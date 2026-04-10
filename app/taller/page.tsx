@@ -968,7 +968,7 @@ export default function CalibreApp() {
                 <input value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Buscar Patente o RUT..." className="w-full p-4 pl-12 rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm uppercase text-xs font-bold text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all" />
             </div>
             <div className="space-y-2 mt-4 max-h-60 overflow-y-auto custom-scrollbar">
-                {/* 🔥 LISTA DE VEHÍCULOS (CON INDICADOR DE ALERTAS PENDIENTES) */}
+                {/* 🔥 LISTA DE VEHÍCULOS (CON INDICADOR DE ALERTAS PENDIENTES CORREGIDO) */}
                 {vehiculosFiltrados.map(v => {
                     const tieneAlerta = v.alertas_desgaste?.some((a: any) => a.estado === 'Pendiente');
                     return (
@@ -977,7 +977,9 @@ export default function CalibreApp() {
                             <div className="flex items-center gap-2">
                                 <p className="font-black text-sm text-slate-100 tracking-wider">{v.patente}</p>
                                 {tieneAlerta && (
-                                    <AlertTriangle size={14} className="text-orange-500 animate-pulse" title="Vehículo con desgaste pendiente" />
+                                    <span title="Vehículo con desgaste pendiente">
+                                        <AlertTriangle size={14} className="text-orange-500 animate-pulse" />
+                                    </span>
                                 )}
                             </div>
                             <p className="text-[10px] text-slate-500 uppercase">{v.clientes?.nombre}</p>
