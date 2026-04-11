@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import imageCompression from 'browser-image-compression'
 import Login from '@/components/Login'
 import CAR_DATA from './autos.json'
-import { Edit2, Trash2, FileText, Clock, User, CheckCircle, Search, Bot, Camera, Plus, Wrench, ChevronRight, Info, MessageSquare, Mic, AlertTriangle, Megaphone, Settings } from 'lucide-react'
+import { Edit2, ChevronDown, Trash2, FileText, Clock, User, CheckCircle, Search, Bot, Camera, Plus, Wrench, ChevronRight, Info, MessageSquare, Mic, AlertTriangle, Megaphone, Settings } from 'lucide-react'
 import toast, { Toaster } from 'react-hot-toast'
 
 // 🚀 COMPONENTES EXTERNOS
@@ -47,7 +47,7 @@ export default function CalibreApp() {
 
   const [vehiculoSeleccionado, setVehiculoSeleccionado] = useState<any | null>(null)
   const [vehiculoInfo, setVehiculoInfo] = useState<any | null>(null)
-  
+  const [recepcionAbierta, setRecepcionAbierta] = useState(false)
   const [modalNuevaOrden, setModalNuevaOrden] = useState<any | null>(null)
   const [descripcionOrden, setDescripcionOrden] = useState('')
   const [valorDiagnostico, setValorDiagnostico] = useState('')
@@ -851,115 +851,126 @@ export default function CalibreApp() {
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6 w-full relative z-10">
         <div className="lg:col-span-1 space-y-4 md:space-y-6">
+          
+          {/* 🔥 1. ACORDEÓN DE RECEPCIÓN */}
           <section className="bg-slate-900/40 backdrop-blur-md p-5 rounded-3xl shadow-2xl border border-slate-700/50 relative overflow-hidden">
-            <h2 className="text-xl font-black mb-5 text-slate-100 uppercase tracking-tighter flex items-center justify-between">
-                <span className="flex items-center gap-2">Recepción <FileText className="text-emerald-500" size={20} /></span>
-                {/* 🔥 BOTÓN DE CAMPAÑAS CORREGIDO A CIAN */}
-                <button onClick={() => setModalMarketing(true)} className="bg-cyan-700 hover:bg-cyan-600 p-2 rounded-xl text-white transition-all shadow-[0_0_15px_rgba(8,145,178,0.3)]" title="Lanzar Campaña de Marketing">
+            <div className="flex items-center justify-between">
+                <button 
+                    type="button"
+                    onClick={() => setRecepcionAbierta(!recepcionAbierta)}
+                    className="flex items-center gap-2 text-xl font-black text-slate-100 uppercase tracking-tighter focus:outline-none md:cursor-default"
+                >
+                    Recepción <FileText className="text-emerald-500" size={20} />
+                    <ChevronDown className={`md:hidden text-emerald-500 transition-transform duration-300 ${recepcionAbierta ? 'rotate-180' : ''}`} size={24} />
+                </button>
+                <button onClick={() => setModalMarketing(true)} className="bg-cyan-700 hover:bg-cyan-600 p-2 rounded-xl text-white transition-all shadow-[0_0_15px_rgba(8,145,178,0.3)] relative z-20" title="Lanzar Campaña de Marketing">
                     <Megaphone size={16} />
                 </button>
-            </h2>
-            <form id="form-recepcion" onSubmit={registrarTodo} className="space-y-3 relative z-10">
-              
-              <input 
-                  name="rut_cliente" 
-                  value={rutInput}
-                  placeholder="RUT" 
-                  onChange={handleRutChange} 
-                  className="w-full p-3 rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm text-sm text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all" 
-              />
-              <input 
-                  name="nombre_cliente" 
-                  value={nombreInput}
-                  onChange={(e) => setNombreInput(e.target.value)}
-                  required 
-                  placeholder="Nombre Dueño" 
-                  className="w-full p-3 rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm text-sm text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all" 
-              />
-              
-              <input 
-                  name="tel_cliente" 
-                  type="tel" 
-                  maxLength={12} 
-                  value={telefonoInput}
-                  onChange={(e) => {
-                      let v = e.target.value.replace(/[^\d+]/g, '');
-                      if (!v.startsWith('+569')) v = '+569';
-                      setTelefonoInput(v);
-                  }} 
-                  className="w-full p-3 rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm text-sm text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all font-bold" 
-              />
-              
-              <div className="h-px bg-slate-800/50 my-3" />
-              
-              <div className="relative">
+            </div>
+            
+            <div className={`transition-all duration-300 ${recepcionAbierta ? 'block mt-5' : 'hidden'} md:block md:mt-5`}>
+                <form id="form-recepcion" onSubmit={registrarTodo} className="space-y-3 relative z-10">
+                  
                   <input 
-                      name="patente" 
-                      value={patenteInput}
-                      onChange={(e) => setPatenteInput(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))}
+                      name="rut_cliente" 
+                      value={rutInput}
+                      placeholder="RUT" 
+                      onChange={handleRutChange} 
+                      className="w-full p-3 rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm text-sm text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all" 
+                  />
+                  <input 
+                      name="nombre_cliente" 
+                      value={nombreInput}
+                      onChange={(e) => setNombreInput(e.target.value)}
                       required 
-                      placeholder="PATENTE" 
-                      className="w-full p-3 pr-12 rounded-2xl border-2 border-emerald-500/80 bg-slate-900/80 backdrop-blur-sm uppercase font-black text-lg text-center text-emerald-400 outline-none focus:ring-4 ring-emerald-500/20 shadow-[inset_0_0_20px_rgba(16,185,129,0.1)] tracking-widest placeholder:text-emerald-900/50 transition-all" 
+                      placeholder="Nombre Dueño" 
+                      className="w-full p-3 rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm text-sm text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all" 
                   />
-                  <button 
-                      type="button"
-                      onClick={() => document.getElementById('ocr-input')?.click()}
-                      disabled={escaneandoPatente}
-                      className={`absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-xl transition-all shadow-sm ${escaneandoPatente ? 'bg-emerald-900/50 text-emerald-400/50 animate-pulse' : 'bg-slate-800/80 text-emerald-400 border border-slate-700/50 hover:bg-emerald-900/50 hover:scale-105'}`}
-                      title="Escanear con cámara"
-                  >
-                      <Camera size={18} />
-                  </button>
+                  
                   <input 
-                      type="file" 
-                      id="ocr-input" 
-                      accept="image/*" 
-                      capture="environment" 
-                      className="hidden" 
-                      onChange={handleEscanearPatente} 
+                      name="tel_cliente" 
+                      type="tel" 
+                      maxLength={12} 
+                      value={telefonoInput}
+                      onChange={(e) => {
+                          let v = e.target.value.replace(/[^\d+]/g, '');
+                          if (!v.startsWith('+569')) v = '+569';
+                          setTelefonoInput(v);
+                      }} 
+                      className="w-full p-3 rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm text-sm text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all font-bold" 
                   />
-              </div>
-              
-              <div className="grid grid-cols-3 gap-2 mt-2">
-                <div className="col-span-1 relative">
-                    <input 
-                      name="marca" 
-                      list="lista-marcas"
-                      value={marcaInput}
-                      onChange={(e) => setMarcaInput(e.target.value.toUpperCase())}
-                      placeholder="Marca" 
-                      autoComplete="off"
-                      className="w-full p-3 rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm text-xs text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all uppercase" 
-                    />
-                    <datalist id="lista-marcas">
-                        {MARCAS.map(m => <option key={m} value={m} />)}
-                    </datalist>
-                </div>
-                
-                <div className="col-span-1 relative">
-                    <input 
-                      name="modelo" 
-                      list="lista-modelos"
-                      value={modeloInput} 
-                      onChange={(e) => setModeloInput(e.target.value.toUpperCase())} 
-                      placeholder="Modelo" 
-                      autoComplete="off"
-                      className="w-full p-3 rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm text-xs text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all uppercase" 
-                    />
-                    <datalist id="lista-modelos">
-                        {marcaInput && (CAR_DATA as Record<string, string[]>)[marcaInput]?.map(m => <option key={m} value={m} />)}
-                    </datalist>
-                </div>
+                  
+                  <div className="h-px bg-slate-800/50 my-3" />
+                  
+                  <div className="relative">
+                      <input 
+                          name="patente" 
+                          value={patenteInput}
+                          onChange={(e) => setPatenteInput(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))}
+                          required 
+                          placeholder="PATENTE" 
+                          className="w-full p-3 pr-12 rounded-2xl border-2 border-emerald-500/80 bg-slate-900/80 backdrop-blur-sm uppercase font-black text-lg text-center text-emerald-400 outline-none focus:ring-4 ring-emerald-500/20 shadow-[inset_0_0_20px_rgba(16,185,129,0.1)] tracking-widest placeholder:text-emerald-900/50 transition-all" 
+                      />
+                      <button 
+                          type="button"
+                          onClick={() => document.getElementById('ocr-input')?.click()}
+                          disabled={escaneandoPatente}
+                          className={`absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-xl transition-all shadow-sm ${escaneandoPatente ? 'bg-emerald-900/50 text-emerald-400/50 animate-pulse' : 'bg-slate-800/80 text-emerald-400 border border-slate-700/50 hover:bg-emerald-900/50 hover:scale-105'}`}
+                          title="Escanear con cámara"
+                      >
+                          <Camera size={18} />
+                      </button>
+                      <input 
+                          type="file" 
+                          id="ocr-input" 
+                          accept="image/*" 
+                          capture="environment" 
+                          className="hidden" 
+                          onChange={handleEscanearPatente} 
+                      />
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-2 mt-2">
+                    <div className="col-span-1 relative">
+                        <input 
+                          name="marca" 
+                          list="lista-marcas"
+                          value={marcaInput}
+                          onChange={(e) => setMarcaInput(e.target.value.toUpperCase())}
+                          placeholder="Marca" 
+                          autoComplete="off"
+                          className="w-full p-3 rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm text-xs text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all uppercase" 
+                        />
+                        <datalist id="lista-marcas">
+                            {MARCAS.map(m => <option key={m} value={m} />)}
+                        </datalist>
+                    </div>
+                    
+                    <div className="col-span-1 relative">
+                        <input 
+                          name="modelo" 
+                          list="lista-modelos"
+                          value={modeloInput} 
+                          onChange={(e) => setModeloInput(e.target.value.toUpperCase())} 
+                          placeholder="Modelo" 
+                          autoComplete="off"
+                          className="w-full p-3 rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm text-xs text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all uppercase" 
+                        />
+                        <datalist id="lista-modelos">
+                            {marcaInput && (CAR_DATA as Record<string, string[]>)[marcaInput]?.map(m => <option key={m} value={m} />)}
+                        </datalist>
+                    </div>
 
-                <div className="col-span-1">
-                    <input name="anho" type="number" placeholder="Año" className="w-full p-3 rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm text-xs text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all" />
-                </div>
-              </div>
-              
-              <button disabled={loading} className="w-full bg-emerald-600 text-slate-950 py-4 rounded-full font-black shadow-[0_0_20px_rgba(16,185,129,0.2)] hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] transition-all uppercase text-xs mt-3 disabled:opacity-50 hover:scale-[1.02] flex items-center justify-center gap-2">
-                  {loading ? 'Procesando...' : <><Plus size={16}/> Registrar Orden</>}
-              </button>
-            </form>
+                    <div className="col-span-1">
+                        <input name="anho" type="number" placeholder="Año" className="w-full p-3 rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm text-xs text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all" />
+                    </div>
+                  </div>
+                  
+                  <button disabled={loading} className="w-full bg-emerald-600 text-slate-950 py-4 rounded-full font-black shadow-[0_0_20px_rgba(16,185,129,0.2)] hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] transition-all uppercase text-xs mt-3 disabled:opacity-50 hover:scale-[1.02] flex items-center justify-center gap-2">
+                      {loading ? 'Procesando...' : <><Plus size={16}/> Registrar Orden</>}
+                  </button>
+                </form>
+            </div>
           </section>
 
           <section className="bg-slate-900/40 backdrop-blur-md p-5 rounded-3xl shadow-2xl border border-slate-700/50">
@@ -985,7 +996,8 @@ export default function CalibreApp() {
                             <p className="text-[9px] text-slate-500 uppercase truncate">{v.clientes?.nombre}</p>
                         </div>
                         
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                        {/* 🔥 2. BOTONES DEL BUSCADOR SIEMPRE VISIBLES EN MÓVIL */}
+                        <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
                             <button onClick={() => setVehiculoInfo(v)} className="bg-slate-700/50 text-emerald-400 p-1.5 rounded-lg hover:bg-slate-600 transition-colors" title="Ver Detalles">
                                 <Info size={12} />
                             </button>
@@ -1065,13 +1077,15 @@ export default function CalibreApp() {
                                 <div>
                                     <div className="flex justify-between items-start mb-5">
                                         <div className="overflow-hidden pr-2">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <p className="font-black text-3xl tracking-tighter text-slate-100 truncate">{o.vehiculos?.patente}</p>
+                                            
+                                            {/* 🔥 3. PATENTE Y ESTADO (COLUMNA EN MÓVIL, FILA EN PC) */}
+                                            <div className="flex flex-col items-start md:flex-row md:items-center gap-2 mb-1">
+                                                <p className="font-black text-3xl tracking-tighter text-slate-100 w-full md:w-auto truncate">{o.vehiculos?.patente}</p>
                                                 
                                                 <select 
                                                     value={o.sub_estado || 'Diagnóstico'}
                                                     onChange={(e) => cambiarSubEstado(o.id, e.target.value)}
-                                                    className={`text-[8px] font-black px-1.5 py-1 rounded-md border uppercase tracking-wider outline-none cursor-pointer text-center shrink-0 ${COLOR_ESTADO[o.sub_estado || 'Diagnóstico']}`}
+                                                    className={`text-[8px] font-black px-1.5 py-1 rounded-md border uppercase tracking-wider outline-none cursor-pointer text-center shrink-0 w-fit ${COLOR_ESTADO[o.sub_estado || 'Diagnóstico']}`}
                                                 >
                                                     <option className="bg-slate-900 text-slate-100 font-bold" value="Diagnóstico">DIAGNÓSTICO</option>
                                                     <option className="bg-slate-900 text-slate-100 font-bold" value="Pendiente Aprobación">ESPERA APROBAR</option>
