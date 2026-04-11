@@ -35,31 +35,31 @@ export default function Login() {
     }
   }
 
-  // 🛠️ Función de Google con "Modo Debug" y Try/Catch
-  const handleGoogleLogin = async () => {
-    try {
-        setErrorMsg('')
-        console.log("🟢 1. Iniciando petición a Supabase para Google OAuth...")
-        
-        const { data, error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-                // 🟢 CORREGIDO: Redirigir a /taller
-                redirectTo: `${window.location.origin}/taller`
-            }
-        })
+ const handleGoogleLogin = async () => {
+  try {
+      setErrorMsg('')
+      setLoading(true) // Opcional, para que el botón muestre carga
+      console.log("🟢 Iniciando petición a Supabase para Google OAuth...")
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+              // 🔥 CAMBIO CLAVE: Ahora lo mandamos al callback
+              redirectTo: `${window.location.origin}/auth/callback`
+          }
+      })
 
-        console.log("🟢 2. Respuesta de Supabase:", data)
-
-        if (error) {
-            console.error("🔴 Error de Supabase:", error.message)
-            setErrorMsg(`Error de Google: ${error.message}`)
-        }
-    } catch (err) {
-        console.error("🔴 Error crítico al conectar:", err)
-        setErrorMsg('El sistema bloqueó la conexión con Google. Revisa la consola.')
-    }
+      if (error) {
+          console.error("🔴 Error de Supabase:", error.message)
+          setErrorMsg(`Error de Google: ${error.message}`)
+      }
+  } catch (err) {
+      console.error("🔴 Error crítico al conectar:", err)
+      setErrorMsg('El sistema bloqueó la conexión con Google.')
+  } finally {
+      // setLoading(false) // Si usaste el estado loading
   }
+}
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-4 selection:bg-emerald-500 selection:text-slate-950 relative overflow-hidden">
