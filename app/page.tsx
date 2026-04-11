@@ -1,6 +1,6 @@
+'use client'
 import Link from 'next/link'
-import { Wrench, ArrowRight, Bot, FileText, Activity, CheckCircle, Star, Shield, LineChart, LayoutDashboard, Lock } from 'lucide-react'
-//implementando en github para uso en vercel
+import { Wrench, ArrowRight, Bot, FileText, CheckCircle, Star, Shield, LineChart, LayoutDashboard, Lock, BookOpen, Database, MessageCircle } from 'lucide-react'
 
 export default function LandingPage() {
   return (
@@ -25,7 +25,7 @@ export default function LandingPage() {
         
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-950/50 border border-emerald-900/50 text-emerald-400 text-[10px] font-black uppercase tracking-widest mb-8 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            Lanzamiento Oficial 2026
+            Actualiza tu taller
         </div>
 
         <h1 className="text-5xl md:text-7xl lg:text-8xl font-black uppercase tracking-tighter mb-8 leading-[0.9]">
@@ -54,11 +54,11 @@ export default function LandingPage() {
             </div>
             <div className="flex items-center gap-2 text-sm font-bold text-slate-300">
                 <div className="flex text-emerald-500"><Star size={16} fill="currentColor"/><Star size={16} fill="currentColor"/><Star size={16} fill="currentColor"/><Star size={16} fill="currentColor"/><Star size={16} fill="currentColor"/></div>
-                <span>Confían más de 50 talleres en Chile</span>
+                <span>Más de 50 talleres confían en nosotros</span>
             </div>
         </div>
 
-        {/* 🟢 MOCKUP VISUAL DEL SISTEMA (Construido con código) */}
+        {/* 🟢 MOCKUP VISUAL DEL SISTEMA */}
         <div className="w-full max-w-5xl bg-slate-900 border border-slate-700 rounded-t-3xl rounded-b-lg shadow-2xl overflow-hidden relative">
             <div className="bg-slate-800/50 border-b border-slate-700 px-4 py-3 flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-red-500/50"></div>
@@ -84,40 +84,75 @@ export default function LandingPage() {
                     </div>
                 ))}
             </div>
-            {/* Gradiente para difuminar la parte de abajo */}
             <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-slate-950 to-transparent"></div>
         </div>
       </section>
 
-      {/* 🟢 SECCIÓN DE BENEFICIOS (BENTO GRID) */}
+      {/* 🟢 SECCIÓN DE BENEFICIOS (BENTO GRID EXPANDIDO) */}
       <section id="beneficios" className="w-full bg-slate-900 border-t border-slate-800 py-24 relative z-10">
         <div className="max-w-7xl mx-auto px-6">
             <div className="text-center mb-16">
                 <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter text-slate-100">Por qué elegir <span className="text-emerald-500">Calibre</span></h2>
+                <p className="mt-4 text-slate-400 font-bold">Un ecosistema completo diseñado para que dejes de apagar incendios y empieces a crecer.</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Grid de 6 columnas */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                
+                {/* 1. Pizarra */}
                 <div className="bg-slate-950 p-8 rounded-[40px] border border-slate-800 hover:border-emerald-500/50 transition-colors group">
                     <div className="bg-slate-900 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-slate-800">
                         <LayoutDashboard className="text-emerald-500" size={32} />
                     </div>
                     <h3 className="text-xl font-black uppercase tracking-tighter mb-4">Pizarra Inteligente</h3>
-                    <p className="text-sm font-bold text-slate-400 leading-relaxed">Visualiza todos los vehículos en el taller en tiempo real. Asigna mecánicos, actualiza estados y controla los tiempos de entrega con un clic.</p>
+                    <p className="text-sm font-bold text-slate-400 leading-relaxed">Visualiza todos los vehículos en tiempo real. Asigna mecánicos, actualiza estados y controla los tiempos de entrega con un solo clic.</p>
                 </div>
+
+                {/* 2. Diagnóstico IA */}
                 <div className="bg-slate-950 p-8 rounded-[40px] border border-slate-800 hover:border-blue-500/50 transition-colors group">
                     <div className="bg-slate-900 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-slate-800">
                         <Bot className="text-blue-500" size={32} />
                     </div>
-                    <h3 className="text-xl font-black uppercase tracking-tighter mb-4">Scanner IA OBD2</h3>
-                    <p className="text-sm font-bold text-slate-400 leading-relaxed">Ingresa los códigos de error de tu scanner y nuestra IA te dará un diagnóstico detallado, causas probables y soluciones recomendadas.</p>
+                    <h3 className="text-xl font-black uppercase tracking-tighter mb-4">Diagnóstico IA (OBD2)</h3>
+                    <p className="text-sm font-bold text-slate-400 leading-relaxed">Ingresa códigos de falla o síntomas, y nuestra IA te entregará probabilidades de diagnóstico, torques referenciales y pasos a seguir.</p>
                 </div>
+
+                {/* 3. Escáner de Patentes (OCR) */}
+                <div className="bg-slate-950 p-8 rounded-[40px] border border-slate-800 hover:border-purple-500/50 transition-colors group">
+                    <div className="bg-slate-900 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-slate-800">
+                        <BookOpen className="text-purple-500" size={32} />
+                    </div>
+                    <h3 className="text-xl font-black uppercase tracking-tighter mb-4">Manual generativo</h3>
+                    <p className="text-sm font-bold text-slate-400 leading-relaxed">Mantente informado para tus trabajos, ya sean torques o valores en especifico, aquí los tienes.</p>
+                </div>
+
+                {/* 4. Base de Datos / Historial */}
+                <div className="bg-slate-950 p-8 rounded-[40px] border border-slate-800 hover:border-cyan-500/50 transition-colors group">
+                    <div className="bg-slate-900 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-slate-800">
+                        <Database className="text-cyan-500" size={32} />
+                    </div>
+                    <h3 className="text-xl font-black uppercase tracking-tighter mb-4">Historial Clínico Auto</h3>
+                    <p className="text-sm font-bold text-slate-400 leading-relaxed">Mantén un registro inmutable de mantenimientos, kilometrajes y reparaciones previas por cada vehículo que visita tus instalaciones.</p>
+                </div>
+
+                {/* 5. Conexión WhatsApp */}
+                <div className="bg-slate-950 p-8 rounded-[40px] border border-slate-800 hover:border-green-500/50 transition-colors group">
+                    <div className="bg-slate-900 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-slate-800">
+                        <MessageCircle className="text-green-500" size={32} />
+                    </div>
+                    <h3 className="text-xl font-black uppercase tracking-tighter mb-4">Enlaces a WhatsApp</h3>
+                    <p className="text-sm font-bold text-slate-400 leading-relaxed">Envía recordatorios, presupuestos y notificaciones de vehículo listo directo al celular de tu cliente en segundos.</p>
+                </div>
+
+                {/* 6. Informes PDF */}
                 <div className="bg-slate-950 p-8 rounded-[40px] border border-slate-800 hover:border-orange-500/50 transition-colors group">
                     <div className="bg-slate-900 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-slate-800">
                         <FileText className="text-orange-500" size={32} />
                     </div>
-                    <h3 className="text-xl font-black uppercase tracking-tighter mb-4">Informes PDF Auto</h3>
-                    <p className="text-sm font-bold text-slate-400 leading-relaxed">Al finalizar el trabajo, el sistema genera automáticamente un reporte profesional en PDF y lo envía al correo o WhatsApp de tu cliente.</p>
+                    <h3 className="text-xl font-black uppercase tracking-tighter mb-4">Informes Profesionales</h3>
+                    <p className="text-sm font-bold text-slate-400 leading-relaxed">Genera reportes técnicos en formato PDF con el logo de tu taller. Transmite transparencia y justifica el valor de tus servicios.</p>
                 </div>
+
             </div>
         </div>
       </section>
@@ -142,7 +177,6 @@ export default function LandingPage() {
                 </ul>
             </div>
             
-            {/* Gráfico Abstracto Decorativo */}
             <div className="relative">
                 <div className="absolute inset-0 bg-blue-500/10 blur-[100px] rounded-full"></div>
                 <div className="bg-slate-900 border border-slate-800 rounded-[40px] p-8 relative z-10 shadow-2xl">
@@ -171,7 +205,7 @@ export default function LandingPage() {
       <section className="w-full max-w-4xl mx-auto px-6 py-24 text-center relative z-10">
         <Shield className="text-slate-700 mx-auto mb-6" size={48} />
         <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter mb-6">Tu taller, blindado en la nube.</h2>
-        <p className="text-slate-400 font-bold mb-10 max-w-xl mx-auto">Únete a la nueva era de la gestión automotriz. Seguridad de nivel bancario (RLS) para que tu información y la de tus clientes esté 100% protegida.</p>
+        <p className="text-slate-400 font-bold mb-10 max-w-xl mx-auto">Únete a la nueva era de la gestión automotriz. Trabajamos en base a sistemas internacionales con seguridad de nivel bancario para que tu información y la de tus clientes esté 100% protegida.</p>
         <Link href="/taller" className="inline-flex items-center justify-center gap-3 bg-emerald-600 text-slate-950 px-10 py-6 rounded-full font-black text-sm uppercase tracking-widest hover:bg-emerald-500 transition-all hover:scale-105 shadow-[0_0_30px_rgba(16,185,129,0.3)]">
             Ingresar a mi Taller <ArrowRight size={18} />
         </Link>
@@ -179,19 +213,31 @@ export default function LandingPage() {
 
       {/* 🟢 FOOTER CORPORATIVO */}
       <footer className="w-full bg-slate-950 border-t border-slate-900 py-12 relative z-10">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-2 opacity-50">
-                <Wrench size={20} />
-                <span className="text-lg font-black uppercase tracking-tighter">Calibre.</span>
+        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
+            
+            <div className="flex items-center gap-2 group cursor-default">
+                <Wrench size={20} className="text-slate-500 group-hover:text-emerald-500 transition-colors" />
+                <span className="text-lg font-black uppercase tracking-tighter text-slate-300">
+                    Calibre<span className="text-emerald-500">.</span>
+                </span>
             </div>
-            <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
+
+            <div className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] text-center">
                 © 2026 Calibre Software. Todos los derechos reservados.
             </div>
-            <div className="flex gap-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                <a href="#" className="hover:text-emerald-400 transition-colors">Soporte</a>
-                <a href="#" className="hover:text-emerald-400 transition-colors">Privacidad</a>
-                <a href="#" className="hover:text-emerald-400 transition-colors">Términos</a>
+
+            <div className="flex gap-8">
+                <Link href="/soporte" className="text-[10px] font-black text-slate-500 hover:text-emerald-400 uppercase tracking-widest transition-all hover:translate-y-[-1px]">
+                    Soporte
+                </Link>
+                <Link href="/terminos" className="text-[10px] font-black text-slate-500 hover:text-emerald-400 uppercase tracking-widest transition-all hover:translate-y-[-1px]">
+                    Privacidad
+                </Link>
+                <Link href="/terminos" className="text-[10px] font-black text-slate-500 hover:text-emerald-400 uppercase tracking-widest transition-all hover:translate-y-[-1px]">
+                    Términos
+                </Link>
             </div>
+            
         </div>
       </footer>
 
