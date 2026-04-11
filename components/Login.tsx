@@ -27,8 +27,8 @@ export default function Login() {
             return
         }
         
-        // Si es exitoso, redirigimos al dashboard
-        window.location.href = '/dashboard'
+        // 🟢 CORREGIDO: Redirigir a /taller
+        window.location.href = '/taller'
     } catch (err) {
         setErrorMsg('Ocurrió un error inesperado al iniciar sesión.')
         setLoading(false)
@@ -44,7 +44,8 @@ export default function Login() {
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: `${window.location.origin}/dashboard`
+                // 🟢 CORREGIDO: Redirigir a /taller
+                redirectTo: `${window.location.origin}/taller`
             }
         })
 
