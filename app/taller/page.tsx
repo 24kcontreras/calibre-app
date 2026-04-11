@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import imageCompression from 'browser-image-compression'
 import Login from '@/components/Login'
 import CAR_DATA from './autos.json'
-import { Edit2, Trash2, FileText, Clock, User, CheckCircle, Search, Bot, Camera, Plus, Wrench, ChevronRight, Info, MessageSquare, Mic, AlertTriangle, Megaphone } from 'lucide-react'
+import { Edit2, Trash2, FileText, Clock, User, CheckCircle, Search, Bot, Camera, Plus, Wrench, ChevronRight, Info, MessageSquare, Mic, AlertTriangle, Megaphone, Settings } from 'lucide-react'
 import toast, { Toaster } from 'react-hot-toast'
 
 // 🚀 COMPONENTES EXTERNOS
@@ -825,7 +825,7 @@ export default function CalibreApp() {
   if (!session) return <Login />
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 font-sans w-full mx-auto selection:bg-emerald-500 selection:text-slate-950 relative overflow-hidden">
+    <main className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-6 font-sans w-full mx-auto selection:bg-emerald-500 selection:text-slate-950 relative overflow-hidden">
       
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-emerald-900/10 rounded-full blur-[120px] pointer-events-none z-0"></div>
 
@@ -849,13 +849,13 @@ export default function CalibreApp() {
         onOpenMarketing={() => setModalMarketing(true)} 
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 w-full relative z-10">
-        <div className="lg:col-span-1 space-y-6">
-          <section className="bg-slate-900/40 backdrop-blur-md p-6 rounded-[35px] shadow-2xl border border-slate-700/50 relative overflow-hidden">
-            <h2 className="text-xl font-black mb-6 text-slate-100 uppercase tracking-tighter flex items-center justify-between">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6 w-full relative z-10">
+        <div className="lg:col-span-1 space-y-4 md:space-y-6">
+          <section className="bg-slate-900/40 backdrop-blur-md p-5 rounded-3xl shadow-2xl border border-slate-700/50 relative overflow-hidden">
+            <h2 className="text-xl font-black mb-5 text-slate-100 uppercase tracking-tighter flex items-center justify-between">
                 <span className="flex items-center gap-2">Recepción <FileText className="text-emerald-500" size={20} /></span>
-                {/* 🔥 BOTÓN DE CAMPAÑAS DE MARKETING */}
-                <button onClick={() => setModalMarketing(true)} className="bg-purple-600 hover:bg-purple-500 p-2 rounded-xl text-white transition-all shadow-[0_0_15px_rgba(147,51,234,0.3)]" title="Lanzar Campaña de Marketing">
+                {/* 🔥 BOTÓN DE CAMPAÑAS CORREGIDO A CIAN */}
+                <button onClick={() => setModalMarketing(true)} className="bg-cyan-700 hover:bg-cyan-600 p-2 rounded-xl text-white transition-all shadow-[0_0_15px_rgba(8,145,178,0.3)]" title="Lanzar Campaña de Marketing">
                     <Megaphone size={16} />
                 </button>
             </h2>
@@ -866,7 +866,7 @@ export default function CalibreApp() {
                   value={rutInput}
                   placeholder="RUT" 
                   onChange={handleRutChange} 
-                  className="w-full p-4 rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm text-sm text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all" 
+                  className="w-full p-3 rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm text-sm text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all" 
               />
               <input 
                   name="nombre_cliente" 
@@ -874,7 +874,7 @@ export default function CalibreApp() {
                   onChange={(e) => setNombreInput(e.target.value)}
                   required 
                   placeholder="Nombre Dueño" 
-                  className="w-full p-4 rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm text-sm text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all" 
+                  className="w-full p-3 rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm text-sm text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all" 
               />
               
               <input 
@@ -887,10 +887,10 @@ export default function CalibreApp() {
                       if (!v.startsWith('+569')) v = '+569';
                       setTelefonoInput(v);
                   }} 
-                  className="w-full p-4 rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm text-sm text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all font-bold" 
+                  className="w-full p-3 rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm text-sm text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all font-bold" 
               />
               
-              <div className="h-px bg-slate-800/50 my-4" />
+              <div className="h-px bg-slate-800/50 my-3" />
               
               <div className="relative">
                   <input 
@@ -899,16 +899,16 @@ export default function CalibreApp() {
                       onChange={(e) => setPatenteInput(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))}
                       required 
                       placeholder="PATENTE" 
-                      className="w-full p-4 pr-14 rounded-2xl border-2 border-emerald-500/80 bg-slate-900/80 backdrop-blur-sm uppercase font-black text-xl text-center text-emerald-400 outline-none focus:ring-4 ring-emerald-500/20 shadow-[inset_0_0_20px_rgba(16,185,129,0.1)] tracking-widest placeholder:text-emerald-900/50 transition-all" 
+                      className="w-full p-3 pr-12 rounded-2xl border-2 border-emerald-500/80 bg-slate-900/80 backdrop-blur-sm uppercase font-black text-lg text-center text-emerald-400 outline-none focus:ring-4 ring-emerald-500/20 shadow-[inset_0_0_20px_rgba(16,185,129,0.1)] tracking-widest placeholder:text-emerald-900/50 transition-all" 
                   />
                   <button 
                       type="button"
                       onClick={() => document.getElementById('ocr-input')?.click()}
                       disabled={escaneandoPatente}
-                      className={`absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-xl transition-all shadow-sm ${escaneandoPatente ? 'bg-emerald-900/50 text-emerald-400/50 animate-pulse' : 'bg-slate-800/80 text-emerald-400 border border-slate-700/50 hover:bg-emerald-900/50 hover:scale-105'}`}
+                      className={`absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-xl transition-all shadow-sm ${escaneandoPatente ? 'bg-emerald-900/50 text-emerald-400/50 animate-pulse' : 'bg-slate-800/80 text-emerald-400 border border-slate-700/50 hover:bg-emerald-900/50 hover:scale-105'}`}
                       title="Escanear con cámara"
                   >
-                      <Camera size={20} />
+                      <Camera size={18} />
                   </button>
                   <input 
                       type="file" 
@@ -929,7 +929,7 @@ export default function CalibreApp() {
                       onChange={(e) => setMarcaInput(e.target.value.toUpperCase())}
                       placeholder="Marca" 
                       autoComplete="off"
-                      className="w-full p-4 rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm text-sm text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all uppercase" 
+                      className="w-full p-3 rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm text-xs text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all uppercase" 
                     />
                     <datalist id="lista-marcas">
                         {MARCAS.map(m => <option key={m} value={m} />)}
@@ -944,7 +944,7 @@ export default function CalibreApp() {
                       onChange={(e) => setModeloInput(e.target.value.toUpperCase())} 
                       placeholder="Modelo" 
                       autoComplete="off"
-                      className="w-full p-4 rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm text-sm text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all uppercase" 
+                      className="w-full p-3 rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm text-xs text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all uppercase" 
                     />
                     <datalist id="lista-modelos">
                         {marcaInput && (CAR_DATA as Record<string, string[]>)[marcaInput]?.map(m => <option key={m} value={m} />)}
@@ -952,219 +952,234 @@ export default function CalibreApp() {
                 </div>
 
                 <div className="col-span-1">
-                    <input name="anho" type="number" placeholder="Año" className="w-full p-4 rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm text-sm text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all" />
+                    <input name="anho" type="number" placeholder="Año" className="w-full p-3 rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm text-xs text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all" />
                 </div>
               </div>
               
-              <button disabled={loading} className="w-full bg-emerald-600 text-slate-950 py-5 rounded-full font-black shadow-[0_0_20px_rgba(16,185,129,0.2)] hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] transition-all uppercase text-xs mt-4 disabled:opacity-50 hover:scale-[1.02] flex items-center justify-center gap-2">
-                  {loading ? 'Procesando...' : <><Plus size={16}/> Registrar y Abrir Orden</>}
+              <button disabled={loading} className="w-full bg-emerald-600 text-slate-950 py-4 rounded-full font-black shadow-[0_0_20px_rgba(16,185,129,0.2)] hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] transition-all uppercase text-xs mt-3 disabled:opacity-50 hover:scale-[1.02] flex items-center justify-center gap-2">
+                  {loading ? 'Procesando...' : <><Plus size={16}/> Registrar Orden</>}
               </button>
             </form>
           </section>
 
-          <section className="bg-slate-900/40 backdrop-blur-md p-6 rounded-[35px] shadow-2xl border border-slate-700/50">
+          <section className="bg-slate-900/40 backdrop-blur-md p-5 rounded-3xl shadow-2xl border border-slate-700/50">
             <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-                <input value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Buscar Patente o RUT..." className="w-full p-4 pl-12 rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm uppercase text-xs font-bold text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
+                <input value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Buscar Patente o RUT..." className="w-full p-3 pl-9 rounded-xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm uppercase text-xs font-bold text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all" />
             </div>
-            <div className="space-y-2 mt-4 max-h-60 overflow-y-auto custom-scrollbar">
-                {/* 🔥 LISTA DE VEHÍCULOS (CON INDICADOR DE ALERTAS PENDIENTES CORREGIDO) */}
+            <div className="space-y-2 mt-3 max-h-40 overflow-y-auto custom-scrollbar-dark pr-2">
+                {/* 🔥 LISTA DE VEHÍCULOS */}
                 {vehiculosFiltrados.map(v => {
                     const tieneAlerta = v.alertas_desgaste?.some((a: any) => a.estado === 'Pendiente');
                     return (
-                    <div key={v.id} className="p-4 bg-slate-800/50 backdrop-blur-sm rounded-2xl flex justify-between items-center group border border-slate-700/50 hover:border-emerald-500/50 transition-all">
-                        <div>
+                    <div key={v.id} className="p-3 bg-slate-800/50 backdrop-blur-sm rounded-xl flex justify-between items-center group border border-slate-700/50 hover:border-emerald-500/50 transition-all">
+                        <div className="overflow-hidden pr-2">
                             <div className="flex items-center gap-2">
-                                <p className="font-black text-sm text-slate-100 tracking-wider">{v.patente}</p>
+                                <p className="font-black text-xs text-slate-100 tracking-wider truncate">{v.patente}</p>
                                 {tieneAlerta && (
-                                    <span title="Vehículo con desgaste pendiente">
-                                        <AlertTriangle size={14} className="text-orange-500 animate-pulse" />
+                                    <span title="Vehículo con desgaste pendiente" className="shrink-0">
+                                        <AlertTriangle size={12} className="text-orange-500 animate-pulse" />
                                     </span>
                                 )}
                             </div>
-                            <p className="text-[10px] text-slate-500 uppercase">{v.clientes?.nombre}</p>
+                            <p className="text-[9px] text-slate-500 uppercase truncate">{v.clientes?.nombre}</p>
                         </div>
                         
-                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => setVehiculoInfo(v)} className="bg-slate-700/50 text-emerald-400 p-2 rounded-xl hover:bg-slate-600 transition-colors" title="Ver Detalles">
-                                <Info size={14} />
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                            <button onClick={() => setVehiculoInfo(v)} className="bg-slate-700/50 text-emerald-400 p-1.5 rounded-lg hover:bg-slate-600 transition-colors" title="Ver Detalles">
+                                <Info size={12} />
                             </button>
-                            <button onClick={() => abrirOrden(v)} className="bg-emerald-600 text-slate-950 px-3 py-2 rounded-xl text-[10px] font-black hover:bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)] hover:scale-105 transition-all">ORDEN</button>
+                            <button onClick={() => abrirOrden(v)} className="bg-emerald-600 text-slate-950 px-2 py-1.5 rounded-lg text-[9px] font-black hover:bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)] transition-all">ORDEN</button>
                         </div>
                     </div>
                 )})}
             </div>
           </section>
 
-          <section className="bg-slate-900/40 backdrop-blur-md p-6 rounded-[35px] shadow-2xl border border-slate-700/50">
-            <h2 className="text-sm font-black mb-4 text-blue-400 uppercase tracking-widest flex items-center gap-2">
-                <Bot size={16} /> Agenda Predictiva
+          <section className="bg-slate-900/40 backdrop-blur-md p-5 rounded-3xl shadow-2xl border border-slate-700/50">
+            <h2 className="text-xs font-black mb-3 text-blue-400 uppercase tracking-widest flex items-center gap-2">
+                <Bot size={14} /> Agenda Predictiva
             </h2>
-            <p className="text-[10px] text-slate-400 font-bold mb-4 leading-tight">
-                Clientes que requieren mantención por tiempo o desgastes pendientes.
+            <p className="text-[9px] text-slate-400 font-bold mb-3 leading-tight">
+                Clientes que requieren mantención o tienen desgastes pendientes.
             </p>
             
-            <div className="space-y-3 max-h-60 overflow-y-auto custom-scrollbar-dark pr-2">
+            <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar-dark pr-2">
                 {oportunidadesVenta.map(v => {
                     const alerta = v.alertas_desgaste?.find((a: any) => a.estado === 'Pendiente');
                     return (
-                        <div key={v.id} className="p-3 bg-slate-950/50 backdrop-blur-sm rounded-2xl border border-slate-800 hover:border-blue-500/50 transition-all group">
+                        <div key={v.id} className="p-3 bg-slate-950/50 backdrop-blur-sm rounded-xl border border-slate-800 hover:border-blue-500/50 transition-all group">
                             <div className="flex justify-between items-start mb-2">
-                                <div>
-                                    <p className="font-black text-xs text-slate-200 uppercase">{v.clientes?.nombre}</p>
-                                    <p className="text-[10px] text-slate-500 font-bold uppercase">{v.marca} {v.modelo} • {v.patente}</p>
+                                <div className="overflow-hidden">
+                                    <p className="font-black text-[10px] text-slate-200 uppercase truncate">{v.clientes?.nombre}</p>
+                                    <p className="text-[9px] text-slate-500 font-bold uppercase truncate">{v.marca} {v.modelo} • {v.patente}</p>
                                 </div>
                             </div>
                             
-                            <div className="bg-slate-900 rounded-lg p-2 mb-3">
-                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                                    <AlertTriangle size={10} className={alerta ? "text-yellow-500" : "text-slate-500"} /> 
-                                    Motivo: {alerta ? `Revisar ${alerta.pieza}` : 'Mantención Preventiva (>6 meses)'}
+                            <div className="bg-slate-900 rounded-lg p-2 mb-2">
+                                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                                    <AlertTriangle size={10} className={alerta ? "text-yellow-500 shrink-0" : "text-slate-500 shrink-0"} /> 
+                                    <span className="truncate">{alerta ? `Revisar ${alerta.pieza}` : 'Mantención Preventiva'}</span>
                                 </p>
                             </div>
 
-                            <button onClick={() => enviarRecordatorioPredictivo(v)} className="w-full bg-blue-600/10 text-blue-400 border border-blue-600/30 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-slate-950 transition-all flex items-center justify-center gap-2">
-                                <MessageSquare size={12} /> Enviar Aviso
+                            <button onClick={() => enviarRecordatorioPredictivo(v)} className="w-full bg-blue-600/10 text-blue-400 border border-blue-600/30 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-slate-950 transition-all flex items-center justify-center gap-1">
+                                <MessageSquare size={10} /> Enviar Aviso
                             </button>
                         </div>
                     );
                 })}
 
                 {oportunidadesVenta.length === 0 && (
-                    <div className="text-center p-4 border border-dashed border-slate-700/50 rounded-2xl">
-                        <p className="text-xs text-slate-500 font-bold">No hay clientes pendientes de contacto para estas fechas.</p>
+                    <div className="text-center p-4 border border-dashed border-slate-700/50 rounded-xl">
+                        <p className="text-[10px] text-slate-500 font-bold">No hay clientes pendientes.</p>
                     </div>
                 )}
             </div>
           </section>
         </div>
 
-        <div className="lg:col-span-3 space-y-8">
+        {/* 🔥 COLUMNA PRINCIPAL DERECHA */}
+        <div className="lg:col-span-3 flex flex-col gap-6">
+            
+            {/* PIZARRA ACTIVA (REINA ABSOLUTA) */}
             <section className="relative">
                 <div className="absolute -top-10 -left-10 w-64 h-64 bg-orange-500/10 rounded-full blur-[80px] pointer-events-none z-0"></div>
                 
-                <div className="flex items-center gap-3 mb-6 relative z-10">
+                <div className="flex items-center gap-3 mb-5 relative z-10">
                     <span className="h-3 w-3 bg-orange-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(249,115,22,0.8)]"></span>
-                    <h2 className="text-3xl font-black text-slate-100 tracking-tighter uppercase">Pizarra Activa</h2>
+                    <h2 className="text-2xl font-black text-slate-100 tracking-tighter uppercase">Pizarra Activa</h2>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 relative z-10">
-                    {ordenesAbiertas.map(o => (
-                        <div key={o.id} className="bg-slate-900/40 backdrop-blur-md p-8 rounded-[40px] shadow-2xl border-2 border-slate-800 hover:border-orange-500/50 transition-all relative overflow-hidden group flex flex-col justify-between">
-                            <div>
-                                <div className="flex justify-between items-start mb-6">
-                                    <div>
-                                        <div className="flex items-center gap-3 mb-2">
-                                            <p className="font-black text-4xl tracking-tighter text-slate-100">{o.vehiculos?.patente}</p>
+
+                {/* 🔥 EMPTY STATE ELEGANTE */}
+                {ordenesAbiertas.length === 0 ? (
+                    <div className="min-h-[250px] border-2 border-dashed border-slate-800 rounded-3xl flex flex-col items-center justify-center text-center p-6 relative z-10 bg-slate-900/20 backdrop-blur-sm">
+                        <Settings size={48} className="text-slate-700 mb-4 animate-[spin_10s_linear_infinite]" />
+                        <h3 className="text-lg font-black text-slate-400 uppercase tracking-widest mb-1">Taller Despejado</h3>
+                        <p className="text-xs text-slate-500 font-bold">Registra un vehículo a la izquierda para comenzar el trabajo.</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 relative z-10 items-start">
+                        {ordenesAbiertas.map(o => (
+                            <div key={o.id} className="bg-slate-900/40 backdrop-blur-md p-6 rounded-3xl shadow-2xl border-2 border-slate-800 hover:border-orange-500/50 transition-all relative overflow-hidden group flex flex-col justify-between">
+                                <div>
+                                    <div className="flex justify-between items-start mb-5">
+                                        <div className="overflow-hidden pr-2">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <p className="font-black text-3xl tracking-tighter text-slate-100 truncate">{o.vehiculos?.patente}</p>
+                                                
+                                                <select 
+                                                    value={o.sub_estado || 'Diagnóstico'}
+                                                    onChange={(e) => cambiarSubEstado(o.id, e.target.value)}
+                                                    className={`text-[8px] font-black px-1.5 py-1 rounded-md border uppercase tracking-wider outline-none cursor-pointer text-center shrink-0 ${COLOR_ESTADO[o.sub_estado || 'Diagnóstico']}`}
+                                                >
+                                                    <option className="bg-slate-900 text-slate-100 font-bold" value="Diagnóstico">DIAGNÓSTICO</option>
+                                                    <option className="bg-slate-900 text-slate-100 font-bold" value="Pendiente Aprobación">ESPERA APROBAR</option>
+                                                    <option className="bg-slate-900 text-slate-100 font-bold" value="Esperando Repuestos">ESPERA REPUESTOS</option>
+                                                    <option className="bg-slate-900 text-slate-100 font-bold" value="En Reparación">REPARANDO</option>
+                                                    <option className="bg-slate-900 text-slate-100 font-bold" value="Listo para Entrega">LISTO PARA ENTREGA</option>
+                                                </select>
+                                            </div>
+
+                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest truncate">{o.vehiculos?.marca} {o.vehiculos?.modelo}</p>
                                             
-                                            <select 
-                                                value={o.sub_estado || 'Diagnóstico'}
-                                                onChange={(e) => cambiarSubEstado(o.id, e.target.value)}
-                                                className={`text-[9px] font-black px-2 py-1 rounded-md border uppercase tracking-wider outline-none cursor-pointer text-center ${COLOR_ESTADO[o.sub_estado || 'Diagnóstico']}`}
-                                            >
-                                                <option className="bg-slate-900 text-slate-100 font-bold" value="Diagnóstico">DIAGNÓSTICO</option>
-                                                <option className="bg-slate-900 text-slate-100 font-bold" value="Pendiente Aprobación">PENDIENTE APROBAR</option>
-                                                <option className="bg-slate-900 text-slate-100 font-bold" value="Esperando Repuestos">ESPERA REPUESTOS</option>
-                                                <option className="bg-slate-900 text-slate-100 font-bold" value="En Reparación">REPARANDO</option>
-                                                <option className="bg-slate-900 text-slate-100 font-bold" value="Listo para Entrega">LISTO PARA ENTREGA</option>
-                                            </select>
-                                        </div>
+                                            <div className="flex items-center gap-1 mt-2 text-[9px] font-bold text-slate-400 bg-slate-950/50 w-fit px-2 py-1 rounded border border-slate-800">
+                                                <Clock size={10} className="text-orange-400" />
+                                                <span>{calcularTiempoEnTaller(o.created_at)} en taller</span>
+                                            </div>
 
-                                        <p className="text-xs font-black text-slate-500 uppercase tracking-widest">{o.vehiculos?.marca} {o.vehiculos?.modelo}</p>
+                                            <div onClick={() => handleAsignarMecanico(o.id, o.mecanico)} className="flex items-center gap-1 w-fit mt-2 bg-slate-800/50 backdrop-blur-sm text-slate-300 font-bold text-[9px] px-2 py-1.5 rounded-lg border border-slate-700/50 shadow-sm uppercase cursor-pointer hover:bg-emerald-900/50 hover:text-emerald-400 hover:border-emerald-700 transition-all truncate max-w-full" title="Clic para cambiar mecánico">
+                                                <User size={10} className="shrink-0" /> <span className="truncate">{o.mecanico && o.mecanico !== 'Sin asignar' ? o.mecanico : 'Mecánico'}</span>
+                                            </div>
+                                        </div>
                                         
-                                        <div className="flex items-center gap-1 mt-2 text-[10px] font-bold text-slate-400 bg-slate-950/50 w-fit px-2 py-1 rounded border border-slate-800">
-                                            <Clock size={10} className="text-orange-400" />
-                                            <span>{calcularTiempoEnTaller(o.created_at)} en taller</span>
-                                        </div>
-
-                                        <div onClick={() => handleAsignarMecanico(o.id, o.mecanico)} className="flex items-center gap-1 w-fit mt-3 bg-slate-800/50 backdrop-blur-sm text-slate-300 font-bold text-[9px] px-3 py-1.5 rounded-lg border border-slate-700/50 shadow-sm uppercase cursor-pointer hover:bg-emerald-900/50 hover:text-emerald-400 hover:border-emerald-700 transition-all" title="Clic para cambiar mecánico">
-                                            <User size={12} /> {o.mecanico && o.mecanico !== 'Sin asignar' ? o.mecanico : 'Asignar Mecánico'}
+                                        {/* 🔥 BOTONES DE ALERTA Y CÁMARA */}
+                                        <div className="flex gap-2 shrink-0">
+                                            <button onClick={() => abrirModalAlerta(o)} className="bg-slate-800/50 backdrop-blur-sm p-2.5 rounded-xl hover:bg-orange-900/50 text-orange-400 transition-all border border-slate-700/50 shadow-sm hover:scale-110" title="Registrar Desgaste">
+                                                <AlertTriangle size={16} />
+                                            </button>
+                                            <button onClick={() => setFotoForm({ordenId: o.id, file: null, preview: '', descripcion: ''})} className="bg-slate-800/50 backdrop-blur-sm p-2.5 rounded-xl hover:bg-emerald-900/50 text-emerald-400 transition-all border border-slate-700/50 shadow-sm hover:scale-110">
+                                                <Camera size={16} />
+                                            </button>
                                         </div>
                                     </div>
+                                    <div className="bg-slate-800/30 backdrop-blur-sm p-3 rounded-xl mb-4 italic text-xs text-slate-400 border border-slate-700/50 line-clamp-2" title={o.descripcion}>"{o.descripcion}"</div>
                                     
-                                    {/* 🔥 BOTONES DE ALERTA Y CÁMARA */}
-                                    <div className="flex gap-2">
-                                        <button onClick={() => abrirModalAlerta(o)} className="bg-slate-800/50 backdrop-blur-sm p-3 rounded-2xl hover:bg-orange-900/50 text-orange-400 transition-all border border-slate-700/50 shadow-sm hover:scale-110" title="Registrar Desgaste">
-                                            <AlertTriangle size={20} />
-                                        </button>
-                                        <button onClick={() => setFotoForm({ordenId: o.id, file: null, preview: '', descripcion: ''})} className="bg-slate-800/50 backdrop-blur-sm p-3 rounded-2xl hover:bg-emerald-900/50 text-emerald-400 transition-all border border-slate-700/50 shadow-sm hover:scale-110">
-                                            <Camera size={20} />
+                                    <div className="space-y-2 mb-4 max-h-40 overflow-y-auto custom-scrollbar-dark pr-1">
+                                        {o.items_orden?.map((item: any) => (
+                                            <div key={item.id} className="flex justify-between items-center text-[9px] font-bold bg-slate-950/50 backdrop-blur-sm p-2.5 rounded-xl border border-slate-800/50 group/item transition-colors hover:border-slate-700">
+                                                <div className="flex-1 pr-2 overflow-hidden">
+                                                    <span className="text-slate-300 uppercase block truncate">{item.descripcion}</span>
+                                                    <span className="text-slate-600 block">({item.procedencia})</span>
+                                                </div>
+                                                <div className="flex items-center gap-2 shrink-0">
+                                                    <span className="text-emerald-400 mr-1">${item.precio.toLocaleString()}</span>
+                                                    <button onClick={() => abrirModalItem(o.id, item)} className="text-slate-600 hover:text-emerald-400 transition-colors p-1" title="Editar">
+                                                        <Edit2 size={12} />
+                                                    </button>
+                                                    <button onClick={() => eliminarItemBD(item.id)} className="text-slate-600 hover:text-red-400 transition-colors p-1" title="Eliminar">
+                                                        <Trash2 size={12} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                        <button onClick={() => abrirModalItem(o.id)} className="w-full py-3 border-2 border-dashed border-slate-700/50 rounded-xl text-[9px] font-black text-slate-500 hover:text-emerald-400 hover:border-emerald-600/50 uppercase transition-all bg-slate-900/30 hover:bg-slate-900/60 flex items-center justify-center gap-1">
+                                            <Plus size={12} /> Agregar Item
                                         </button>
                                     </div>
                                 </div>
-                                <div className="bg-slate-800/30 backdrop-blur-sm p-4 rounded-2xl mb-6 italic text-sm text-slate-400 border border-slate-700/50">"{o.descripcion}"</div>
-                                
-                                <div className="space-y-2 mb-6 max-h-48 overflow-y-auto custom-scrollbar-dark pr-2">
-                                    {o.items_orden?.map((item: any) => (
-                                        <div key={item.id} className="flex justify-between items-center text-[10px] font-bold bg-slate-950/50 backdrop-blur-sm p-3 rounded-xl border border-slate-800/50 group/item transition-colors hover:border-slate-700">
-                                            <div className="flex-1 pr-2">
-                                                <span className="text-slate-300 uppercase block truncate">{item.descripcion}</span>
-                                                <span className="text-slate-600 block">({item.procedencia})</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-emerald-400 mr-2">${item.precio.toLocaleString()}</span>
-                                                <button onClick={() => abrirModalItem(o.id, item)} className="text-slate-600 hover:text-emerald-400 transition-colors p-1" title="Editar">
-                                                    <Edit2 size={12} />
-                                                </button>
-                                                <button onClick={() => eliminarItemBD(item.id)} className="text-slate-600 hover:text-red-400 transition-colors p-1" title="Eliminar">
-                                                    <Trash2 size={12} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                    <button onClick={() => abrirModalItem(o.id)} className="w-full py-4 border-2 border-dashed border-slate-700/50 rounded-2xl text-[10px] font-black text-slate-500 hover:text-emerald-400 hover:border-emerald-600/50 uppercase transition-all bg-slate-900/30 hover:bg-slate-900/60 flex items-center justify-center gap-1">
-                                        <Plus size={14} /> Agregar Item
+                                <div className="flex justify-between items-center pt-4 border-t border-slate-800/50 mt-auto">
+                                    <div>
+                                        <p className="font-black text-emerald-400 text-2xl mb-1">${o.items_orden?.reduce((s:number,i:any)=>s+i.precio,0).toLocaleString()}</p>
+                                        
+                                        {o.items_orden?.length > 0 && (
+                                            <button onClick={() => solicitarAprobacion(o)} className="flex items-center gap-1 text-[8px] font-black text-green-400 bg-green-500/10 border border-green-500/30 px-2 py-1 rounded hover:bg-green-500/30 transition-colors uppercase tracking-widest">
+                                                <MessageSquare size={10}/> Aprobar
+                                            </button>
+                                        )}
+                                    </div>
+                                    <button onClick={() => entregarOrdenYFinalizar(o)} className="bg-emerald-600 text-slate-950 px-5 py-2.5 rounded-full text-xs font-black shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:shadow-[0_0_25px_rgba(16,185,129,0.5)] hover:scale-105 transition-all uppercase tracking-wider flex items-center gap-2">
+                                        Listo <CheckCircle size={14} />
                                     </button>
                                 </div>
                             </div>
-                            <div className="flex justify-between items-center pt-6 border-t border-slate-800/50 mt-auto">
-                                <div>
-                                    <p className="font-black text-emerald-400 text-3xl mb-1">${o.items_orden?.reduce((s:number,i:any)=>s+i.precio,0).toLocaleString()}</p>
-                                    
-                                    {o.items_orden?.length > 0 && (
-                                        <button onClick={() => solicitarAprobacion(o)} className="flex items-center gap-1 text-[9px] font-black text-green-400 bg-green-500/10 border border-green-500/30 px-2 py-1 rounded hover:bg-green-500/30 transition-colors uppercase tracking-widest">
-                                            <MessageSquare size={10}/> Pedir Aprobación
-                                        </button>
-                                    )}
-                                </div>
-                                <button onClick={() => entregarOrdenYFinalizar(o)} className="bg-emerald-600 text-slate-950 px-6 py-3 rounded-full text-xs font-black shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:shadow-[0_0_25px_rgba(16,185,129,0.5)] hover:scale-105 transition-all uppercase tracking-wider flex items-center gap-2">
-                                    Listo <CheckCircle size={16} />
-                                </button>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                )}
             </section>
 
-            <section className="bg-slate-900/40 backdrop-blur-md rounded-[40px] shadow-2xl border border-slate-700/50 p-8 overflow-hidden relative">
-                <div className="absolute -inset-20 bg-emerald-900/5 rounded-full blur-3xl pointer-events-none"></div>
-                <div className="flex justify-between items-center mb-6 relative z-10">
-                    <h2 className="text-sm font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                        <CheckCircle className="text-emerald-500" size={16} /> Trabajos Finalizados
+            {/* 🔥 TRABAJOS FINALIZADOS (COMPACTO Y LIMITADO) */}
+            <section className="bg-slate-900/40 backdrop-blur-md rounded-3xl shadow-2xl border border-slate-700/50 p-5 relative">
+                <div className="flex justify-between items-center mb-4 relative z-10">
+                    <h2 className="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                        <CheckCircle className="text-emerald-500" size={14} /> Trabajos Finalizados Recientes
                     </h2>
-                    {historial.length > 5 && (
-                        <button onClick={() => setModalHistorial(true)} className="text-[10px] font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 uppercase tracking-widest bg-emerald-900/30 px-3 py-1.5 rounded-lg border border-emerald-900/50 transition-colors">
-                            Ver todos ({historial.length}) <ChevronRight size={12}/>
+                    {historial.length > 3 && (
+                        <button onClick={() => setModalHistorial(true)} className="text-[9px] font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 uppercase tracking-widest bg-emerald-900/30 px-3 py-1.5 rounded-lg border border-emerald-900/50 transition-colors">
+                            Ver todos ({historial.length}) <ChevronRight size={10}/>
                         </button>
                     )}
                 </div>
                 
-                <div className="space-y-3 relative z-10">
-                    {historial.slice(0, 5).map(o => (
-                        <div key={o.id} className="flex justify-between items-center p-4 bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 hover:border-emerald-500/50 hover:bg-slate-800/80 transition-all">
-                            <div className="flex flex-col md:flex-row md:items-center gap-2">
-                                <span className="font-black text-slate-100 tracking-wider">{o.vehiculos?.patente}</span>
-                                <span className="text-xs text-slate-400 font-bold uppercase hidden md:block">{o.vehiculos?.clientes?.nombre}</span>
-                                <span className="text-[9px] bg-slate-950/80 px-2 py-1 rounded-md text-emerald-400 border border-slate-800 font-bold ml-2 flex items-center gap-1">
-                                    <User size={10} /> {o.mecanico || 'Sin asignar'}
-                                </span>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 relative z-10">
+                    {historial.slice(0, 3).map(o => (
+                        <div key={o.id} className="flex justify-between items-center p-3 bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700/50 hover:border-emerald-500/50 transition-all">
+                            <div className="overflow-hidden pr-2">
+                                <span className="font-black text-slate-100 tracking-wider text-sm block truncate">{o.vehiculos?.patente}</span>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <span className="text-[9px] text-slate-400 font-bold uppercase truncate max-w-[100px]">{o.vehiculos?.clientes?.nombre}</span>
+                                    <span className="text-[8px] bg-slate-950/80 px-1.5 py-0.5 rounded text-emerald-400 border border-slate-800 font-bold flex items-center gap-1 shrink-0">
+                                        <User size={8} /> {o.mecanico || 'N/A'}
+                                    </span>
+                                </div>
                             </div>
                             
-                            <button onClick={() => generarDocumentoPDF(o, o.resumen_ia, nombreTaller)} className="bg-transparent text-slate-500 border border-slate-700/50 px-4 py-2 rounded-xl font-bold text-[10px] hover:border-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all uppercase tracking-widest flex items-center gap-1">
-                                <FileText size={12} /> Generar PDF
+                            <button onClick={() => generarDocumentoPDF(o, o.resumen_ia, nombreTaller)} className="bg-slate-900 text-slate-500 border border-slate-700/50 p-2.5 rounded-xl hover:border-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all shrink-0" title="Generar Informe PDF">
+                                <FileText size={16} />
                             </button>
                         </div>
                     ))}
-                    {historial.length === 0 && <p className="text-xs text-slate-500 italic">No hay trabajos finalizados aún.</p>}
+                    {historial.length === 0 && <p className="text-xs text-slate-500 italic col-span-full">No hay trabajos finalizados aún.</p>}
                 </div>
             </section>
         </div>

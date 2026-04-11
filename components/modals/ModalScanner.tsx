@@ -7,7 +7,7 @@ interface ModalScannerProps {
   setCodigoScanner: (val: string) => void;
   vehiculoScanner: string;
   setVehiculoScanner: (val: string) => void;
-  consultarScanner: (e: React.FormEvent, tipo: 'scanner' | 'manual') => void; // 🔥 Ahora recibe el tipo
+  consultarScanner: (e: React.FormEvent, tipo: 'scanner' | 'manual') => void;
   cargandoScanner: boolean;
   resultadoScanner: any;
 }
@@ -19,11 +19,16 @@ export default function ModalScanner({
   // 🔥 ESTADO PARA LAS PESTAÑAS
   const [modoActivo, setModoActivo] = useState<'scanner' | 'manual'>('scanner');
 
+  // 🔥 LAS 8 SUGERENCIAS DE DATOS DUROS ACORDADAS
   const sugerenciasManual = [
-    "Torque pernos de culata",
-    "Orden apriete tapa válvulas",
-    "Capacidad aceite de caja",
-    "Luz de bujías"
+    "Torque pernos culata",
+    "Torque biela y bancada",
+    "Luz de válvulas",
+    "Presión de compresión",
+    "Viscosidad aceite motor",
+    "Tipo de aceite caja",
+    "Orden de encendido",
+    "Presión de combustible"
   ];
 
   const handleSugerencia = (sugerencia: string) => {
@@ -44,7 +49,7 @@ export default function ModalScanner({
         </button>
 
         {/* 🔥 SELECTOR DE HERRAMIENTAS (PESTAÑAS) */}
-        <div className="flex bg-slate-950 p-1 rounded-2xl mb-6">
+        <div className="flex bg-slate-950 p-1 rounded-2xl mb-6 shrink-0">
           <button 
             onClick={() => { setModoActivo('scanner'); setCodigoScanner(''); }}
             className={`flex-1 py-3 flex items-center justify-center gap-2 font-black text-xs uppercase tracking-widest rounded-xl transition-all ${modoActivo === 'scanner' ? 'bg-emerald-600 text-slate-950 shadow-lg' : 'text-slate-500 hover:text-emerald-400'}`}
@@ -60,7 +65,7 @@ export default function ModalScanner({
         </div>
 
         {/* CABECERA DINÁMICA */}
-        <div className="mb-6">
+        <div className="mb-6 shrink-0">
           <h3 className={`text-2xl font-black tracking-tighter uppercase flex items-center gap-2 ${modoActivo === 'scanner' ? 'text-emerald-400' : 'text-blue-400'}`}>
             <Bot /> {modoActivo === 'scanner' ? 'Diagnóstico IA' : 'Biblioteca Técnica'}
           </h3>
@@ -107,7 +112,7 @@ export default function ModalScanner({
         </form>
 
         {/* 🔥 ÁREA DEL RESULTADO */}
-        <div className="mt-6 flex-1 overflow-y-auto custom-scrollbar-dark rounded-2xl bg-slate-950/80 border border-slate-800 p-6 relative">
+        <div className="mt-6 flex-1 overflow-y-auto custom-scrollbar-dark rounded-2xl bg-slate-950/80 border border-slate-800 p-6 relative min-h-[200px]">
           {cargandoScanner ? (
             <div className={`h-full flex flex-col items-center justify-center animate-pulse ${modoActivo === 'scanner' ? 'text-emerald-500/50' : 'text-blue-500/50'}`}>
               <Bot size={40} className="mb-4" />
@@ -130,8 +135,8 @@ export default function ModalScanner({
           )}
           
           {/* 🔥 EL DISCLAIMER LEGAL GIGANTE */}
-          {(resultadoScanner?.resultado && !cargandoScanner) && (
-            <div className="mt-4 pt-4 border-t border-slate-800/50 flex items-start gap-2 text-[9px] text-slate-500 font-bold leading-tight">
+          {(!cargandoScanner && resultadoScanner?.resultado) && (
+            <div className="mt-6 pt-4 border-t border-slate-800/50 flex items-start gap-2 text-[9px] text-slate-500 font-bold leading-tight">
               <AlertOctagon size={14} className="shrink-0 text-red-900" />
               <p>
                 <span className="text-red-800">ATENCIÓN:</span> CALIBRE utiliza IA de asistencia. Los datos numéricos críticos (torques, medidas) deben ser verificados siempre en el manual oficial del fabricante. CALIBRE no se responsabiliza por daños derivados del uso de esta información.

@@ -43,24 +43,27 @@ export default function ModalTelemetria({
         <div className="p-8 overflow-y-auto custom-scrollbar-dark flex-1">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
                 
+                {/* GANANCIAS DEL MES */}
                 <div className="bg-slate-950 p-6 rounded-[32px] border border-slate-800 shadow-xl flex flex-col justify-center items-center text-center relative overflow-hidden group hover:border-emerald-500/50 transition-all">
                     <div className="absolute -inset-10 bg-emerald-500/5 rounded-full blur-3xl group-hover:bg-emerald-500/10 transition-all"></div>
                     <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 relative z-10 flex items-center gap-1"><DollarSign size={12} className="text-emerald-400"/> Ganancias del Mes</h3>
-                    <p className="text-3xl md:text-4xl font-black text-slate-100 tracking-tighter relative z-10 w-full truncate px-2" title={`$${gananciasEsteMes.toLocaleString('es-CL')}`}>
+                    <p className="text-2xl md:text-3xl font-black text-slate-100 tracking-tighter relative z-10 w-full px-2" title={`$${gananciasEsteMes.toLocaleString('es-CL')}`}>
                         ${gananciasEsteMes.toLocaleString('es-CL')}
                     </p>
                     <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mt-2 relative z-10">{autosEsteMes} vehículos atendidos</p>
                 </div>
 
+                {/* TICKET PROMEDIO */}
                 <div className="bg-slate-950 p-6 rounded-[32px] border border-slate-800 shadow-xl flex flex-col justify-center items-center text-center relative overflow-hidden">
                     <div className="absolute -inset-10 bg-blue-500/5 rounded-full blur-3xl"></div>
                     <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 relative z-10 flex items-center gap-1"><TrendingUp size={12} className="text-blue-400"/> Ticket Promedio</h3>
-                    <p className="text-3xl md:text-4xl font-black text-blue-400 tracking-tighter relative z-10 w-full truncate px-2" title={`$${ticketPromedio.toLocaleString('es-CL')}`}>
+                    <p className="text-2xl md:text-3xl font-black text-blue-400 tracking-tighter relative z-10 w-full px-2" title={`$${ticketPromedio.toLocaleString('es-CL')}`}>
                         ${ticketPromedio.toLocaleString('es-CL')}
                     </p>
                     <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mt-2 relative z-10">Histórico global</p>
                 </div>
 
+                {/* ORIGEN DE INGRESOS */}
                 <div className="bg-slate-950 p-6 rounded-[32px] border border-slate-800 shadow-xl flex flex-col justify-between">
                     <div>
                         <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Origen de Ingresos</h3>
@@ -80,22 +83,25 @@ export default function ModalTelemetria({
                             <span className="text-slate-400 uppercase">Repuesto ({pctRepuesto}%)</span>
                         </div>
                     </div>
-                    <div className="mt-4 pt-4 border-t border-slate-800 text-[10px] text-slate-500 flex justify-between">
+                    <div className="mt-4 pt-4 border-t border-slate-800 text-[10px] text-slate-500 flex justify-between font-bold">
                         <span>${ingresosServicio.toLocaleString('es-CL')}</span>
                         <span>${ingresosRepuesto.toLocaleString('es-CL')}</span>
                     </div>
                 </div>
 
+                {/* TOP MARCAS (CORREGIDO PARA FORMATO PRECIO Y ESPACIO) */}
                 <div className="bg-slate-950 p-6 rounded-[32px] border border-slate-800 shadow-xl flex flex-col justify-between">
                     <div>
                         <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Top Marcas</h3>
-                        <p className="text-sm font-bold text-slate-300 mb-4">Vehículos más frecuentes</p>
+                        <p className="text-sm font-bold text-slate-300 mb-4">Ingresos por Fabricante</p>
                     </div>
                     <div className="space-y-3">
                         {topMarcas.length > 0 ? topMarcas.map(([marca, count]: any, idx) => (
-                            <div key={idx} className="flex justify-between items-center bg-slate-800 p-3 rounded-2xl border border-slate-700">
-                                <span className="font-black text-xs text-slate-200 uppercase">{marca}</span>
-                                <span className="bg-slate-900 text-emerald-400 font-black text-[10px] px-3 py-1 rounded-full">{count}</span>
+                            <div key={idx} className="flex justify-between items-center bg-slate-800 p-3 rounded-2xl border border-slate-700 gap-2">
+                                <span className="font-black text-xs text-slate-200 uppercase truncate flex-1">{marca}</span>
+                                <span className="bg-slate-900 text-emerald-400 font-black text-[10px] px-2 py-1 rounded-lg shrink-0">
+                                    ${count.toLocaleString('es-CL')}
+                                </span>
                             </div>
                         )) : (
                             <p className="text-xs text-slate-600 italic">No hay datos suficientes.</p>
@@ -103,6 +109,7 @@ export default function ModalTelemetria({
                     </div>
                 </div>
 
+                {/* RENDIMIENTO (TRABAJOS POR MECÁNICO) */}
                 <div className="bg-slate-950 p-6 rounded-[32px] border border-slate-800 shadow-xl flex flex-col justify-between">
                     <div>
                         <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Rendimiento</h3>
@@ -110,9 +117,13 @@ export default function ModalTelemetria({
                     </div>
                     <div className="space-y-3">
                         {topMecanicos.length > 0 ? topMecanicos.map(([mecanico, count]: any, idx) => (
-                            <div key={idx} className="flex justify-between items-center bg-slate-800 p-3 rounded-2xl border border-slate-700">
-                                <span className="font-black text-xs text-slate-200 uppercase truncate pr-2 flex items-center gap-1"><User size={12}/> {mecanico}</span>
-                                <span className="bg-slate-900 text-emerald-400 font-black text-[10px] px-3 py-1 rounded-full">{count}</span>
+                            <div key={idx} className="flex justify-between items-center bg-slate-800 p-3 rounded-2xl border border-slate-700 gap-2">
+                                <span className="font-black text-xs text-slate-200 uppercase truncate flex items-center gap-1 flex-1">
+                                    <User size={12} className="shrink-0"/> {mecanico}
+                                </span>
+                                <span className="bg-slate-900 text-emerald-400 font-black text-[10px] px-3 py-1 rounded-full shrink-0">
+                                    {count}
+                                </span>
                             </div>
                         )) : (
                             <p className="text-xs text-slate-600 italic">No hay datos suficientes.</p>
