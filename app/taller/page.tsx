@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import imageCompression from 'browser-image-compression'
 import Login from '@/components/Login'
 import CAR_DATA from './autos.json'
-import { Edit2, Trash2, FileText, Clock, User, CheckCircle, Search, Bot, Plus, Wrench, ChevronRight, Info, MessageSquare, Mic, AlertTriangle, Megaphone, Settings, ChevronDown, Camera } from 'lucide-react'
+import { Edit2, Trash2, FileText, Clock, User, CheckCircle, Search, Bot, Plus, Wrench, ChevronRight, Info, MessageSquare, Mic, AlertTriangle, Megaphone, Settings, ChevronDown, Camera, Share2 } from 'lucide-react'
 import toast, { Toaster } from 'react-hot-toast'
 
 // 🚀 COMPONENTES EXTERNOS
@@ -321,6 +321,14 @@ export default function CalibreApp() {
     setHistorial(oFinalizadas || [])
   }
 
+  // 🔥 NUEVA FUNCIÓN PARA COPIAR EL LINK MÁGICO
+  const copiarLinkCliente = (ordenId: string) => {
+      const linkUrl = `${window.location.origin}/estado/${ordenId}`;
+      const mensaje = `¡Hola! Puedes revisar el detalle y seguir el estado de tu vehículo en tiempo real aquí:\n👉 ${linkUrl}`;
+      navigator.clipboard.writeText(mensaje);
+      toast.success("¡Link copiado al portapapeles!", { icon: '🔗' });
+  }
+
   const handleRutChange = (e: any) => {
       let v = e.target.value.replace(/[^0-9kK]/g, '').toUpperCase().slice(0, 9);
       if (v.length > 1) v = v.slice(0, -1).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '-' + v.slice(-1);
@@ -552,13 +560,15 @@ export default function CalibreApp() {
       return `${horas}h`;
   }
 
+  // 🔥 ACTUALIZADO: Envía el mensaje con el link mágico incluido
   const solicitarAprobacion = (o: any) => {
       const total = o.items_orden?.reduce((sum: number, item: any) => sum + item.precio, 0) || 0;
       const telefono = o.vehiculos?.clientes?.telefono;
       const cliente = o.vehiculos?.clientes?.nombre || 'Estimado(a)';
       const vehiculo = `${o.vehiculos?.marca} ${o.vehiculos?.modelo}`;
+      const linkUrl = `${window.location.origin}/estado/${o.id}`;
       
-      const msj = `Hola ${cliente}, te escribimos de ${nombreTaller}. 🔧\nEl presupuesto preliminar para tu ${vehiculo} (Patente: ${o.vehiculos?.patente}) es de *$${total.toLocaleString('es-CL')}*.\n\n¿Nos confirmas por aquí para proceder con el trabajo? Quedamos atentos.`;
+      const msj = `Hola ${cliente}, te escribimos de ${nombreTaller}. 🔧\nEl presupuesto preliminar para tu ${vehiculo} (Patente: ${o.vehiculos?.patente}) es de *$${total.toLocaleString('es-CL')}*.\n\nPuedes revisar el detalle y seguir el estado de tu vehículo en tiempo real aquí:\n👉 ${linkUrl}\n\n¿Nos confirmas por aquí para proceder con el trabajo? Quedamos atentos.`;
       
       if (telefono && telefono.startsWith('+569') && telefono.length === 12) {
           window.open(`https://wa.me/${telefono.replace('+', '')}?text=${encodeURIComponent(msj)}`, '_blank');
@@ -718,7 +728,6 @@ export default function CalibreApp() {
               }
           };
 
-          // 🔥 AHORA LE PASAMOS LA CONFIGURACIÓN COMPLETA AL PDF
           const configPDF = {
               nombreTaller,
               direccion: session?.user?.user_metadata?.direccion_taller || '',
@@ -1140,11 +1149,15 @@ export default function CalibreApp() {
                                             </div>
                                         </div>
                                         
+                                        {/* 🔥 NUEVO BOTÓN DE COMPARTIR LINK */}
                                         <div className="flex gap-2 shrink-0">
+                                            <button onClick={() => copiarLinkCliente(o.id)} className="bg-slate-800/50 backdrop-blur-sm p-2.5 rounded-xl hover:bg-blue-900/50 text-blue-400 transition-all border border-slate-700/50 shadow-sm hover:scale-110" title="Copiar Link para el Cliente">
+                                                <Share2 size={16} />
+                                            </button>
                                             <button onClick={() => abrirModalAlerta(o)} className="bg-slate-800/50 backdrop-blur-sm p-2.5 rounded-xl hover:bg-orange-900/50 text-orange-400 transition-all border border-slate-700/50 shadow-sm hover:scale-110" title="Registrar Desgaste">
                                                 <AlertTriangle size={16} />
                                             </button>
-                                            <button onClick={() => setFotoForm({ordenId: o.id, file: null, preview: '', descripcion: ''})} className="bg-slate-800/50 backdrop-blur-sm p-2.5 rounded-xl hover:bg-emerald-900/50 text-emerald-400 transition-all border border-slate-700/50 shadow-sm hover:scale-110">
+                                            <button onClick={() => setFotoForm({ordenId: o.id, file: null, preview: '', descripcion: ''})} className="bg-slate-800/50 backdrop-blur-sm p-2.5 rounded-xl hover:bg-emerald-900/50 text-emerald-400 transition-all border border-slate-700/50 shadow-sm hover:scale-110" title="Subir Evidencia">
                                                 <Camera size={16} />
                                             </button>
                                         </div>
@@ -1341,7 +1354,6 @@ export default function CalibreApp() {
         />
       )}
 
-      {/* 🔥 AQUÍ ESTÁ EL MODAL HISTORIAL CORREGIDO (UNA SOLA VEZ) */}
       {modalHistorial && (
         <ModalHistorial 
             onClose={() => setModalHistorial(false)}
@@ -1426,7 +1438,6 @@ export default function CalibreApp() {
           consultarScanner={consultarScanner}
           cargandoScanner={cargandoScanner}
           resultadoScanner={resultadoScanner}
-          // 🔥 Agregamos esto para que el modal pueda vaciar el resultado
           setResultadoScanner={setResultadoScanner}
         />
       )}
