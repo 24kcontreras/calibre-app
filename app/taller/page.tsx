@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import imageCompression from 'browser-image-compression'
 import Login from '@/components/Login'
 import CAR_DATA from './autos.json'
-import { Edit2, Trash2, FileText, Clock, User, CheckCircle, Search, Bot, Camera, Plus, Wrench, ChevronRight, Info, MessageSquare, Mic, AlertTriangle, Megaphone, Settings } from 'lucide-react'
+import { Edit2, Trash2, FileText, Clock, User, CheckCircle, Search, Bot, Camera, Plus, Wrench, ChevronRight, Info, MessageSquare, Mic, AlertTriangle, Megaphone, Settings, ChevronDown } from 'lucide-react'
 import toast, { Toaster } from 'react-hot-toast'
 
 // 🚀 COMPONENTES EXTERNOS
@@ -20,8 +20,6 @@ import ModalItem from '@/components/modals/ModalItem'
 import ModalScanner from '@/components/modals/ModalScanner'
 import ModalAlerta from '@/components/modals/ModalAlerta'
 import ModalMarketing from '@/components/modals/ModalMarketing'
-
-// 🚀 MOTOR DE PDF EXTERNO
 import { generarDocumentoPDF } from '@/utils/pdfGenerator'
 
 const MARCAS = Object.keys(CAR_DATA).sort();
@@ -33,6 +31,34 @@ const COLOR_ESTADO: Record<string, string> = {
     'En Reparación': 'bg-purple-500/20 text-purple-400 border-purple-500/50',
     'Listo para Entrega': 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50'
 };
+
+// 🔥 VALIDADOR DE RUT BLINDADO OFICIAL (Movido fuera del componente)
+const validarRutChileno = (rutCompleto: string) => {
+    if (!rutCompleto) return false;
+    
+    const rutLimpio = rutCompleto.replace(/[^0-9kK]/g, '').toUpperCase();
+    if (rutLimpio.length < 8) return false;
+
+    const cuerpo = rutLimpio.slice(0, -1);
+    const dvIngresado = rutLimpio.slice(-1);
+    
+    let suma = 0;
+    let multiplo = 2;
+    
+    for (let i = 1; i <= cuerpo.length; i++) {
+        const digito = parseInt(cuerpo.charAt(cuerpo.length - i));
+        suma += multiplo * digito;
+        multiplo = multiplo < 7 ? multiplo + 1 : 2;
+    }
+    
+    const dvEsperado = 11 - (suma % 11);
+    let dvCalculado = dvEsperado.toString();
+    
+    if (dvEsperado === 11) dvCalculado = '0';
+    if (dvEsperado === 10) dvCalculado = 'K';
+    
+    return dvCalculado === dvIngresado;
+}
 
 export default function CalibreApp() {
   const [session, setSession] = useState<any>(null)
@@ -64,19 +90,16 @@ export default function CalibreApp() {
   const [modalScanner, setModalScanner] = useState(false)
   const [modalMarketing, setModalMarketing] = useState(false)
   
-  // 🔥 Estados del Semáforo Real
   const [modalAlerta, setModalAlerta] = useState<any | null>(null)
   const [alertaForm, setAlertaForm] = useState({ pieza: '', nivel_riesgo: 'Amarillo', observacion: '' })
   const [guardandoAlerta, setGuardandoAlerta] = useState(false)
 
   const [busquedaHistorial, setBusquedaHistorial] = useState('')
   
-  // 🔥 ESTADOS DEL FORMULARIO DE RECEPCIÓN
   const [nombreInput, setNombreInput] = useState('')
   const [rutInput, setRutInput] = useState('')
   const [telefonoInput, setTelefonoInput] = useState('+569')
   const [patenteInput, setPatenteInput] = useState('')
-  const [escaneandoPatente, setEscaneandoPatente] = useState(false)
 
   const [marcaInput, setMarcaInput] = useState('')
   const [modeloInput, setModeloInput] = useState('') 
@@ -240,49 +263,6 @@ export default function CalibreApp() {
           }
       }
   }
-
-  const handleEscanearPatente = async (e: any) => {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      setEscaneandoPatente(true);
-      const toastId = toast.loading("Ojo biónico analizando vehículo...");
-
-      try {
-          const options = { maxSizeMB: 0.5, maxWidthOrHeight: 1024, useWebWorker: true };
-          const compressedFile = await imageCompression(file, options);
-          
-          const base64data = await new Promise((resolve, reject) => {
-              const reader = new FileReader();
-              reader.readAsDataURL(compressedFile);
-              reader.onloadend = () => resolve(reader.result);
-              reader.onerror = reject;
-          });
-          
-          const res = await fetch('/api/ocr', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ imageBase64: base64data })
-          });
-          
-          const data = await res.json();
-          
-          if (data.error || (!data.patente && !data.marca)) {
-              toast.error("La IA no logró identificar los datos.", { id: toastId });
-          } else {
-              if (data.patente) setPatenteInput(data.patente);
-              if (data.marca) setMarcaInput(data.marca);
-              if (data.modelo) setModeloInput(data.modelo);
-              
-              toast.success(`¡Datos extraídos con éxito!`, { id: toastId });
-          }
-      } catch (error) {
-          toast.error("Error al procesar la imagen de la cámara", { id: toastId });
-      } finally {
-          setEscaneandoPatente(false);
-          e.target.value = null; 
-      }
-  };
 
   const abrirOrden = (vehiculo: any) => {
       setDescripcionOrden(''); 
@@ -688,34 +668,6 @@ export default function CalibreApp() {
       }
   }
 
-  // 🔥 VALIDADOR DE RUT BLINDADO OFICIAL
-  const validarRutChileno = (rutCompleto: string) => {
-      if (!rutCompleto) return false;
-      
-      const rutLimpio = rutCompleto.replace(/[^0-9kK]/g, '').toUpperCase();
-      if (rutLimpio.length < 8) return false;
-
-      const cuerpo = rutLimpio.slice(0, -1);
-      const dvIngresado = rutLimpio.slice(-1);
-      
-      let suma = 0;
-      let multiplo = 2;
-      
-      for (let i = 1; i <= cuerpo.length; i++) {
-          const digito = parseInt(cuerpo.charAt(cuerpo.length - i));
-          suma += multiplo * digito;
-          multiplo = multiplo < 7 ? multiplo + 1 : 2;
-      }
-      
-      const dvEsperado = 11 - (suma % 11);
-      let dvCalculado = dvEsperado.toString();
-      
-      if (dvEsperado === 11) dvCalculado = '0';
-      if (dvEsperado === 10) dvCalculado = 'K';
-      
-      return dvCalculado === dvIngresado;
-  }
-
   const tLimpio = busqueda.replace(/[^a-zA-Z0-9kK]/g, '').toLowerCase()
   const vehiculosFiltrados = vehiculos.filter(v => 
     v.patente.toLowerCase().includes(tLimpio) || 
@@ -884,7 +836,6 @@ export default function CalibreApp() {
             <div className={`transition-all duration-300 ${recepcionAbierta ? 'block mt-5' : 'hidden'} md:block md:mt-5`}>
                 <form id="form-recepcion" onSubmit={registrarTodo} className="space-y-3 relative z-10">
                   
-                  {/* 🔥 EL IMPUT DEL RUT CON LA NUEVA LÓGICA DE COLOR 🔥 */}
                   <input 
                       name="rut_cliente" 
                       value={rutInput}
@@ -924,30 +875,14 @@ export default function CalibreApp() {
                   <div className="h-px bg-slate-800/50 my-3" />
                   
                   <div className="relative">
+                      {/* 🔥 INPUT PATENTE LIMPIO (Sin cámara) */}
                       <input 
                           name="patente" 
                           value={patenteInput}
                           onChange={(e) => setPatenteInput(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))}
                           required 
                           placeholder="PATENTE" 
-                          className="w-full p-3 pr-12 rounded-2xl border-2 border-emerald-500/80 bg-slate-900/80 backdrop-blur-sm uppercase font-black text-lg text-center text-emerald-400 outline-none focus:ring-4 ring-emerald-500/20 shadow-[inset_0_0_20px_rgba(16,185,129,0.1)] tracking-widest placeholder:text-emerald-900/50 transition-all" 
-                      />
-                      <button 
-                          type="button"
-                          onClick={() => document.getElementById('ocr-input')?.click()}
-                          disabled={escaneandoPatente}
-                          className={`absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-xl transition-all shadow-sm ${escaneandoPatente ? 'bg-emerald-900/50 text-emerald-400/50 animate-pulse' : 'bg-slate-800/80 text-emerald-400 border border-slate-700/50 hover:bg-emerald-900/50 hover:scale-105'}`}
-                          title="Escanear con cámara"
-                      >
-                          <Camera size={18} />
-                      </button>
-                      <input 
-                          type="file" 
-                          id="ocr-input" 
-                          accept="image/*" 
-                          capture="environment" 
-                          className="hidden" 
-                          onChange={handleEscanearPatente} 
+                          className="w-full p-3 rounded-2xl border-2 border-emerald-500/80 bg-slate-900/80 backdrop-blur-sm uppercase font-black text-lg text-center text-emerald-400 outline-none focus:ring-4 ring-emerald-500/20 shadow-[inset_0_0_20px_rgba(16,185,129,0.1)] tracking-widest placeholder:text-emerald-900/50 transition-all" 
                       />
                   </div>
                   
@@ -1000,7 +935,6 @@ export default function CalibreApp() {
                 <input value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Buscar Patente o RUT..." className="w-full p-3 pl-9 rounded-xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm uppercase text-xs font-bold text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all" />
             </div>
             <div className="space-y-2 mt-3 max-h-40 overflow-y-auto custom-scrollbar-dark pr-2">
-                {/* 🔥 LISTA DE VEHÍCULOS */}
                 {vehiculosFiltrados.map(v => {
                     const tieneAlerta = v.alertas_desgaste?.some((a: any) => a.estado === 'Pendiente');
                     return (
@@ -1074,7 +1008,6 @@ export default function CalibreApp() {
         {/* 🔥 COLUMNA PRINCIPAL DERECHA */}
         <div className="lg:col-span-3 flex flex-col gap-6">
             
-            {/* PIZARRA ACTIVA (REINA ABSOLUTA) */}
             <section className="relative">
                 <div className="absolute -top-10 -left-10 w-64 h-64 bg-orange-500/10 rounded-full blur-[80px] pointer-events-none z-0"></div>
                 
@@ -1083,7 +1016,6 @@ export default function CalibreApp() {
                     <h2 className="text-2xl font-black text-slate-100 tracking-tighter uppercase">Pizarra Activa</h2>
                 </div>
 
-                {/* 🔥 EMPTY STATE ELEGANTE */}
                 {ordenesAbiertas.length === 0 ? (
                     <div className="min-h-[250px] border-2 border-dashed border-slate-800 rounded-3xl flex flex-col items-center justify-center text-center p-6 relative z-10 bg-slate-900/20 backdrop-blur-sm">
                         <Settings size={48} className="text-slate-700 mb-4 animate-[spin_10s_linear_infinite]" />
@@ -1098,7 +1030,6 @@ export default function CalibreApp() {
                                     <div className="flex justify-between items-start mb-5">
                                         <div className="overflow-hidden pr-2">
                                             
-                                            {/* 🔥 3. PATENTE Y ESTADO (COLUMNA EN MÓVIL, FILA EN PC) */}
                                             <div className="flex flex-col items-start md:flex-row md:items-center gap-2 mb-1">
                                                 <p className="font-black text-3xl tracking-tighter text-slate-100 w-full md:w-auto truncate">{o.vehiculos?.patente}</p>
                                                 
@@ -1127,7 +1058,6 @@ export default function CalibreApp() {
                                             </div>
                                         </div>
                                         
-                                        {/* 🔥 BOTONES DE ALERTA Y CÁMARA */}
                                         <div className="flex gap-2 shrink-0">
                                             <button onClick={() => abrirModalAlerta(o)} className="bg-slate-800/50 backdrop-blur-sm p-2.5 rounded-xl hover:bg-orange-900/50 text-orange-400 transition-all border border-slate-700/50 shadow-sm hover:scale-110" title="Registrar Desgaste">
                                                 <AlertTriangle size={16} />
@@ -1182,7 +1112,6 @@ export default function CalibreApp() {
                 )}
             </section>
 
-            {/* 🔥 TRABAJOS FINALIZADOS (COMPACTO Y LIMITADO) */}
             <section className="bg-slate-900/40 backdrop-blur-md rounded-3xl shadow-2xl border border-slate-700/50 p-5 relative">
                 <div className="flex justify-between items-center mb-4 relative z-10">
                     <h2 className="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
@@ -1296,7 +1225,6 @@ export default function CalibreApp() {
           </div>
       )}
 
-      {/* 🔥 RENDEREIZAR EL NUEVO MODAL DE ALERTA CON LA FUNCIÓN PARA RESOLVER */}
       {modalAlerta && (
         <ModalAlerta 
           alertaForm={alertaForm}
