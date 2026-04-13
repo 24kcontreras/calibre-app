@@ -1,6 +1,7 @@
 'use client'
 import Link from 'next/link'
-import { Wrench, ArrowRight, Bot, FileText, CheckCircle, Star, Shield, LineChart, LayoutDashboard, Lock, BookOpen, Database, MessageCircle } from 'lucide-react'
+import Image from 'next/image' // 🔥 IMPORTAMOS IMAGE
+import { ArrowRight, Bot, FileText, CheckCircle, Star, Shield, LineChart, LayoutDashboard, Lock, BookOpen, Database, MessageCircle } from 'lucide-react' // Quitamos Wrench
 
 export default function LandingPage() {
   return (
@@ -9,8 +10,15 @@ export default function LandingPage() {
       {/* 🟢 BARRA DE NAVEGACIÓN */}
       <nav className="w-full border-b border-slate-800 bg-slate-950/80 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-            <div className="flex items-center gap-2">
-                <Wrench className="text-emerald-500" size={24} />
+            {/* 🔥 MARCA CON LOGO Y TEXTO */}
+            <div className="flex items-center gap-2.5">
+                <Image 
+                    src="/logo-calibre.png" 
+                    alt="Logo Calibre" 
+                    width={28} 
+                    height={28} 
+                    className="object-contain drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+                />
                 <span className="text-xl font-black uppercase tracking-tighter">Calibre<span className="text-emerald-500">.</span></span>
             </div>
             <Link href="/taller" className="bg-slate-800 text-slate-200 hover:text-emerald-400 border border-slate-700 hover:border-emerald-500 px-5 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all">
@@ -215,8 +223,15 @@ export default function LandingPage() {
       <footer className="w-full bg-slate-950 border-t border-slate-900 py-12 relative z-10">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
             
+            {/* 🔥 MARCA CON LOGO Y TEXTO EN EL FOOTER */}
             <div className="flex items-center gap-2 group cursor-default">
-                <Wrench size={20} className="text-slate-500 group-hover:text-emerald-500 transition-colors" />
+                <Image 
+                    src="/logo-calibre.png" 
+                    alt="Logo Calibre" 
+                    width={20} 
+                    height={20} 
+                    className="object-contain opacity-50 group-hover:opacity-100 transition-opacity"
+                />
                 <span className="text-lg font-black uppercase tracking-tighter text-slate-300">
                     Calibre<span className="text-emerald-500">.</span>
                 </span>

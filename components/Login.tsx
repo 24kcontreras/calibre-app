@@ -68,17 +68,21 @@ export default function Login() {
 
       <div className="w-full max-w-md bg-slate-900/80 backdrop-blur-xl p-8 sm:p-12 rounded-[40px] border border-slate-800 shadow-2xl relative z-10">
         
-        {/* 🔥 Logo Unificado con Image de Next.js */}
+        {/* Logo Unificado */}
         <div className="flex flex-col items-center justify-center mb-10">
-            <Image 
-                src="/logo-calibre.png" 
-                alt="Logo Calibre" 
-                width={200} 
-                height={60} 
-                priority
-                className="object-contain drop-shadow-[0_0_15px_rgba(16,185,129,0.2)]"
-            />
-            <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-4">Acceso Operadores</h2>
+            <div className="mb-4">
+                <Image 
+                    src="/logo-calibre.png" 
+                    alt="Logo Calibre" 
+                    width={70} 
+                    height={70} 
+                    priority
+                    className="object-contain drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+                />
+            </div>
+            {/* 🔥 VUELVE EL TEXTO ORIGINAL */}
+            <h1 className="text-3xl font-black uppercase tracking-tighter">Calibre<span className="text-emerald-500">.</span></h1>
+            <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-2">Acceso Operadores</h2>
         </div>
 
         {/* Formulario */}

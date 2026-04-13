@@ -29,22 +29,23 @@ export default function Header({
               {nombreTaller}
           </h1>
           
-          {/* 🔥 SECCIÓN "POWERED BY" CON TU LOGO */}
+          {/* 🔥 SECCIÓN "POWERED BY" RESTAURADA Y MEJORADA */}
           <div className="flex items-center justify-center md:justify-start gap-2 mt-2">
             <span className="h-1.5 w-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span>
-            <span className="text-[10px] font-black text-emerald-500 tracking-[0.2em] uppercase opacity-80">
-               POWERED BY
-            </span>
-            <Image 
-                src="/logo-calibre.png" 
-                alt="Logo Calibre" 
-                width={80} 
-                height={20} 
-                className="object-contain opacity-90 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]"
-            />
+            
+            <div className="flex items-center gap-1.5 opacity-80">
+                <p className="text-[10px] font-black text-emerald-500 tracking-[0.3em] uppercase">
+                    POWERED BY CALIBRE
+                </p>
+                <Image 
+                    src="/logo-calibre.png" 
+                    alt="Icono Calibre" 
+                    width={18} 
+                    height={18} 
+                    className="object-contain"
+                />
+            </div>
           </div>
-        </div>
-      </div>
 
       <div className="flex gap-4 items-center w-full md:w-auto overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
           <button onClick={onOpenTelemetria} className="flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-400 text-slate-950 px-6 py-4 rounded-[32px] font-black transition-all shadow-[0_0_20px_rgba(59,130,246,0.2)] hover:shadow-[0_0_30px_rgba(59,130,246,0.4)] hover:scale-[1.02] whitespace-nowrap">
