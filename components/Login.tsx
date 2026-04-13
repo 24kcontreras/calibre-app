@@ -44,19 +44,20 @@ export default function Login() {
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: `${window.location.origin}/auth/callback`
+                // 🔥 EL CAMBIO ESTÁ AQUÍ: Lo mandamos directo a /taller
+                redirectTo: `${window.location.origin}/taller`
             }
         })
 
         if (error) {
             console.error("🔴 Error de Supabase:", error.message)
             setErrorMsg(`Error de Google: ${error.message}`)
+            setLoading(false)
         }
     } catch (err) {
         console.error("🔴 Error crítico al conectar:", err)
         setErrorMsg('El sistema bloqueó la conexión con Google.')
-    } finally {
-        // setLoading(false) // Comentado ya que redirige
+        setLoading(false)
     }
   }
 

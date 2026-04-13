@@ -116,7 +116,7 @@ export default function LandingPage() {
                     <p className="text-sm font-bold text-slate-400 leading-relaxed">Visualiza todos los vehículos en tiempo real. Asigna mecánicos, actualiza estados y controla los tiempos de entrega con un solo clic.</p>
                 </div>
 
-                {/* 2. Diagnóstico IA */}
+                {/* 2. diagnóstico IA */}
                 <div className="bg-slate-950 p-8 rounded-[40px] border border-slate-800 hover:border-blue-500/50 transition-colors group">
                     <div className="bg-slate-900 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-slate-800">
                         <Bot className="text-blue-500" size={32} />
@@ -125,13 +125,13 @@ export default function LandingPage() {
                     <p className="text-sm font-bold text-slate-400 leading-relaxed">Ingresa códigos de falla o síntomas, y nuestra IA te entregará probabilidades de diagnóstico, torques referenciales y pasos a seguir.</p>
                 </div>
 
-                {/* 3. Escáner de Patentes (OCR) */}
+                {/* 3. manual */}
                 <div className="bg-slate-950 p-8 rounded-[40px] border border-slate-800 hover:border-purple-500/50 transition-colors group">
                     <div className="bg-slate-900 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-slate-800">
                         <BookOpen className="text-purple-500" size={32} />
                     </div>
-                    <h3 className="text-xl font-black uppercase tracking-tighter mb-4">Manual generativo</h3>
-                    <p className="text-sm font-bold text-slate-400 leading-relaxed">Mantente informado para tus trabajos, ya sean torques o valores en especifico, aquí los tienes.</p>
+                    <h3 className="text-xl font-black uppercase tracking-tighter mb-4">Manual tecnico IA</h3>
+                    <p className="text-sm font-bold text-slate-400 leading-relaxed">Accede a especificaciones exactas en segundos. Consulta torques de apriete, luz de válvulas, capacidades de fluidos y más, sin perder horas buscando en foros de internet.</p>
                 </div>
 
                 {/* 4. Base de Datos / Historial */}
