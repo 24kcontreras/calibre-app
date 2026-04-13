@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import imageCompression from 'browser-image-compression'
 import Login from '@/components/Login'
 import CAR_DATA from './autos.json'
-import { Edit2, Trash2, FileText, Clock, User, CheckCircle, Search, Bot, Plus, Wrench, ChevronRight, Info, MessageSquare, Mic, AlertTriangle, Megaphone, Settings, ChevronDown, Camera } from 'lucide-react' // Dejamos Camera por si la usas en otro lado, pero quitamos escaneandoPatente
+import { Edit2, Trash2, FileText, Clock, User, CheckCircle, Search, Bot, Plus, Wrench, ChevronRight, Info, MessageSquare, Mic, AlertTriangle, Megaphone, Settings, ChevronDown, Camera } from 'lucide-react'
 import toast, { Toaster } from 'react-hot-toast'
 
 // 🚀 COMPONENTES EXTERNOS
@@ -32,7 +32,7 @@ const COLOR_ESTADO: Record<string, string> = {
     'Listo para Entrega': 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50'
 };
 
-// 🔥 VALIDADOR DE RUT BLINDADO OFICIAL (Movido fuera del componente)
+// 🔥 VALIDADOR DE RUT BLINDADO OFICIAL
 const validarRutChileno = (rutCompleto: string) => {
     if (!rutCompleto) return false;
     
@@ -114,8 +114,19 @@ export default function CalibreApp() {
   const [resultadoScanner, setResultadoScanner] = useState<any>(null)
   const [cargandoScanner, setCargandoScanner] = useState(false)
 
+  // 🔥 ESTADOS PARA CONFIGURACIÓN DEL TALLER
   const [nombreTaller, setNombreTaller] = useState('MI TALLER')
   const [inputTaller, setInputTaller] = useState('')
+  const [inputDireccion, setInputDireccion] = useState('')
+  const [inputTelefonoConfig, setInputTelefonoConfig] = useState('')
+  const [inputGarantia, setInputGarantia] = useState('')
+  const [incluirIva, setIncluirIva] = useState(false)
+  
+  const [logoFile, setLogoFile] = useState<File | null>(null)
+  const [logoPreview, setLogoPreview] = useState<string | null>(null)
+  const [subiendoLogo, setSubiendoLogo] = useState(false)
+  const [guardandoConfiguracion, setGuardandoConfiguracion] = useState(false)
+
   const router = useRouter()
 
   const iniciarDictado = (setField: (val: string) => void, currentVal: string) => {
@@ -159,6 +170,20 @@ export default function CalibreApp() {
     }
   };
 
+  const extraerDatosConfiguracion = (metadata: any) => {
+      if (!metadata) return;
+      
+      const n = metadata.nombre_taller || 'MI TALLER';
+      setNombreTaller(n);
+      setInputTaller(n);
+      
+      if (metadata.direccion_taller) setInputDireccion(metadata.direccion_taller);
+      if (metadata.telefono_taller) setInputTelefonoConfig(metadata.telefono_taller);
+      if (metadata.garantia_taller) setInputGarantia(metadata.garantia_taller);
+      if (metadata.incluir_iva !== undefined) setIncluirIva(metadata.incluir_iva);
+      if (metadata.logo_url) setLogoPreview(metadata.logo_url);
+  };
+
   useEffect(() => {
     let isMounted = true; 
 
@@ -172,16 +197,7 @@ export default function CalibreApp() {
             setSession(currentSession);
             if (currentSession?.user?.id) {
                 await cargarTodo(currentSession.user.id);
-                
-                // 🔥 LEER NOMBRE DE LA NUBE:
-                const nombreEnNube = currentSession.user.user_metadata?.nombre_taller;
-                if (nombreEnNube) {
-                    setNombreTaller(nombreEnNube);
-                    setInputTaller(nombreEnNube);
-                } else {
-                    setNombreTaller('MI TALLER');
-                    setInputTaller('MI TALLER');
-                }
+                extraerDatosConfiguracion(currentSession.user.user_metadata);
             }
         }
       } catch (err) {
@@ -198,13 +214,7 @@ export default function CalibreApp() {
           setSession(currentSession);
           if (currentSession?.user?.id) {
               cargarTodo(currentSession.user.id);
-              
-              // 🔥 LEER NOMBRE DE LA NUBE SI CAMBIA LA SESIÓN:
-              const nombreEnNube = currentSession.user.user_metadata?.nombre_taller;
-              if (nombreEnNube) {
-                  setNombreTaller(nombreEnNube);
-                  setInputTaller(nombreEnNube);
-              }
+              extraerDatosConfiguracion(currentSession.user.user_metadata);
           }
       }
     });
@@ -215,28 +225,71 @@ export default function CalibreApp() {
     }
   }, [])
 
-  const guardarNombreTaller = async () => {
+  // 🔥 NUEVA LÓGICA DE GUARDADO DE CONFIGURACIÓN
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      
+      const previewUrl = URL.createObjectURL(file);
+      setLogoPreview(previewUrl);
+      setLogoFile(file);
+  }
+
+  const guardarConfiguracion = async () => {
       if (inputTaller.trim() === '') {
-          toast.error("El nombre no puede estar vacío");
+          toast.error("El nombre del taller no puede estar vacío");
           return;
       }
       
-      const nombreLimpio = inputTaller.toUpperCase().trim();
-      const toastId = toast.loading("Guardando en la nube...");
-
+      setGuardandoConfiguracion(true);
+      const toastId = toast.loading("Guardando ajustes en la nube...");
+      
       try {
-          // 🔥 MAGIA SAAS: Guardamos el nombre en los metadatos del usuario en Supabase
+          let logoUrl = session?.user?.user_metadata?.logo_url || null;
+
+          // Si hay un archivo nuevo, lo subimos al bucket "logos"
+          if (logoFile) {
+              setSubiendoLogo(true);
+              const options = { maxSizeMB: 0.5, maxWidthOrHeight: 1024, useWebWorker: true };
+              const compressedFile = await imageCompression(logoFile, options);
+              
+              const fileName = `${session.user.id}/logo_${Date.now()}.png`;
+              const { error: uploadError } = await supabase.storage.from('logos').upload(fileName, compressedFile, { upsert: true });
+              
+              if (uploadError) throw uploadError;
+              
+              const { data: { publicUrl } } = supabase.storage.from('logos').getPublicUrl(fileName);
+              logoUrl = publicUrl;
+              setSubiendoLogo(false);
+          }
+
+          const nombreLimpio = inputTaller.toUpperCase().trim();
+          
+          const payloadMetadata = {
+              nombre_taller: nombreLimpio,
+              direccion_taller: inputDireccion,
+              telefono_taller: inputTelefonoConfig,
+              garantia_taller: inputGarantia,
+              incluir_iva: incluirIva,
+              logo_url: logoUrl
+          };
+
           const { error } = await supabase.auth.updateUser({
-              data: { nombre_taller: nombreLimpio }
+              data: payloadMetadata
           });
 
           if (error) throw error;
 
           setNombreTaller(nombreLimpio);
-          toast.success("¡Nombre del taller actualizado exitosamente!", { id: toastId });
+          setLogoFile(null); // Limpiamos el archivo pendiente porque ya subió
+          
+          toast.success("¡Ajustes guardados exitosamente!", { id: toastId });
           setModalConfiguracion(false);
       } catch (error: any) {
           toast.error("Error al guardar: " + error.message, { id: toastId });
+          setSubiendoLogo(false);
+      } finally {
+          setGuardandoConfiguracion(false);
       }
   }
 
@@ -667,7 +720,17 @@ export default function CalibreApp() {
               }
           };
 
-          await generarDocumentoPDF(ordenParaPDF, resumenGenerado, nombreTaller);
+          // 🔥 AHORA LE PASAMOS LA CONFIGURACIÓN COMPLETA AL PDF
+          const configPDF = {
+              nombreTaller,
+              direccion: session?.user?.user_metadata?.direccion_taller || '',
+              telefono: session?.user?.user_metadata?.telefono_taller || '',
+              garantia: session?.user?.user_metadata?.garantia_taller || '',
+              logoUrl: session?.user?.user_metadata?.logo_url || null,
+              incluirIva: session?.user?.user_metadata?.incluir_iva || false
+          };
+
+          await generarDocumentoPDF(ordenParaPDF, resumenGenerado, configPDF);
           
           const telefono = o.vehiculos?.clientes?.telefono;
           const cliente = o.vehiculos?.clientes?.nombre || 'Estimado(a)';
@@ -799,8 +862,6 @@ export default function CalibreApp() {
       }
   };
 
-  // 🔥 LÓGICA DE ESTADO VISUAL PARA EL RUT
-  // Se agregó la condición de longitud mínima para que no ponga en rojo el RUT apenas se empieza a escribir
   const rutSinFormato = rutInput.replace(/[^0-9kK]/g, '');
   const isRutValid = rutSinFormato.length >= 8 && validarRutChileno(rutInput);
   const isRutInvalid = rutSinFormato.length >= 8 && !isRutValid;
@@ -860,7 +921,6 @@ export default function CalibreApp() {
             <div className={`transition-all duration-300 ${recepcionAbierta ? 'block mt-5' : 'hidden'} md:block md:mt-5`}>
                 <form id="form-recepcion" onSubmit={registrarTodo} className="space-y-3 relative z-10">
                   
-                  {/* 🔥 EL IMPUT DEL RUT CON LA NUEVA LÓGICA DE COLOR 🔥 */}
                   <input 
                       name="rut_cliente" 
                       value={rutInput}
@@ -900,7 +960,6 @@ export default function CalibreApp() {
                   <div className="h-px bg-slate-800/50 my-3" />
                   
                   <div className="relative">
-                      {/* 🔥 INPUT PATENTE LIMPIO (Sin cámara) */}
                       <input 
                           name="patente" 
                           value={patenteInput}
@@ -1087,6 +1146,9 @@ export default function CalibreApp() {
                                             <button onClick={() => abrirModalAlerta(o)} className="bg-slate-800/50 backdrop-blur-sm p-2.5 rounded-xl hover:bg-orange-900/50 text-orange-400 transition-all border border-slate-700/50 shadow-sm hover:scale-110" title="Registrar Desgaste">
                                                 <AlertTriangle size={16} />
                                             </button>
+                                            <button onClick={() => setFotoForm({ordenId: o.id, file: null, preview: '', descripcion: ''})} className="bg-slate-800/50 backdrop-blur-sm p-2.5 rounded-xl hover:bg-emerald-900/50 text-emerald-400 transition-all border border-slate-700/50 shadow-sm hover:scale-110">
+                                                <Camera size={16} />
+                                            </button>
                                         </div>
                                     </div>
                                     <div className="bg-slate-800/30 backdrop-blur-sm p-3 rounded-xl mb-4 italic text-xs text-slate-400 border border-slate-700/50 line-clamp-2" title={o.descripcion}>"{o.descripcion}"</div>
@@ -1159,7 +1221,14 @@ export default function CalibreApp() {
                                 </div>
                             </div>
                             
-                            <button onClick={() => generarDocumentoPDF(o, o.resumen_ia, nombreTaller)} className="bg-slate-900 text-slate-500 border border-slate-700/50 p-2.5 rounded-xl hover:border-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all shrink-0" title="Generar Informe PDF">
+                            <button onClick={() => generarDocumentoPDF(o, o.resumen_ia, {
+                                nombreTaller,
+                                direccion: session?.user?.user_metadata?.direccion_taller || '',
+                                telefono: session?.user?.user_metadata?.telefono_taller || '',
+                                garantia: session?.user?.user_metadata?.garantia_taller || '',
+                                logoUrl: session?.user?.user_metadata?.logo_url || null,
+                                incluirIva: session?.user?.user_metadata?.incluir_iva || false
+                            })} className="bg-slate-900 text-slate-500 border border-slate-700/50 p-2.5 rounded-xl hover:border-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all shrink-0" title="Generar Informe PDF">
                                 <FileText size={16} />
                             </button>
                         </div>
@@ -1297,8 +1366,20 @@ export default function CalibreApp() {
           onClose={() => setModalConfiguracion(false)}
           inputTaller={inputTaller}
           setInputTaller={setInputTaller}
-          guardarNombreTaller={guardarNombreTaller}
+          guardarConfiguracion={guardarConfiguracion}
+          guardandoConfiguracion={guardandoConfiguracion}
           handleLogout={handleLogout}
+          inputDireccion={inputDireccion}
+          setInputDireccion={setInputDireccion}
+          inputTelefono={inputTelefonoConfig}
+          setInputTelefono={setInputTelefonoConfig}
+          logoPreview={logoPreview}
+          handleLogoChange={handleLogoChange}
+          subiendoLogo={subiendoLogo}
+          inputGarantia={inputGarantia}
+          setInputGarantia={setInputGarantia}
+          incluirIva={incluirIva}
+          setIncluirIva={setIncluirIva}
         />
       )}
 
