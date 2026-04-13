@@ -1,19 +1,20 @@
 'use client'
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Wrench, ArrowRight, Mail, Lock, AlertCircle } from 'lucide-react'
+import { ArrowRight, Mail, Lock, AlertCircle } from 'lucide-react' // Quitamos Wrench
 import Link from 'next/link'
+import Image from 'next/image'
 
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  const [errorMsg, setErrorMsg] = useState('') // Estado para manejar el error visual
+  const [errorMsg, setErrorMsg] = useState('')
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    setErrorMsg('') // Limpiar errores previos
+    setErrorMsg('')
     
     try {
         const { error } = await supabase.auth.signInWithPassword({ 
@@ -27,7 +28,6 @@ export default function Login() {
             return
         }
         
-        // 🟢 CORREGIDO: Redirigir a /taller
         window.location.href = '/taller'
     } catch (err) {
         setErrorMsg('Ocurrió un error inesperado al iniciar sesión.')
@@ -35,31 +35,30 @@ export default function Login() {
     }
   }
 
- const handleGoogleLogin = async () => {
-  try {
-      setErrorMsg('')
-      setLoading(true) // Opcional, para que el botón muestre carga
-      console.log("🟢 Iniciando petición a Supabase para Google OAuth...")
-      
-      const { data, error } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-              // 🔥 CAMBIO CLAVE: Ahora lo mandamos al callback
-              redirectTo: `${window.location.origin}/auth/callback`
-          }
-      })
+  const handleGoogleLogin = async () => {
+    try {
+        setErrorMsg('')
+        setLoading(true)
+        console.log("🟢 Iniciando petición a Supabase para Google OAuth...")
+        
+        const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: `${window.location.origin}/auth/callback`
+            }
+        })
 
-      if (error) {
-          console.error("🔴 Error de Supabase:", error.message)
-          setErrorMsg(`Error de Google: ${error.message}`)
-      }
-  } catch (err) {
-      console.error("🔴 Error crítico al conectar:", err)
-      setErrorMsg('El sistema bloqueó la conexión con Google.')
-  } finally {
-      // setLoading(false) // Si usaste el estado loading
+        if (error) {
+            console.error("🔴 Error de Supabase:", error.message)
+            setErrorMsg(`Error de Google: ${error.message}`)
+        }
+    } catch (err) {
+        console.error("🔴 Error crítico al conectar:", err)
+        setErrorMsg('El sistema bloqueó la conexión con Google.')
+    } finally {
+        // setLoading(false) // Comentado ya que redirige
+    }
   }
-}
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-4 selection:bg-emerald-500 selection:text-slate-950 relative overflow-hidden">
@@ -69,13 +68,17 @@ export default function Login() {
 
       <div className="w-full max-w-md bg-slate-900/80 backdrop-blur-xl p-8 sm:p-12 rounded-[40px] border border-slate-800 shadow-2xl relative z-10">
         
-        {/* Logo Unificado */}
+        {/* 🔥 Logo Unificado con Image de Next.js */}
         <div className="flex flex-col items-center justify-center mb-10">
-            <div className="bg-slate-950 p-4 rounded-3xl border border-slate-800 mb-4 shadow-inner">
-                <Wrench className="text-emerald-500" size={32} />
-            </div>
-            <h1 className="text-2xl font-black uppercase tracking-tighter">Calibre<span className="text-emerald-500">.</span></h1>
-            <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-2">Acceso Operadores</h2>
+            <Image 
+                src="/logo-calibre.png" 
+                alt="Logo Calibre" 
+                width={200} 
+                height={60} 
+                priority
+                className="object-contain drop-shadow-[0_0_15px_rgba(16,185,129,0.2)]"
+            />
+            <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-4">Acceso Operadores</h2>
         </div>
 
         {/* Formulario */}
@@ -128,11 +131,12 @@ export default function Login() {
             <div className="h-px bg-slate-800 flex-1"></div>
         </div>
 
-        {/* 🔥 Botón de Google Único y Funcional */}
+        {/* 🔥 Botón de Google */}
         <button 
             onClick={handleGoogleLogin}
+            disabled={loading}
             type="button" 
-            className="w-full py-4 px-4 flex items-center justify-center gap-3 rounded-2xl bg-slate-950 border border-slate-800 text-xs font-black text-slate-300 uppercase tracking-widest hover:border-slate-600 hover:text-slate-100 hover:bg-slate-900 transition-all"
+            className="w-full py-4 px-4 flex items-center justify-center gap-3 rounded-2xl bg-slate-950 border border-slate-800 text-xs font-black text-slate-300 uppercase tracking-widest hover:border-slate-600 hover:text-slate-100 hover:bg-slate-900 transition-all disabled:opacity-50"
         >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="18px" height="18px">
                 <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>

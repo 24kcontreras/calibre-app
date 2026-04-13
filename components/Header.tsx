@@ -1,4 +1,5 @@
 import { Activity, ScanLine, Settings, Megaphone } from 'lucide-react'
+import Image from 'next/image' // 🔥 IMPORTAMOS EL COMPONENTE DE IMAGEN
 
 interface HeaderProps {
   nombreTaller: string;
@@ -23,14 +24,24 @@ export default function Header({
     <header className="flex flex-col md:flex-row justify-between items-center mb-12 border-b border-slate-800 pb-8 w-full gap-6 relative z-10">
       <div className="flex items-center gap-4 group cursor-default w-full md:w-auto justify-center md:justify-start">
         <div className="text-center md:text-left">
+          {/* Nombre del Taller del Cliente */}
           <h1 className="text-3xl md:text-4xl font-black text-slate-100 tracking-tighter uppercase leading-none">
               {nombreTaller}
           </h1>
+          
+          {/* 🔥 SECCIÓN "POWERED BY" CON TU LOGO */}
           <div className="flex items-center justify-center md:justify-start gap-2 mt-2">
             <span className="h-1.5 w-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span>
-            <p className="text-[10px] font-black text-emerald-500 tracking-[0.3em] uppercase opacity-80">
-               Powered by CALIBRE
-            </p>
+            <span className="text-[10px] font-black text-emerald-500 tracking-[0.2em] uppercase opacity-80">
+               POWERED BY
+            </span>
+            <Image 
+                src="/logo-calibre.png" 
+                alt="Logo Calibre" 
+                width={80} 
+                height={20} 
+                className="object-contain opacity-90 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]"
+            />
           </div>
         </div>
       </div>
