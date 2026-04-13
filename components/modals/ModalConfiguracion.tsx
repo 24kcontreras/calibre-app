@@ -1,41 +1,32 @@
-import { Settings, Save, LogOut, Upload, FileText, Percent, Image as ImageIcon, MapPin, Phone } from 'lucide-react'
+import { Settings, Save, LogOut, Upload, FileText, Percent, Image as ImageIcon, MapPin, Phone, Sparkles } from 'lucide-react'
 
 interface ModalConfiguracionProps {
   onClose: () => void;
   inputTaller: string;
   setInputTaller: (val: string) => void;
-  
-  // 🔥 Mantenemos la función antigua por ahora para que no explote tu page.tsx, 
-  // pero en el próximo paso la cambiaremos por una que guarde TODO.
-  guardarNombreTaller?: () => void; 
-  guardarConfiguracion?: () => void; 
+  guardarConfiguracion: () => void; 
   guardandoConfiguracion?: boolean;
-  
   handleLogout: () => void;
-
-  // 🔥 Nuevos Props
   inputDireccion?: string;
   setInputDireccion?: (val: string) => void;
-  
   inputTelefono?: string;
   setInputTelefono?: (val: string) => void;
-
   logoPreview?: string | null;
   handleLogoChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   subiendoLogo?: boolean;
-  
   inputGarantia?: string;
   setInputGarantia?: (val: string) => void;
-  
   incluirIva?: boolean;
   setIncluirIva?: (val: boolean) => void;
+  
+  // 🔥 Nuevo prop para saber si es usuario nuevo
+  esOnboarding?: boolean; 
 }
 
 export default function ModalConfiguracion({
   onClose,
   inputTaller,
   setInputTaller,
-  guardarNombreTaller,
   guardarConfiguracion,
   guardandoConfiguracion,
   handleLogout,
@@ -49,17 +40,9 @@ export default function ModalConfiguracion({
   inputGarantia,
   setInputGarantia,
   incluirIva,
-  setIncluirIva
+  setIncluirIva,
+  esOnboarding = false // Por defecto es falso
 }: ModalConfiguracionProps) {
-
-  // Función puente temporal
-  const handleGuardar = () => {
-      if (guardarConfiguracion) {
-          guardarConfiguracion();
-      } else if (guardarNombreTaller) {
-          guardarNombreTaller();
-      }
-  }
 
   return (
     <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 z-[200]">
@@ -68,10 +51,23 @@ export default function ModalConfiguracion({
         {/* HEADER DEL MODAL (Fijo arriba) */}
         <div className="p-6 md:p-8 border-b border-slate-800 flex justify-between items-center bg-slate-900 shrink-0 relative z-10">
           <div>
-            <h3 className="text-2xl font-black italic uppercase tracking-tighter text-slate-100 flex items-center gap-2"><Settings className="text-emerald-500"/> Ajustes</h3>
-            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-1">Configuración de Plataforma</p>
+            {esOnboarding ? (
+                <>
+                    <h3 className="text-2xl font-black italic uppercase tracking-tighter text-emerald-400 flex items-center gap-2"><Sparkles className="text-emerald-500"/> ¡Bienvenido!</h3>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">Configura tu taller para empezar</p>
+                </>
+            ) : (
+                <>
+                    <h3 className="text-2xl font-black italic uppercase tracking-tighter text-slate-100 flex items-center gap-2"><Settings className="text-emerald-500"/> Ajustes</h3>
+                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-1">Configuración de Plataforma</p>
+                </>
+            )}
           </div>
-          <button onClick={onClose} className="text-slate-500 hover:text-red-400 font-black text-xl p-2 bg-slate-800 rounded-full transition-colors border border-slate-700 w-10 h-10 flex items-center justify-center">✕</button>
+          
+          {/* 🔥 Si es Onboarding, escondemos la X para que no pueda cerrar sin guardar */}
+          {!esOnboarding && (
+              <button onClick={onClose} className="text-slate-500 hover:text-red-400 font-black text-xl p-2 bg-slate-800 rounded-full transition-colors border border-slate-700 w-10 h-10 flex items-center justify-center">✕</button>
+          )}
         </div>
         
         {/* CONTENIDO ESCROLEABLE */}
@@ -80,7 +76,7 @@ export default function ModalConfiguracion({
             {/* 1. INFORMACIÓN DEL TALLER */}
             <div className="space-y-4">
                 <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">Nombre Oficial del Taller</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">Nombre Oficial del Taller <span className="text-red-500">*</span></label>
                     <input 
                         value={inputTaller} 
                         onChange={(e) => setInputTaller(e.target.value)} 
@@ -161,18 +157,18 @@ export default function ModalConfiguracion({
         {/* FOOTER DEL MODAL (Fijo abajo con botones de acción) */}
         <div className="p-6 border-t border-slate-800 bg-slate-900 shrink-0 space-y-3 relative z-10">
             <button 
-                onClick={handleGuardar} 
-                disabled={guardandoConfiguracion}
+                onClick={guardarConfiguracion} 
+                disabled={guardandoConfiguracion || !inputTaller.trim()}
                 className="w-full py-4 bg-emerald-600 text-slate-950 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-emerald-500 transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(16,185,129,0.2)] hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
             >
-                <Save size={16} /> {guardandoConfiguracion ? 'Guardando...' : 'Guardar Ajustes'}
+                <Save size={16} /> {guardandoConfiguracion ? 'Guardando...' : (esOnboarding ? 'Guardar y Comenzar' : 'Guardar Ajustes')}
             </button>
 
             <button 
                 onClick={handleLogout} 
                 className="w-full py-3 text-slate-500 hover:text-red-400 rounded-xl font-black text-[10px] uppercase tracking-widest transition-colors flex items-center justify-center gap-2 bg-transparent"
             >
-                <LogOut size={14} /> Cerrar Sesión
+                <LogOut size={14} /> {esOnboarding ? 'Cancelar y Salir' : 'Cerrar Sesión'}
             </button>
         </div>
 

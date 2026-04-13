@@ -114,7 +114,8 @@ export default function CalibreApp() {
   const [resultadoScanner, setResultadoScanner] = useState<any>(null)
   const [cargandoScanner, setCargandoScanner] = useState(false)
 
-  // 🔥 ESTADOS PARA CONFIGURACIÓN DEL TALLER
+  // 🔥 ESTADOS PARA CONFIGURACIÓN DEL TALLER Y ONBOARDING
+  const [esOnboarding, setEsOnboarding] = useState(false)
   const [nombreTaller, setNombreTaller] = useState('MI TALLER')
   const [inputTaller, setInputTaller] = useState('')
   const [inputDireccion, setInputDireccion] = useState('')
@@ -170,12 +171,22 @@ export default function CalibreApp() {
     }
   };
 
+  // 🔥 NUEVA LÓGICA DE ONBOARDING EN LA CARGA
   const extraerDatosConfiguracion = (metadata: any) => {
-      if (!metadata) return;
+      // Si no hay metadata o el usuario nunca configuró el nombre del taller:
+      if (!metadata || !metadata.nombre_taller) {
+          setNombreTaller('MI TALLER');
+          setInputTaller(''); // Lo dejamos vacío para que deba llenarlo
+          setEsOnboarding(true);
+          setModalConfiguracion(true); // ¡BOOM! Le abrimos la ventana de bienvenida
+          return;
+      }
       
-      const n = metadata.nombre_taller || 'MI TALLER';
+      // Si ya tiene configuración, cargamos todo normal
+      const n = metadata.nombre_taller;
       setNombreTaller(n);
       setInputTaller(n);
+      setEsOnboarding(false); // Ya pasó el onboarding
       
       if (metadata.direccion_taller) setInputDireccion(metadata.direccion_taller);
       if (metadata.telefono_taller) setInputTelefonoConfig(metadata.telefono_taller);
@@ -280,8 +291,9 @@ export default function CalibreApp() {
 
           setNombreTaller(nombreLimpio);
           setLogoFile(null); 
+          setEsOnboarding(false); // Quitamos el estado de onboarding
           
-          toast.success("¡Ajustes guardados exitosamente!", { id: toastId });
+          toast.success(esOnboarding ? "¡Bienvenido a CALIBRE!" : "¡Ajustes guardados exitosamente!", { id: toastId });
           setModalConfiguracion(false);
       } catch (error: any) {
           toast.error("Error al guardar: " + error.message, { id: toastId });
@@ -321,7 +333,6 @@ export default function CalibreApp() {
     setHistorial(oFinalizadas || [])
   }
 
-  // 🔥 NUEVA FUNCIÓN PARA COPIAR EL LINK MÁGICO
   const copiarLinkCliente = (ordenId: string) => {
       const linkUrl = `${window.location.origin}/estado/${ordenId}`;
       const mensaje = `¡Hola! Puedes revisar el detalle y seguir el estado de tu vehículo en tiempo real aquí:\n👉 ${linkUrl}`;
@@ -560,7 +571,6 @@ export default function CalibreApp() {
       return `${horas}h`;
   }
 
-  // 🔥 ACTUALIZADO: Envía el mensaje con el link mágico incluido
   const solicitarAprobacion = (o: any) => {
       const total = o.items_orden?.reduce((sum: number, item: any) => sum + item.precio, 0) || 0;
       const telefono = o.vehiculos?.clientes?.telefono;
@@ -1149,7 +1159,6 @@ export default function CalibreApp() {
                                             </div>
                                         </div>
                                         
-                                        {/* 🔥 NUEVO BOTÓN DE COMPARTIR LINK */}
                                         <div className="flex gap-2 shrink-0">
                                             <button onClick={() => copiarLinkCliente(o.id)} className="bg-slate-800/50 backdrop-blur-sm p-2.5 rounded-xl hover:bg-blue-900/50 text-blue-400 transition-all border border-slate-700/50 shadow-sm hover:scale-110" title="Copiar Link para el Cliente">
                                                 <Share2 size={16} />
@@ -1398,6 +1407,7 @@ export default function CalibreApp() {
           setInputGarantia={setInputGarantia}
           incluirIva={incluirIva}
           setIncluirIva={setIncluirIva}
+          esOnboarding={esOnboarding} // 🔥 Le pasamos el estado al modal
         />
       )}
 
