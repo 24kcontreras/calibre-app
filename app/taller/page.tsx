@@ -225,7 +225,6 @@ export default function CalibreApp() {
     }
   }, [])
 
-  // 🔥 NUEVA LÓGICA DE GUARDADO DE CONFIGURACIÓN
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
@@ -247,7 +246,6 @@ export default function CalibreApp() {
       try {
           let logoUrl = session?.user?.user_metadata?.logo_url || null;
 
-          // Si hay un archivo nuevo, lo subimos al bucket "logos"
           if (logoFile) {
               setSubiendoLogo(true);
               const options = { maxSizeMB: 0.5, maxWidthOrHeight: 1024, useWebWorker: true };
@@ -281,7 +279,7 @@ export default function CalibreApp() {
           if (error) throw error;
 
           setNombreTaller(nombreLimpio);
-          setLogoFile(null); // Limpiamos el archivo pendiente porque ya subió
+          setLogoFile(null); 
           
           toast.success("¡Ajustes guardados exitosamente!", { id: toastId });
           setModalConfiguracion(false);
@@ -1343,13 +1341,21 @@ export default function CalibreApp() {
         />
       )}
 
+      {/* 🔥 AQUÍ ESTÁ EL MODAL HISTORIAL CORREGIDO (UNA SOLA VEZ) */}
       {modalHistorial && (
         <ModalHistorial 
             onClose={() => setModalHistorial(false)}
             busquedaHistorial={busquedaHistorial}
             setBusquedaHistorial={setBusquedaHistorial}
             historialFiltrado={historialFiltrado}
-            nombreTaller={nombreTaller}
+            configPDF={{
+                nombreTaller,
+                direccion: session?.user?.user_metadata?.direccion_taller || '',
+                telefono: session?.user?.user_metadata?.telefono_taller || '',
+                garantia: session?.user?.user_metadata?.garantia_taller || '',
+                logoUrl: session?.user?.user_metadata?.logo_url || null,
+                incluirIva: session?.user?.user_metadata?.incluir_iva || false
+            }}
         />
       )}
 

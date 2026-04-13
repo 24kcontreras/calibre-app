@@ -6,7 +6,15 @@ interface ModalHistorialProps {
   busquedaHistorial: string;
   setBusquedaHistorial: (val: string) => void;
   historialFiltrado: any[];
-  nombreTaller: string;
+  // 🔥 Recibimos la configuración completa en vez de solo el nombre
+  configPDF: {
+      nombreTaller: string;
+      direccion: string;
+      telefono: string;
+      garantia: string;
+      logoUrl: string | null;
+      incluirIva: boolean;
+  };
 }
 
 export default function ModalHistorial({
@@ -14,12 +22,12 @@ export default function ModalHistorial({
   busquedaHistorial,
   setBusquedaHistorial,
   historialFiltrado,
-  nombreTaller
+  configPDF
 }: ModalHistorialProps) {
   return (
     <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 z-[200]">
       <div className="bg-slate-900 rounded-[40px] shadow-2xl max-w-3xl w-full border border-slate-800 flex flex-col max-h-[90vh]">
-        <div className="p-8 border-b border-slate-800 flex flex-col md:flex-row md:justify-between md:items-center gap-4 shrink-0">
+        <div className="p-8 border-b border-slate-800 flex flex-col md:flex-row md:justify-between md:items-center gap-4 shrink-0 relative">
           <div>
             <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-100 flex items-center gap-2">
                 <FolderOpen className="text-emerald-500"/> Historial de Trabajos
@@ -59,7 +67,8 @@ export default function ModalHistorial({
                   <div className="flex items-center gap-4 justify-between md:justify-end">
                     <p className="font-black text-emerald-400">${total.toLocaleString('es-CL')}</p>
                     
-                    <button onClick={() => generarDocumentoPDF(o, o.resumen_ia, nombreTaller)} className="bg-emerald-950/50 text-emerald-400 border border-emerald-900/50 px-4 py-2 rounded-xl font-bold text-[10px] hover:bg-emerald-600 hover:text-slate-950 transition-all uppercase tracking-widest flex items-center gap-1">
+                    {/* 🔥 AQUÍ LE MANDAMOS LA CONFIGURACIÓN COMPLETA AL GENERADOR DE PDF */}
+                    <button onClick={() => generarDocumentoPDF(o, o.resumen_ia, configPDF)} className="bg-emerald-950/50 text-emerald-400 border border-emerald-900/50 px-4 py-2 rounded-xl font-bold text-[10px] hover:bg-emerald-600 hover:text-slate-950 transition-all uppercase tracking-widest flex items-center gap-1">
                         <FileText size={12} /> Generar PDF
                     </button>
                   </div>
