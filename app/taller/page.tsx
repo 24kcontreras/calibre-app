@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import imageCompression from 'browser-image-compression'
 import Login from '@/components/Login'
 import CAR_DATA from './autos.json'
-import { Edit2, Trash2, FileText, Clock, User, CheckCircle, Search, Bot, Camera, Plus, Wrench, ChevronRight, Info, MessageSquare, Mic, AlertTriangle, Megaphone, Settings, ChevronDown } from 'lucide-react'
+import { Edit2, Trash2, FileText, Clock, User, CheckCircle, Search, Bot, Plus, Wrench, ChevronRight, Info, MessageSquare, Mic, AlertTriangle, Megaphone, Settings, ChevronDown, Camera } from 'lucide-react' // Dejamos Camera por si la usas en otro lado, pero quitamos escaneandoPatente
 import toast, { Toaster } from 'react-hot-toast'
 
 // 🚀 COMPONENTES EXTERNOS
@@ -172,6 +172,16 @@ export default function CalibreApp() {
             setSession(currentSession);
             if (currentSession?.user?.id) {
                 await cargarTodo(currentSession.user.id);
+                
+                // 🔥 LEER NOMBRE DE LA NUBE:
+                const nombreEnNube = currentSession.user.user_metadata?.nombre_taller;
+                if (nombreEnNube) {
+                    setNombreTaller(nombreEnNube);
+                    setInputTaller(nombreEnNube);
+                } else {
+                    setNombreTaller('MI TALLER');
+                    setInputTaller('MI TALLER');
+                }
             }
         }
       } catch (err) {
@@ -188,17 +198,16 @@ export default function CalibreApp() {
           setSession(currentSession);
           if (currentSession?.user?.id) {
               cargarTodo(currentSession.user.id);
+              
+              // 🔥 LEER NOMBRE DE LA NUBE SI CAMBIA LA SESIÓN:
+              const nombreEnNube = currentSession.user.user_metadata?.nombre_taller;
+              if (nombreEnNube) {
+                  setNombreTaller(nombreEnNube);
+                  setInputTaller(nombreEnNube);
+              }
           }
       }
     });
-
-    const tallerGuardado = localStorage.getItem('calibre_nombre_taller');
-    if (tallerGuardado && isMounted) {
-        setNombreTaller(tallerGuardado);
-        setInputTaller(tallerGuardado);
-    } else if (isMounted) {
-        setInputTaller('MI TALLER');
-    }
 
     return () => {
         isMounted = false;
@@ -206,16 +215,29 @@ export default function CalibreApp() {
     }
   }, [])
 
-  const guardarNombreTaller = () => {
+  const guardarNombreTaller = async () => {
       if (inputTaller.trim() === '') {
           toast.error("El nombre no puede estar vacío");
           return;
       }
+      
       const nombreLimpio = inputTaller.toUpperCase().trim();
-      setNombreTaller(nombreLimpio);
-      localStorage.setItem('calibre_nombre_taller', nombreLimpio);
-      toast.success("¡Nombre guardado exitosamente!");
-      setModalConfiguracion(false);
+      const toastId = toast.loading("Guardando en la nube...");
+
+      try {
+          // 🔥 MAGIA SAAS: Guardamos el nombre en los metadatos del usuario en Supabase
+          const { error } = await supabase.auth.updateUser({
+              data: { nombre_taller: nombreLimpio }
+          });
+
+          if (error) throw error;
+
+          setNombreTaller(nombreLimpio);
+          toast.success("¡Nombre del taller actualizado exitosamente!", { id: toastId });
+          setModalConfiguracion(false);
+      } catch (error: any) {
+          toast.error("Error al guardar: " + error.message, { id: toastId });
+      }
   }
 
   const handleLogout = async () => { 
@@ -778,8 +800,10 @@ export default function CalibreApp() {
   };
 
   // 🔥 LÓGICA DE ESTADO VISUAL PARA EL RUT
-  const isRutValid = rutInput.length > 0 && validarRutChileno(rutInput);
-  const isRutInvalid = rutInput.length > 0 && !isRutValid;
+  // Se agregó la condición de longitud mínima para que no ponga en rojo el RUT apenas se empieza a escribir
+  const rutSinFormato = rutInput.replace(/[^0-9kK]/g, '');
+  const isRutValid = rutSinFormato.length >= 8 && validarRutChileno(rutInput);
+  const isRutInvalid = rutSinFormato.length >= 8 && !isRutValid;
 
   if (authLoading) {
     return (
@@ -836,6 +860,7 @@ export default function CalibreApp() {
             <div className={`transition-all duration-300 ${recepcionAbierta ? 'block mt-5' : 'hidden'} md:block md:mt-5`}>
                 <form id="form-recepcion" onSubmit={registrarTodo} className="space-y-3 relative z-10">
                   
+                  {/* 🔥 EL IMPUT DEL RUT CON LA NUEVA LÓGICA DE COLOR 🔥 */}
                   <input 
                       name="rut_cliente" 
                       value={rutInput}
@@ -1061,9 +1086,6 @@ export default function CalibreApp() {
                                         <div className="flex gap-2 shrink-0">
                                             <button onClick={() => abrirModalAlerta(o)} className="bg-slate-800/50 backdrop-blur-sm p-2.5 rounded-xl hover:bg-orange-900/50 text-orange-400 transition-all border border-slate-700/50 shadow-sm hover:scale-110" title="Registrar Desgaste">
                                                 <AlertTriangle size={16} />
-                                            </button>
-                                            <button onClick={() => setFotoForm({ordenId: o.id, file: null, preview: '', descripcion: ''})} className="bg-slate-800/50 backdrop-blur-sm p-2.5 rounded-xl hover:bg-emerald-900/50 text-emerald-400 transition-all border border-slate-700/50 shadow-sm hover:scale-110">
-                                                <Camera size={16} />
                                             </button>
                                         </div>
                                     </div>
