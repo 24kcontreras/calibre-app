@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import imageCompression from 'browser-image-compression'
 import Login from '@/components/Login'
 import CAR_DATA from './autos.json'
-import { Edit2, ChevronDown, Trash2, FileText, Clock, User, CheckCircle, Search, Bot, Camera, Plus, Wrench, ChevronRight, Info, MessageSquare, Mic, AlertTriangle, Megaphone, Settings } from 'lucide-react'
+import { Edit2, Trash2, FileText, Clock, User, CheckCircle, Search, Bot, Camera, Plus, Wrench, ChevronRight, Info, MessageSquare, Mic, AlertTriangle, Megaphone, Settings } from 'lucide-react'
 import toast, { Toaster } from 'react-hot-toast'
 
 // 🚀 COMPONENTES EXTERNOS
@@ -48,6 +48,7 @@ export default function CalibreApp() {
   const [vehiculoSeleccionado, setVehiculoSeleccionado] = useState<any | null>(null)
   const [vehiculoInfo, setVehiculoInfo] = useState<any | null>(null)
   const [recepcionAbierta, setRecepcionAbierta] = useState(false)
+  
   const [modalNuevaOrden, setModalNuevaOrden] = useState<any | null>(null)
   const [descripcionOrden, setDescripcionOrden] = useState('')
   const [valorDiagnostico, setValorDiagnostico] = useState('')
@@ -341,14 +342,13 @@ export default function CalibreApp() {
       }
   }
 
-  // 🔥 NUEVA FUNCIÓN PARA RESOLVER ALERTAS EXISTENTES
   const resolverAlertaBD = async (alertaId: string) => {
       try {
           const { error } = await supabase.from('alertas_desgaste').update({ estado: 'Resuelta' }).eq('id', alertaId);
           if (error) throw error;
           toast.success("¡Alerta marcada como corregida!");
           await cargarTodo();
-          setModalAlerta(null); // Cerramos el modal después de resolver
+          setModalAlerta(null); 
       } catch (error: any) {
           toast.error("Error al actualizar la alerta: " + error.message);
       }
@@ -657,8 +657,6 @@ export default function CalibreApp() {
               resumen_ia: resumenGenerado
           }).eq('id', o.id);
 
-          // 🔥 EL FILTRO MÁGICO PARA EL PDF:
-          // Solo le pasamos al PDF las alertas que están "Pendientes".
           const ordenParaPDF = {
               ...o,
               vehiculos: {
@@ -667,7 +665,6 @@ export default function CalibreApp() {
               }
           };
 
-          // Le pasamos la orden filtrada al generador
           await generarDocumentoPDF(ordenParaPDF, resumenGenerado, nombreTaller);
           
           const telefono = o.vehiculos?.clientes?.telefono;
@@ -691,18 +688,32 @@ export default function CalibreApp() {
       }
   }
 
+  // 🔥 VALIDADOR DE RUT BLINDADO OFICIAL
   const validarRutChileno = (rutCompleto: string) => {
-      if (!/^[0-9]+[-|‐]{1}[0-9kK]{1}$/.test(rutCompleto)) return false;
-      const tmp = rutCompleto.split('-');
-      let digv = tmp[1].toLowerCase();
-      const rut = tmp[0];
-      if (digv == 'k') digv = 'k';
-      let M = 0, S = 1;
-      for (; parseInt(rut); parseInt(rut)) {
-          S = (S + parseInt(rut) % 10 * (9 - M++ % 6)) % 11;
+      if (!rutCompleto) return false;
+      
+      const rutLimpio = rutCompleto.replace(/[^0-9kK]/g, '').toUpperCase();
+      if (rutLimpio.length < 8) return false;
+
+      const cuerpo = rutLimpio.slice(0, -1);
+      const dvIngresado = rutLimpio.slice(-1);
+      
+      let suma = 0;
+      let multiplo = 2;
+      
+      for (let i = 1; i <= cuerpo.length; i++) {
+          const digito = parseInt(cuerpo.charAt(cuerpo.length - i));
+          suma += multiplo * digito;
+          multiplo = multiplo < 7 ? multiplo + 1 : 2;
       }
-      if (S ? S - 1 : 'k' === digv) return true;
-      return false;
+      
+      const dvEsperado = 11 - (suma % 11);
+      let dvCalculado = dvEsperado.toString();
+      
+      if (dvEsperado === 11) dvCalculado = '0';
+      if (dvEsperado === 10) dvCalculado = 'K';
+      
+      return dvCalculado === dvIngresado;
   }
 
   const tLimpio = busqueda.replace(/[^a-zA-Z0-9kK]/g, '').toLowerCase()
@@ -814,6 +825,10 @@ export default function CalibreApp() {
       }
   };
 
+  // 🔥 LÓGICA DE ESTADO VISUAL PARA EL RUT
+  const isRutValid = rutInput.length > 0 && validarRutChileno(rutInput);
+  const isRutInvalid = rutInput.length > 0 && !isRutValid;
+
   if (authLoading) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
@@ -838,7 +853,6 @@ export default function CalibreApp() {
           </div>
       )}
 
-      {/* 🔥 AQUÍ LE PASAMOS LA FUNCIÓN AL HEADER */}
       <Header 
         nombreTaller={nombreTaller}
         cajaTotal={cajaTotal}
@@ -852,7 +866,6 @@ export default function CalibreApp() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6 w-full relative z-10">
         <div className="lg:col-span-1 space-y-4 md:space-y-6">
           
-          {/* 🔥 1. ACORDEÓN DE RECEPCIÓN */}
           <section className="bg-slate-900/40 backdrop-blur-md p-5 rounded-3xl shadow-2xl border border-slate-700/50 relative overflow-hidden">
             <div className="flex items-center justify-between">
                 <button 
@@ -871,13 +884,21 @@ export default function CalibreApp() {
             <div className={`transition-all duration-300 ${recepcionAbierta ? 'block mt-5' : 'hidden'} md:block md:mt-5`}>
                 <form id="form-recepcion" onSubmit={registrarTodo} className="space-y-3 relative z-10">
                   
+                  {/* 🔥 EL IMPUT DEL RUT CON LA NUEVA LÓGICA DE COLOR 🔥 */}
                   <input 
                       name="rut_cliente" 
                       value={rutInput}
                       placeholder="RUT" 
                       onChange={handleRutChange} 
-                      className="w-full p-3 rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm text-sm text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all" 
+                      className={`w-full p-3 rounded-2xl bg-slate-900/50 backdrop-blur-sm text-sm text-slate-200 outline-none transition-all border ${
+                          isRutInvalid 
+                          ? 'border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)] focus:border-red-500 focus:ring-1 focus:ring-red-500/50' 
+                          : isRutValid
+                          ? 'border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)] focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50'
+                          : 'border-slate-700/50 focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50'
+                      }`}
                   />
+
                   <input 
                       name="nombre_cliente" 
                       value={nombreInput}
@@ -996,7 +1017,6 @@ export default function CalibreApp() {
                             <p className="text-[9px] text-slate-500 uppercase truncate">{v.clientes?.nombre}</p>
                         </div>
                         
-                        {/* 🔥 2. BOTONES DEL BUSCADOR SIEMPRE VISIBLES EN MÓVIL */}
                         <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
                             <button onClick={() => setVehiculoInfo(v)} className="bg-slate-700/50 text-emerald-400 p-1.5 rounded-lg hover:bg-slate-600 transition-colors" title="Ver Detalles">
                                 <Info size={12} />
