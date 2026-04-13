@@ -1426,6 +1426,8 @@ export default function CalibreApp() {
           consultarScanner={consultarScanner}
           cargandoScanner={cargandoScanner}
           resultadoScanner={resultadoScanner}
+          // 🔥 Agregamos esto para que el modal pueda vaciar el resultado
+          setResultadoScanner={setResultadoScanner}
         />
       )}
 

@@ -10,10 +10,12 @@ interface ModalScannerProps {
   consultarScanner: (e: React.FormEvent, tipo: 'scanner' | 'manual') => void;
   cargandoScanner: boolean;
   resultadoScanner: any;
+  // 🔥 Nuevo Prop para poder limpiar el resultado al cambiar de pestaña
+  setResultadoScanner: (val: any) => void; 
 }
 
 export default function ModalScanner({
-  onClose, codigoScanner, setCodigoScanner, vehiculoScanner, setVehiculoScanner, consultarScanner, cargandoScanner, resultadoScanner
+  onClose, codigoScanner, setCodigoScanner, vehiculoScanner, setVehiculoScanner, consultarScanner, cargandoScanner, resultadoScanner, setResultadoScanner
 }: ModalScannerProps) {
   
   // 🔥 ESTADO PARA LAS PESTAÑAS
@@ -53,13 +55,21 @@ export default function ModalScanner({
         {/* 🔥 SELECTOR DE HERRAMIENTAS (PESTAÑAS) */}
         <div className="flex bg-slate-950 p-1 rounded-2xl mb-5 md:mb-6 shrink-0">
           <button 
-            onClick={() => { setModoActivo('scanner'); setCodigoScanner(''); }}
+            onClick={() => { 
+                setModoActivo('scanner'); 
+                setCodigoScanner(''); 
+                setResultadoScanner(null); // 🔥 Limpiamos el resultado viejo
+            }}
             className={`flex-1 py-2 md:py-3 flex items-center justify-center gap-1.5 md:gap-2 font-black text-[10px] md:text-xs uppercase tracking-widest rounded-xl transition-all ${modoActivo === 'scanner' ? 'bg-emerald-600 text-slate-950 shadow-lg' : 'text-slate-500 hover:text-emerald-400'}`}
           >
             <Activity size={16} /> <span className="hidden sm:inline">Scanner</span> OBD2
           </button>
           <button 
-            onClick={() => { setModoActivo('manual'); setCodigoScanner(''); }}
+            onClick={() => { 
+                setModoActivo('manual'); 
+                setCodigoScanner(''); 
+                setResultadoScanner(null); // 🔥 Limpiamos el resultado viejo
+            }}
             className={`flex-1 py-2 md:py-3 flex items-center justify-center gap-1.5 md:gap-2 font-black text-[10px] md:text-xs uppercase tracking-widest rounded-xl transition-all ${modoActivo === 'manual' ? 'bg-blue-600 text-slate-950 shadow-lg' : 'text-slate-500 hover:text-blue-400'}`}
           >
             <BookOpen size={16} /> Manual <span className="hidden sm:inline">Técnico</span>
@@ -86,7 +96,6 @@ export default function ModalScanner({
           />
           
           <div className="flex gap-2">
-            {/* 🟢 AJUSTE CLAVE: flex-1 y min-w-0 para que el input no desborde en móvil */}
             <input 
               value={codigoScanner} 
               onChange={e => setCodigoScanner(modoActivo === 'scanner' ? e.target.value.toUpperCase() : e.target.value)} 
@@ -94,7 +103,6 @@ export default function ModalScanner({
               placeholder={modoActivo === 'scanner' ? "Código o Síntoma (Ej: P0420)" : "Ej: Torque de culata"} 
               className={`flex-1 min-w-0 p-3 md:p-4 rounded-xl md:rounded-2xl border-2 text-sm md:text-base bg-slate-800 font-black outline-none transition-all ${modoActivo === 'scanner' ? 'border-emerald-900/50 text-emerald-400 focus:border-emerald-500 placeholder:text-emerald-900/50 uppercase' : 'border-blue-900/50 text-blue-400 focus:border-blue-500 placeholder:text-blue-900/50'}`} 
             />
-            {/* 🟢 AJUSTE CLAVE: shrink-0 y padding responsivo para que el botón no se aplaste */}
             <button type="submit" disabled={cargandoScanner} className={`px-4 md:px-6 shrink-0 rounded-xl md:rounded-2xl font-black text-slate-950 transition-all disabled:opacity-50 ${modoActivo === 'scanner' ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-blue-600 hover:bg-blue-500'}`}>
               <Search size={20} />
             </button>
