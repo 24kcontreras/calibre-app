@@ -6,8 +6,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 export async function POST(req: Request) {
   try {
     const { falla, vehiculo } = await req.json();
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-pro' });
-
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
     //backticks literales del texto del prompt
     const prompt = `Actúa como un Ingeniero Mecánico Automotriz Experto. 
     Vehículo: ${vehiculo.marca} ${vehiculo.modelo} ${vehiculo.anho || ''}.
