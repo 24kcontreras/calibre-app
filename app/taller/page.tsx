@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import imageCompression from 'browser-image-compression'
 import Login from '@/components/Login'
 import CAR_DATA from './autos.json'
-import { Edit2, Trash2, FileText, Clock, User, CheckCircle, Search, Bot, Plus, Wrench, ChevronRight, Info, MessageSquare, Mic, AlertTriangle, Megaphone, Settings, ChevronDown, Camera, Share2 } from 'lucide-react'
+import { Edit2, Lightbulb ,Trash2, FileText, Clock, User, CheckCircle, Search, Bot, Plus, Wrench, ChevronRight, Info, MessageSquare, Mic, AlertTriangle, Megaphone, Settings, ChevronDown, Camera, Share2 } from 'lucide-react'
 import toast, { Toaster } from 'react-hot-toast'
 
 // 🚀 COMPONENTES EXTERNOS
@@ -20,6 +20,8 @@ import ModalItem from '@/components/modals/ModalItem'
 import ModalScanner from '@/components/modals/ModalScanner'
 import ModalAlerta from '@/components/modals/ModalAlerta'
 import ModalMarketing from '@/components/modals/ModalMarketing'
+// 🔥 IMPORTAMOS EL NUEVO MODAL DE IA
+import ModalAnalisisIA from '@/components/modals/ModalAnalisisIA'
 import { generarDocumentoPDF } from '@/utils/pdfGenerator'
 
 const MARCAS = Object.keys(CAR_DATA).sort();
@@ -70,7 +72,7 @@ export default function CalibreApp() {
   const [vehiculos, setVehiculos] = useState<any[]>([])
   const [ordenesAbiertas, setOrdenesAbiertas] = useState<any[]>([])
   const [historial, setHistorial] = useState<any[]>([])
-
+  
   const [vehiculoSeleccionado, setVehiculoSeleccionado] = useState<any | null>(null)
   const [vehiculoInfo, setVehiculoInfo] = useState<any | null>(null)
   const [recepcionAbierta, setRecepcionAbierta] = useState(false)
@@ -127,8 +129,15 @@ export default function CalibreApp() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
   const [subiendoLogo, setSubiendoLogo] = useState(false)
   const [guardandoConfiguracion, setGuardandoConfiguracion] = useState(false)
+  const [modalAnalisis, setModalAnalisis] = useState<any | null>(null)
 
   const router = useRouter()
+  
+  // 🔥 MEMORIA DE MECÁNICOS PREDICTIVA
+  const mecanicosUnicos = Array.from(new Set([
+      ...ordenesAbiertas.map(o => o.mecanico),
+      ...historial.map(o => o.mecanico)
+  ])).filter(m => m && m !== 'Sin asignar');
 
   const iniciarDictado = (setField: (val: string) => void, currentVal: string) => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -1171,7 +1180,18 @@ export default function CalibreApp() {
                                             </button>
                                         </div>
                                     </div>
-                                    <div className="bg-slate-800/30 backdrop-blur-sm p-3 rounded-xl mb-4 italic text-xs text-slate-400 border border-slate-700/50 line-clamp-2" title={o.descripcion}>"{o.descripcion}"</div>
+                                    
+                                    {/* 🔥 BOTÓN DE LA AMPOLLETA IA AQUÍ */}
+                                    <div className="flex justify-between items-start bg-slate-800/30 backdrop-blur-sm p-3 rounded-xl mb-4 border border-slate-700/50 group/desc">
+                                        <div className="italic text-xs text-slate-400 line-clamp-2" title={o.descripcion}>"{o.descripcion}"</div>
+                                        <button 
+                                            onClick={() => setModalAnalisis(o)} 
+                                            className="ml-2 bg-yellow-900/30 text-yellow-500 hover:bg-yellow-500 hover:text-slate-900 p-2 rounded-lg transition-all border border-yellow-700/50 shrink-0 shadow-sm hover:shadow-[0_0_15px_rgba(234,179,8,0.4)]" 
+                                            title="Analizar Falla con IA"
+                                        >
+                                            <Lightbulb size={14} />
+                                        </button>
+                                    </div>
                                     
                                     <div className="space-y-2 mb-4 max-h-40 overflow-y-auto custom-scrollbar-dark pr-1">
                                         {o.items_orden?.map((item: any) => (
@@ -1303,15 +1323,19 @@ export default function CalibreApp() {
                                   placeholder="Ej: 15000"
                               />
                           </div>
+                          {/* 🔥 MEMORIA PREDICTIVA DE MECÁNICOS AQUÍ */}
                           <div>
                               <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Mecánico Asignado</label>
                               <input 
-                                  type="text"
+                                  list="lista-mecanicos"
                                   value={mecanicoAsignado}
                                   onChange={(e) => setMecanicoAsignado(e.target.value)}
                                   className="w-full p-4 rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm text-sm text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all"
                                   placeholder="Opcional"
                               />
+                              <datalist id="lista-mecanicos">
+                                  {mecanicosUnicos.map(m => <option key={m} value={m} />)}
+                              </datalist>
                           </div>
                       </div>
 
@@ -1407,7 +1431,7 @@ export default function CalibreApp() {
           setInputGarantia={setInputGarantia}
           incluirIva={incluirIva}
           setIncluirIva={setIncluirIva}
-          esOnboarding={esOnboarding} // 🔥 Le pasamos el estado al modal
+          esOnboarding={esOnboarding} 
         />
       )}
 
@@ -1458,6 +1482,14 @@ export default function CalibreApp() {
           vehiculos={vehiculos}
           historial={historial}
           nombreTaller={nombreTaller}
+        />
+      )}
+
+      {/* 🔥 MODAL DE ANÁLISIS IA AQUÍ ABAJO */}
+      {modalAnalisis && (
+        <ModalAnalisisIA 
+          orden={modalAnalisis} 
+          onClose={() => setModalAnalisis(null)} 
         />
       )}
     </main>

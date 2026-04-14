@@ -4,7 +4,6 @@ import { useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { CheckCircle2, Circle, Clock, Wrench, Search, Package, CheckSquare, CarFront, AlertCircle } from 'lucide-react'
 
-// Definimos el orden lógico de los estados para la línea de tiempo
 const PASOS_PROCESO = [
   { id: 'Diagnóstico', nombre: 'Diagnóstico en curso', icono: Search, desc: 'Revisando el vehículo detalladamente.' },
   { id: 'Pendiente Aprobación', nombre: 'Presupuesto enviado', icono: Clock, desc: 'Esperando tu confirmación para proceder.' },
@@ -15,24 +14,22 @@ const PASOS_PROCESO = [
 
 export default function EstadoVehiculoCliente() {
   const params = useParams();
-  const idOrden = params.id as string;
+  const idOrden = params?.id as string;
 
   const [orden, setOrden] = useState<any>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
+    // Si aún no carga el ID de la URL, esperamos.
+    if (!idOrden) return;
+
     const fetchEstado = async () => {
-      if (!idOrden) return;
-      setCargando(true);
       try {
-        // Consultamos la orden, el vehículo y el nombre del taller (del metadata del usuario creador)
-        // NOTA: Para que esta consulta pública funcione con RLS activado, 
-        // asegúrate de tener una política que permita SELECT público a ordenes_trabajo por ID.
-        // Si no la tienes aún, la agregaremos en el siguiente paso.
+        // 🔥 Corrección: Ahora lee la tabla correcta 'talleres'
         const { data, error: err } = await supabase
           .from('ordenes_trabajo')
-          .select('*, vehiculos(*, clientes(nombre)), perfiles_talleres:taller_id(nombre_taller)') // Asumiendo que tienes una forma de traer el nombre, sino lo sacamos del metadata
+          .select('*, vehiculos(*, clientes(nombre)), talleres(nombre_taller)')
           .eq('id', idOrden)
           .single();
 
@@ -48,7 +45,6 @@ export default function EstadoVehiculoCliente() {
 
     fetchEstado();
 
-    // Sincronización en tiempo real (Opcional, pero le da un toque mágico)
     const channel = supabase.channel(`public:ordenes_trabajo:id=eq.${idOrden}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'ordenes_trabajo', filter: `id=eq.${idOrden}` }, (payload) => {
         setOrden((prev: any) => ({ ...prev, ...payload.new }));
@@ -79,22 +75,17 @@ export default function EstadoVehiculoCliente() {
     );
   }
 
-  // Lógica para determinar qué paso está activo
   const estadoActual = orden.estado === 'Finalizada' ? 'Listo para Entrega' : (orden.sub_estado || 'Diagnóstico');
   const indiceActual = PASOS_PROCESO.findIndex(p => p.id === estadoActual);
-  
-  // Ofuscamos la patente por privacidad (Ej: AB•CD•12)
   const patenteOculta = orden.vehiculos?.patente ? `${orden.vehiculos.patente.substring(0, 2)}•••${orden.vehiculos.patente.slice(-2)}` : 'S/N';
   const nombreCliente = orden.vehiculos?.clientes?.nombre ? orden.vehiculos.clientes.nombre.split(' ')[0] : 'Cliente';
+  const nombreTallerStr = orden.talleres?.nombre_taller || 'El Taller';
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 font-sans flex flex-col items-center relative overflow-hidden">
-      {/* Fondo decorativo */}
       <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[50%] bg-emerald-900/10 rounded-full blur-[120px] pointer-events-none z-0"></div>
 
       <div className="w-full max-w-xl relative z-10">
-        
-        {/* Cabecera Taller */}
         <header className="mb-10 text-center">
           <div className="inline-flex items-center justify-center p-3 bg-slate-900 border border-slate-800 rounded-2xl mb-4 shadow-xl">
              <CarFront className="text-emerald-500" size={32} />
@@ -103,11 +94,10 @@ export default function EstadoVehiculoCliente() {
              Estado de tu Vehículo
           </h1>
           <p className="text-emerald-400 font-bold tracking-widest uppercase text-xs">
-            Actualizado en tiempo real
+            {nombreTallerStr}
           </p>
         </header>
 
-        {/* Tarjeta de Información del Vehículo */}
         <section className="bg-slate-900/50 backdrop-blur-md rounded-3xl p-6 border border-slate-800 shadow-2xl mb-8">
             <h2 className="text-slate-400 font-bold uppercase tracking-wider text-[10px] mb-1">Hola, {nombreCliente}</h2>
             <div className="flex justify-between items-end">
@@ -123,7 +113,6 @@ export default function EstadoVehiculoCliente() {
             </div>
         </section>
 
-        {/* Línea de Tiempo (Timeline) */}
         <section className="bg-slate-900/40 backdrop-blur-md rounded-3xl p-6 border border-slate-800 shadow-xl mb-12">
             <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-6 border-b border-slate-800 pb-4">Progreso de la Reparación</h3>
             
@@ -131,13 +120,10 @@ export default function EstadoVehiculoCliente() {
                 {PASOS_PROCESO.map((paso, index) => {
                     const completado = index < indiceActual;
                     const activo = index === indiceActual;
-                    const pendiente = index > indiceActual;
-                    
                     const Icono = paso.icono;
 
                     return (
                         <div key={paso.id} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
-                            {/* Icono central */}
                             <div className={`flex items-center justify-center w-10 h-10 rounded-full border-4 shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-xl z-10 transition-colors duration-500
                                 ${completado ? 'bg-emerald-500 border-emerald-900 text-slate-950' : 
                                   activo ? 'bg-blue-500 border-blue-900 text-slate-950 animate-pulse' : 
@@ -146,9 +132,8 @@ export default function EstadoVehiculoCliente() {
                                 {completado ? <CheckCircle2 size={20} /> : <Icono size={18} />}
                             </div>
 
-                            {/* Contenido (Texto) */}
-                            <div className="w-[calc(100%-3rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-2xl transition-all duration-300
-                                ${activo ? 'bg-slate-800/80 border border-slate-700 shadow-lg' : 'bg-transparent border border-transparent'}">
+                            <div className={`w-[calc(100%-3rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-2xl transition-all duration-300
+                                ${activo ? 'bg-slate-800/80 border border-slate-700 shadow-lg' : 'bg-transparent border border-transparent'}`}>
                                 <h4 className={`font-black text-sm uppercase tracking-wider mb-1 
                                     ${completado ? 'text-slate-300' : activo ? 'text-blue-400' : 'text-slate-600'}`}>
                                     {paso.nombre}
@@ -164,16 +149,13 @@ export default function EstadoVehiculoCliente() {
             </div>
         </section>
 
-        {/* Footer Comercial (La "trampa" de marketing) */}
         <footer className="text-center pb-8">
             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Transparencia garantizada por</p>
             <div className="flex items-center justify-center gap-2 text-slate-300">
                 <Wrench className="text-emerald-500" size={16} />
                 <span className="font-black text-xl tracking-tighter">CALIBRE</span>
             </div>
-            <p className="text-[8px] text-slate-600 mt-2 font-bold">SOFTWARE PARA TALLERES MODERNOS</p>
         </footer>
-
       </div>
     </main>
   )
