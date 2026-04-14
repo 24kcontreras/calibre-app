@@ -8,6 +8,7 @@ export async function POST(req: Request) {
     const { falla, vehiculo } = await req.json();
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
+    //backticks literales del texto del prompt
     const prompt = `Actúa como un Ingeniero Mecánico Automotriz Experto. 
     Vehículo: ${vehiculo.marca} ${vehiculo.modelo} ${vehiculo.anho || ''}.
     Falla reportada por el cliente: "${falla}".
@@ -17,7 +18,7 @@ export async function POST(req: Request) {
     2. Recomendaciones de pruebas de diagnóstico (qué medir, qué sensores revisar).
     3. Precauciones o fallas crónicas conocidas de este modelo que podrían estar relacionadas.
     
-    Devuelve la respuesta en formato HTML limpio usando etiquetas <h3>, <p>, <ul>, <li> y <strong>. No uses Markdown ni bloques de código (```html). Mantenlo directo y técnico.`;
+    Devuelve la respuesta en formato HTML limpio usando etiquetas <h3>, <p>, <ul>, <li> y <strong>. No uses Markdown ni bloques de código HTML. Mantenlo directo y técnico.`;
 
     const result = await model.generateContent(prompt);
     const texto = result.response.text().replace(/```html|```/g, '');
