@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import imageCompression from 'browser-image-compression'
 import Login from '@/components/Login'
 import CAR_DATA from './autos.json'
-import { Edit2, Lightbulb ,Trash2, FileText, Clock, User, CheckCircle, Search, Bot, Plus, Wrench, ChevronRight, Info, MessageSquare, Mic, AlertTriangle, Megaphone, Settings, ChevronDown, Camera, Share2, Circle, CheckCircle2 } from 'lucide-react'
+import { Edit2, Lightbulb ,Trash2, FileText, Clock, User, CheckCircle, Search, Bot, Plus, Wrench, ChevronRight, Info, MessageSquare, Mic, AlertTriangle, Megaphone, Settings, ChevronDown, Camera, Share2, Circle, CheckCircle2, X } from 'lucide-react'
 import toast, { Toaster } from 'react-hot-toast'
 
 // 🚀 COMPONENTES EXTERNOS
@@ -33,11 +33,15 @@ const COLOR_ESTADO: Record<string, string> = {
   'Listo para Entrega': 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50'
 };
 
-// 🔥 VALIDADOR DE RUT BLINDADO OFICIAL
+// 🔥 VALIDADOR DE RUT CON BYPASS PARA EXTRANJEROS
 const validarRutChileno = (rutCompleto: string) => {
   if (!rutCompleto) return false;
   
   const rutLimpio = rutCompleto.replace(/[^0-9kK]/g, '').toUpperCase();
+  
+  // 🔥 Bypass: Si es el RUT genérico, lo dejamos pasar
+  if (rutLimpio === '111111111') return true;
+
   if (rutLimpio.length < 8) return false;
 
   const cuerpo = rutLimpio.slice(0, -1);
@@ -72,7 +76,6 @@ export default function CalibreApp() {
   const [ordenesAbiertas, setOrdenesAbiertas] = useState<any[]>([])
   const [historial, setHistorial] = useState<any[]>([])
   
-  const [vehiculoSeleccionado, setVehiculoSeleccionado] = useState<any | null>(null)
   const [vehiculoInfo, setVehiculoInfo] = useState<any | null>(null)
   const [recepcionAbierta, setRecepcionAbierta] = useState(false)
   
@@ -80,9 +83,16 @@ export default function CalibreApp() {
   const [descripcionOrden, setDescripcionOrden] = useState('')
   const [valorDiagnostico, setValorDiagnostico] = useState('')
   const [mecanicoAsignado, setMecanicoAsignado] = useState('')
-  const [kilometrajeOrden, setKilometrajeOrden] = useState('') // 🔥 ESTADO DE KILOMETRAJE
+  const [kilometrajeOrden, setKilometrajeOrden] = useState('') 
   const [creandoOrden, setCreandoOrden] = useState(false)
   
+  // 🔥 ESTADOS PARA EDITAR LA ORDEN
+  const [modalEditarOrden, setModalEditarOrden] = useState<any | null>(null)
+  const [editFalla, setEditFalla] = useState('')
+  const [editKm, setEditKm] = useState('')
+  const [editMecanico, setEditMecanico] = useState('')
+  const [guardandoEdicion, setGuardandoEdicion] = useState(false)
+
   const [escuchando, setEscuchando] = useState(false)
 
   const [modalCaja, setModalCaja] = useState(false)
@@ -116,7 +126,6 @@ export default function CalibreApp() {
   const [resultadoScanner, setResultadoScanner] = useState<any>(null)
   const [cargandoScanner, setCargandoScanner] = useState(false)
 
-  // 🔥 ESTADOS PARA CONFIGURACIÓN DEL TALLER Y ONBOARDING
   const [esOnboarding, setEsOnboarding] = useState(false)
   const [nombreTaller, setNombreTaller] = useState('MI TALLER')
   const [inputTaller, setInputTaller] = useState('')
@@ -133,7 +142,6 @@ export default function CalibreApp() {
 
   const router = useRouter()
   
-  // 🔥 MEMORIA DE MECÁNICOS PREDICTIVA
   const mecanicosUnicos = Array.from(new Set([
       ...ordenesAbiertas.map(o => o.mecanico),
       ...historial.map(o => o.mecanico)
@@ -180,7 +188,6 @@ export default function CalibreApp() {
     }
   };
 
-  // 🔥 NUEVA LÓGICA DE ONBOARDING EN LA CARGA
   const extraerDatosConfiguracion = (metadata: any) => {
       if (!metadata || !metadata.nombre_taller) {
           setNombreTaller('MI TALLER');
@@ -367,13 +374,62 @@ export default function CalibreApp() {
       setDescripcionOrden(''); 
       setValorDiagnostico('');
       setMecanicoAsignado('');
-      setKilometrajeOrden(''); // 🔥 Limpiamos el kilometraje
+      setKilometrajeOrden('');
       setModalNuevaOrden(vehiculo);
   }
 
   const abrirModalAlerta = (orden: any) => {
       setAlertaForm({ pieza: '', nivel_riesgo: 'Amarillo', observacion: '' });
       setModalAlerta(orden);
+  }
+
+  // 🔥 NUEVO: Función para abrir el modal de edición de orden
+  const abrirModalEditarOrden = (orden: any) => {
+      setEditFalla(orden.descripcion || '');
+      setEditKm(orden.kilometraje?.toString() || '');
+      setEditMecanico(orden.mecanico && orden.mecanico !== 'Sin asignar' ? orden.mecanico : '');
+      setModalEditarOrden(orden);
+  }
+
+  // 🔥 NUEVO: Función para guardar los cambios de la edición
+  const guardarEdicionOrden = async () => {
+      setGuardandoEdicion(true);
+      try {
+          const { error } = await supabase.from('ordenes_trabajo').update({
+              descripcion: editFalla,
+              kilometraje: editKm ? parseInt(editKm) : null,
+              mecanico: editMecanico.trim() || 'Sin asignar'
+          }).eq('id', modalEditarOrden.id);
+
+          if (error) throw error;
+          
+          toast.success("Orden actualizada correctamente");
+          setModalEditarOrden(null);
+          await cargarTodo();
+      } catch (error: any) {
+          toast.error("Error al editar la orden");
+      } finally {
+          setGuardandoEdicion(false);
+      }
+  }
+
+  // 🔥 NUEVO: Función para anular (eliminar) una orden abierta
+  const anularOrden = async (idOrden: string) => {
+      if (!window.confirm("¿Estás seguro de ANULAR y borrar esta orden? Esta acción no se puede deshacer y borrará los ítems asociados.")) return;
+      
+      try {
+          // Borramos en cascada manual por seguridad: fotos -> items -> orden
+          await supabase.from('fotos_orden').delete().eq('orden_id', idOrden);
+          await supabase.from('items_orden').delete().eq('orden_id', idOrden);
+          const { error } = await supabase.from('ordenes_trabajo').delete().eq('id', idOrden);
+          
+          if (error) throw error;
+          
+          toast.success("Orden anulada y eliminada");
+          await cargarTodo();
+      } catch (error: any) {
+          toast.error("Error al anular la orden");
+      }
   }
 
   const guardarAlertaBD = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -454,7 +510,6 @@ export default function CalibreApp() {
       }
 
       try {
-          // 🔥 INSERTAMOS LA ORDEN CON EL KILOMETRAJE INCLUIDO
           const { data: nuevaOrden, error: errorOrden } = await supabase.from('ordenes_trabajo').insert([{
               vehiculo_id: modalNuevaOrden.id,
               estado: 'Abierta',
@@ -659,7 +714,6 @@ export default function CalibreApp() {
       }
   }
 
-  // 🔥 NUEVA FUNCIÓN PARA MARCAR ITEM COMO REALIZADO EN EL CHECKLIST
   const toggleItemRealizado = async (idItem: string, estadoActual: boolean) => {
       try {
           const { error } = await supabase.from('items_orden').update({ realizado: !estadoActual }).eq('id', idItem);
@@ -962,7 +1016,7 @@ export default function CalibreApp() {
                   <input 
                       name="rut_cliente" 
                       value={rutInput}
-                      placeholder="RUT" 
+                      placeholder="RUT (Opcional)" 
                       onChange={handleRutChange} 
                       className={`w-full p-3 rounded-2xl bg-slate-900/50 backdrop-blur-sm text-sm text-slate-200 outline-none transition-all border ${
                           isRutInvalid 
@@ -1074,7 +1128,6 @@ export default function CalibreApp() {
                         </div>
                         
                         <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
-                            {/* 🔥 BOTÓN PARA VER Y EDITAR AL CLIENTE */}
                             <button onClick={() => setVehiculoInfo(v)} className="bg-slate-700/50 text-emerald-400 p-1.5 rounded-lg hover:bg-slate-600 transition-colors" title="Ver Detalles">
                                 <Info size={12} />
                             </button>
@@ -1171,7 +1224,7 @@ export default function CalibreApp() {
 
                                             <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest truncate">
                                                 {o.vehiculos?.marca} {o.vehiculos?.modelo} 
-                                                {o.kilometraje ? ` • ${o.kilometraje.toLocaleString()} KM` : ''} {/* 🔥 MUESTRA EL KILOMETRAJE AQUÍ */}
+                                                {o.kilometraje ? ` • ${o.kilometraje.toLocaleString()} KM` : ''}
                                             </p>
                                             
                                             <div className="flex items-center gap-1 mt-2 text-[9px] font-bold text-slate-400 bg-slate-950/50 w-fit px-2 py-1 rounded border border-slate-800">
@@ -1199,26 +1252,32 @@ export default function CalibreApp() {
                                     
                                     <div className="flex justify-between items-start bg-slate-800/30 backdrop-blur-sm p-3 rounded-xl mb-4 border border-slate-700/50 group/desc">
                                         <div className="italic text-xs text-slate-400 line-clamp-2" title={o.descripcion}>"{o.descripcion}"</div>
-                                        <button 
-                                            onClick={() => setModalAnalisis(o)} 
-                                            className="ml-2 bg-yellow-900/30 text-yellow-500 hover:bg-yellow-500 hover:text-slate-900 p-2 rounded-lg transition-all border border-yellow-700/50 shrink-0 shadow-sm hover:shadow-[0_0_15px_rgba(234,179,8,0.4)]" 
-                                            title="Analizar Falla con IA"
-                                        >
-                                            <Lightbulb size={14} />
-                                        </button>
+                                        <div className="flex gap-1 shrink-0">
+                                            {/* 🔥 NUEVO BOTÓN: EDITAR ORDEN */}
+                                            <button 
+                                                onClick={() => abrirModalEditarOrden(o)} 
+                                                className="ml-2 bg-blue-900/30 text-blue-500 hover:bg-blue-500 hover:text-slate-900 p-2 rounded-lg transition-all border border-blue-700/50 shadow-sm" 
+                                                title="Editar Orden (KM, Falla, Mecánico)"
+                                            >
+                                                <Edit2 size={14} />
+                                            </button>
+                                            <button 
+                                                onClick={() => setModalAnalisis(o)} 
+                                                className="bg-yellow-900/30 text-yellow-500 hover:bg-yellow-500 hover:text-slate-900 p-2 rounded-lg transition-all border border-yellow-700/50 shadow-sm hover:shadow-[0_0_15px_rgba(234,179,8,0.4)]" 
+                                                title="Analizar Falla con IA"
+                                            >
+                                                <Lightbulb size={14} />
+                                            </button>
+                                        </div>
                                     </div>
                                     
                                     <div className="space-y-2 mb-4 max-h-40 overflow-y-auto custom-scrollbar-dark pr-1">
-                                        {/* 🔥 CHECKLIST: ÍTEMS MARCADOS COMO REALIZADOS SE VEN DISTINTOS */}
                                         {o.items_orden?.map((item: any) => (
                                             <div key={item.id} className={`flex justify-between items-center text-[9px] font-bold backdrop-blur-sm p-2.5 rounded-xl border group/item transition-colors ${item.realizado ? 'bg-emerald-900/10 border-emerald-900/30 opacity-70' : 'bg-slate-950/50 border-slate-800/50 hover:border-slate-700'}`}>
                                                 <div className="flex items-center gap-2 flex-1 pr-2 overflow-hidden">
-                                                    
-                                                    {/* 🔥 BOTÓN CHECKLIST MÁGICO */}
                                                     <button onClick={() => toggleItemRealizado(item.id, item.realizado)} className="shrink-0 hover:scale-110 transition-transform">
                                                         {item.realizado ? <CheckCircle2 className="text-emerald-500" size={14} /> : <Circle className="text-slate-600 hover:text-emerald-500/50" size={14} />}
                                                     </button>
-                                                    
                                                     <div>
                                                         <span className={`uppercase block truncate ${item.realizado ? 'text-slate-500 line-through' : 'text-slate-300'}`}>{item.descripcion}</span>
                                                         {!item.realizado && <span className="text-slate-600 block">({item.procedencia})</span>}
@@ -1241,9 +1300,18 @@ export default function CalibreApp() {
                                     </div>
                                 </div>
                                 <div className="flex justify-between items-center pt-4 border-t border-slate-800/50 mt-auto">
-                                    <div>
+                                    <div className="flex items-center gap-2">
                                         <p className="font-black text-emerald-400 text-2xl mb-1">${o.items_orden?.reduce((s:number,i:any)=>s+i.precio,0).toLocaleString()}</p>
                                         
+                                        {/* 🔥 NUEVO BOTÓN: ANULAR ORDEN */}
+                                        <button 
+                                            onClick={() => anularOrden(o.id)} 
+                                            className="text-[8px] font-black text-red-400 bg-red-500/10 border border-red-500/30 px-2 py-1 rounded hover:bg-red-500/30 transition-colors uppercase tracking-widest"
+                                            title="Anular y borrar orden del sistema"
+                                        >
+                                            Anular
+                                        </button>
+
                                         {o.items_orden?.length > 0 && (
                                             <button onClick={() => solicitarAprobacion(o)} className="flex items-center gap-1 text-[8px] font-black text-green-400 bg-green-500/10 border border-green-500/30 px-2 py-1 rounded hover:bg-green-500/30 transition-colors uppercase tracking-widest">
                                                 <MessageSquare size={10}/> Aprobar
@@ -1304,6 +1372,66 @@ export default function CalibreApp() {
       </div>
 
       {/* MODALES */}
+
+      {/* 🔥 MODAL PARA EDITAR ORDEN */}
+      {modalEditarOrden && (
+          <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+              <div className="bg-slate-900/90 backdrop-blur-md border border-blue-700/50 rounded-[35px] p-8 w-full max-w-lg shadow-2xl relative overflow-hidden">
+                  <div className="absolute -top-20 -right-20 w-40 h-40 bg-blue-500/10 rounded-full blur-[50px] pointer-events-none"></div>
+                  
+                  <h3 className="text-2xl font-black text-slate-100 uppercase tracking-tighter mb-2 relative z-10 flex items-center gap-2">
+                      <Edit2 className="text-blue-500"/> Editar Orden
+                  </h3>
+                  <p className="text-sm text-slate-400 mb-6 relative z-10 font-bold">
+                      Actualiza los datos de la orden activa.
+                  </p>
+
+                  <div className="space-y-4 relative z-10">
+                      <div>
+                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Problema Reportado</label>
+                          <textarea 
+                              value={editFalla}
+                              onChange={(e) => setEditFalla(e.target.value)}
+                              className="w-full p-4 rounded-2xl border border-slate-700/50 bg-slate-950/50 text-sm text-slate-200 outline-none focus:border-blue-500/50 transition-all min-h-[80px] resize-none"
+                          />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                          <div className="col-span-1">
+                              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">KM Actual</label>
+                              <input 
+                                  type="number"
+                                  value={editKm}
+                                  onChange={(e) => setEditKm(e.target.value)}
+                                  className="w-full p-4 rounded-2xl border border-slate-700/50 bg-slate-950/50 text-sm text-slate-200 outline-none focus:border-blue-500/50 transition-all"
+                              />
+                          </div>
+                          
+                          <div className="col-span-1">
+                              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Mecánico Asig.</label>
+                              <input 
+                                  list="lista-mecanicos"
+                                  value={editMecanico}
+                                  onChange={(e) => setEditMecanico(e.target.value)}
+                                  className="w-full p-4 rounded-2xl border border-slate-700/50 bg-slate-950/50 text-sm text-slate-200 outline-none focus:border-blue-500/50 transition-all"
+                              />
+                          </div>
+                      </div>
+
+                      <div className="flex gap-3 pt-4">
+                          <button onClick={() => setModalEditarOrden(null)} disabled={guardandoEdicion} className="flex-1 bg-transparent border border-slate-700/50 text-slate-400 py-4 rounded-full text-xs font-black uppercase tracking-wider transition-colors">
+                              Cancelar
+                          </button>
+                          <button onClick={guardarEdicionOrden} disabled={guardandoEdicion} className="flex-1 bg-blue-600 text-slate-100 py-4 rounded-full text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2">
+                              {guardandoEdicion ? 'Guardando...' : 'Guardar Cambios'}
+                          </button>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      )}
+
+      {/* MODAL NUEVA ORDEN */}
       {modalNuevaOrden && (
           <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
               <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700/50 rounded-[35px] p-8 w-full max-w-lg shadow-[0_0_40px_rgba(16,185,129,0.1)] relative overflow-hidden">
@@ -1336,7 +1464,6 @@ export default function CalibreApp() {
                           </div>
                       </div>
 
-                      {/* 🔥 GRILLA DE 3 COLUMNAS CON EL KILOMETRAJE INCORPORADO */}
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           <div className="col-span-1">
                               <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">KM Actual</label>
@@ -1471,7 +1598,6 @@ export default function CalibreApp() {
         />
       )}
 
-      {/* 🔥 MODAL VEHICULO INFO (AHORA CON reCargarGlobal PASADO COMO PROP) */}
       {vehiculoInfo && (
         <ModalVehiculoInfo 
           vehiculoInfo={vehiculoInfo}

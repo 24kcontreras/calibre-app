@@ -132,7 +132,8 @@ export const generarDocumentoPDF = async (o: any, resumenIA: string = "", config
 
         doc.setFont("helvetica", "normal");
         doc.setTextColor(15, 23, 42);
-        doc.text(`${o.kilometraje_entrada?.toLocaleString('es-CL') || 0} km`, 135, startYCaja + 7);
+        // 🔥 CORRECCIÓN DEL KILOMETRAJE AQUÍ (cambiamos kilometraje_entrada a kilometraje)
+        doc.text(o.kilometraje ? `${o.kilometraje.toLocaleString('es-CL')} km` : 'No registrado', 135, startYCaja + 7);
         doc.text(`${o.mecanico && o.mecanico !== 'Sin asignar' ? o.mecanico.toUpperCase() : 'TALLER'}`, 135, startYCaja + 14);
         doc.text(`#${o.id.toString().slice(0, 8).toUpperCase()}`, 135, startYCaja + 21);
 
