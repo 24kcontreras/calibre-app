@@ -1,77 +1,119 @@
-# 🚀 CALIBRE - El Taller del Futuro
+🔧 CALIBRE (Neural Garage OS)
+CALIBRE es una plataforma SaaS (Software as a Service) de nueva generación diseñada específicamente para digitalizar, automatizar y optimizar la gestión de talleres mecánicos automotrices.
 
-CALIBRE es un software SaaS premium diseñado para modernizar y optimizar la gestión de talleres mecánicos. Permite administrar clientes, vehículos, órdenes de trabajo, evidencia fotográfica, y finanzas, integrando Inteligencia Artificial para diagnósticos y resúmenes automáticos.
+Construida con un enfoque en la transparencia hacia el cliente y la asistencia técnica mediante Inteligencia Artificial, CALIBRE elimina el papeleo, reduce las llamadas de clientes ansiosos y convierte un taller tradicional en una experiencia premium.
 
-## ✨ Características Principales
+🚀 Killer Features (Características Principales)
+📱 1. Live Tracker (Experiencia del Cliente)
+Inspirado en la logística de apps como Uber o Cornershop. Cada orden de trabajo genera un enlace único y encriptado que se envía al cliente vía WhatsApp. El cliente puede ver en tiempo real el avance de su vehículo (Diagnóstico > Esperando Repuestos > En Reparación > Listo para Entrega) sin necesidad de descargar aplicaciones ni crear contraseñas.
 
-* **Pizarra Activa:** Sistema Kanban visual para gestionar el estado de los vehículos en tiempo real (Diagnóstico, Reparando, Listo, etc.).
-* **Recepción Ágil:** Registro de clientes (RUT) y vehículos (Patente, Marca, Modelo) con validaciones y auto-completado.
-* **Gestión de Órdenes:** Creación de presupuestos, asignación de mecánicos y control de repuestos/servicios.
-* **Scanner IA:** Integración con IA para leer códigos de error (OBD2) y sugerir planes de acción.
-* **Módulo de Evidencia:** Subida de fotos del estado del vehículo comprimidas automáticamente y guardadas en la nube.
-* **Generación de PDF y Correo:** Creación automática de informes detallados y envío directo al WhatsApp o correo del cliente.
-* **Telemetría y Finanzas:** Dashboard interactivo con el flujo de caja, métricas de rendimiento y ticket promedio.
+💡 2. Segunda Opinión IA ("La Ampolleta")
+Integración nativa con Google Gemini 2.5 Flash. Al ingresar una falla reportada por el cliente, el mecánico puede consultar a la IA para recibir un análisis técnico que incluye:
 
----
+Las 3 causas más probables para ese modelo y año específico.
 
-## 🛠️ Stack Tecnológico
+Qué sensores medir y qué pruebas realizar antes de desarmar.
 
-* **Frontend:** Next.js (App Router), React, TypeScript.
-* **Estilos:** Tailwind CSS (Arquitectura Glassmorphism, UI oscura y resplandores de neón).
-* **Backend & Base de Datos:** Supabase (PostgreSQL, Authentication, Storage).
-* **Procesamiento IA:** OpenAI API (Para Scanner y Resúmenes de cierre de orden).
-* **Utilidades:** * `pdfmake` (Generación de documentos PDF).
-    * `browser-image-compression` (Optimización de fotos).
-    * `lucide-react` (Iconografía).
-    * `react-hot-toast` (Sistema de notificaciones emergentes).
+Fallas crónicas conocidas del vehículo.
 
----
+📋 3. Pizarra Activa & Checklist Interactivo
+Interfaz tipo Kanban para la gestión del taller. Los mecánicos visualizan las órdenes abiertas y pueden interactuar con un To-Do List (Checklist) de repuestos y servicios, marcando visualmente lo que ya está completado para evitar errores de ensamblaje u olvidos en el cobro.
 
-## 📂 Arquitectura del Proyecto (Mapa de Archivos)
+📊 4. Telemetría y Dashboard Financiero
+Un centro de mando en tiempo real que calcula:
 
-Para mantener el código limpio y escalable, el proyecto está modularizado de la siguiente manera:
+Ganancias del mes y Ticket Promedio.
 
-### 1. Núcleo (Página Principal)
-* `src/app/taller/page.tsx`: Es el cerebro del Taller. Mantiene los estados globales, hace las consultas a Supabase y renderiza la Pizarra Activa y la sección de Recepción.
+División porcentual de ingresos (Mano de Obra vs. Venta de Repuestos).
 
-### 2. Componentes UI
-* `src/components/Header.tsx`: Barra de navegación superior con métricas rápidas y botones de acceso a modales.
-* `src/components/Login.tsx`: Pantalla de inicio de sesión.
+Top Marcas más rentables y rendimiento por mecánico.
 
-### 3. Modales (Sistema de Ventanas)
-Toda la lógica secundaria fue extraída a la carpeta `src/components/modals/` para evitar saturar la página principal:
-* `ModalVehiculoInfo.tsx`: Muestra la ficha técnica del vehículo y su cliente.
-* `ModalTelemetria.tsx`: Dashboard financiero y estadísticas del mes.
-* `ModalScanner.tsx`: Interfaz para consultar códigos a la IA.
-* `ModalItem.tsx`: Formulario para agregar repuestos/servicios a una orden.
-* `ModalHistorial.tsx`: Tabla con todas las órdenes finalizadas.
-* `ModalEvidencia.tsx`: Cámara y subida de fotos del auto a Supabase.
-* `ModalConfiguracion.tsx`: Ajustes del taller (nombre) y botón de cierre de sesión.
-* `ModalCaja.tsx`: Resumen de ingresos brutos.
+Flujo de caja histórico detallado.
 
-### 4. Utilidades y APIs
-* `src/utils/pdfGenerator.ts`: Motor de creación de facturas e informes en base64.
-* `src/app/api/`: Carpeta que contiene los Endpoints (Rutas de servidor) para conectarse de forma segura a OpenAI y Resend (Correos).
-* `src/app/globals.css`: Contiene las directivas de Tailwind y estilos personalizados (como la *custom-scrollbar* verde esmeralda).
+🤖 5. Agenda Predictiva y Ficha Clínica
+El sistema registra el kilometraje y guarda "Alertas de Desgaste" (Preventivas o Urgentes). Un algoritmo evalúa el tiempo transcurrido y alerta al taller para enviar campañas de marketing o recordatorios automáticos por WhatsApp (ej. "Toca cambio de aceite" o "Quedó pendiente el cambio de pastillas").
 
----
+📄 6. Generación de Informes Técnicos PDF
+Generación de documentos formales listos para imprimir o enviar, que incluyen:
 
-## 🗄️ Estructura de Base de Datos (Supabase)
+Resumen generado por IA del trabajo realizado.
 
-El sistema opera bajo las siguientes tablas conectadas por relaciones relacionales (Foreign Keys):
+Evidencia fotográfica del desgaste o reparación.
 
-1.  **`clientes`**: `id`, `rut`, `nombre`, `telefono`, `taller_id`.
-2.  **`vehiculos`**: `id`, `patente`, `marca`, `modelo`, `anho`, `cliente_id`, `taller_id`.
-3.  **`ordenes_trabajo`**: `id`, `vehiculo_id`, `estado` (Abierta/Finalizada), `sub_estado`, `descripcion`, `mecanico`, `resumen_ia`.
-4.  **`items_orden`**: `id`, `orden_id`, `descripcion`, `precio`, `tipo_item` (repuesto/servicio), `procedencia`.
-5.  **`fotos_orden`**: `id`, `orden_id`, `url`, `descripcion`.
+Detalle de costos, cálculos de IVA y términos de garantía.
 
----
+Logo personalizado del taller.
 
-## ⚙️ Configuración e Instalación Local
+🛠️ Stack Tecnológico
+Frontend: Next.js (App Router), React, Tailwind CSS, Lucide Icons.
 
-### 1. Clonar el repositorio y bajar dependencias
-```bash
-git clone [https://github.com/tu-usuario/calibre-app.git](https://github.com/tu-usuario/calibre-app.git)
+Backend & Base de Datos: Supabase (PostgreSQL), Supabase Auth, Row Level Security (RLS).
+
+Storage: Supabase Storage (Buckets para Logos y Evidencia fotográfica).
+
+Inteligencia Artificial: Google Generative AI SDK (gemini-2.5-flash).
+
+Utilidades: jspdf y jspdf-autotable (Informes), browser-image-compression (Optimización de imágenes), Web Share API (Compartir nativo).
+
+Hosting: Vercel.
+
+⚙️ Instalación y Configuración Local
+Clonar el repositorio:
+
+Bash
+git clone https://github.com/tu-usuario/calibre-app.git
 cd calibre-app
+Instalar dependencias:
+
+Bash
 npm install
+Configurar Variables de Entorno:
+Crea un archivo .env.local en la raíz del proyecto y agrega las siguientes credenciales:
+
+Fragmento de código
+NEXT_PUBLIC_SUPABASE_URL=tu_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=tu_supabase_anon_key
+GEMINI_API_KEY=tu_google_gemini_api_key
+Configuración de Supabase:
+
+Habilita la autenticación por Email/Password o Google OAuth.
+
+Crea los buckets de Storage: logos y evidencia (Ambos públicos).
+
+Ejecuta las políticas RLS correspondientes para permitir la lectura pública de órdenes para el Live Tracker.
+
+Ejecutar el servidor de desarrollo:
+
+Bash
+npm run dev
+Abre http://localhost:3000 en tu navegador.
+
+🗄️ Estructura de la Base de Datos (Supabase)
+El ecosistema se sostiene sobre las siguientes tablas relacionales clave:
+
+clientes: Guarda información de contacto (RUT, Nombre, Teléfono, Correo).
+
+vehiculos: Vinculado a clientes. Guarda Patente, Marca, Modelo, Año.
+
+ordenes_trabajo: El núcleo. Registra estados, subtotales, kilometraje, mecánicos asignados y resúmenes IA.
+
+items_orden: Tareas individuales (Servicios o Repuestos) con estado booleano de realizado.
+
+fotos_orden: Referencias a las URLs de Supabase Storage para evidencia.
+
+alertas_desgaste: Registro de componentes a vigilar con niveles de riesgo (Amarillo/Rojo).
+
+🌍 Casos de Uso (Flujo de Trabajo Típico)
+Recepción: El vehículo ingresa. El asesor ingresa la patente y el kilometraje. Si es nuevo, el validador de RUT y los selectores predictivos de marcas agilizan el proceso.
+
+Pizarra: El vehículo aparece en la Pizarra Activa. Se levanta el diagnóstico (asistido por IA si hay dudas).
+
+Cotización: Se agregan los ítems al Checklist. Con un clic, se envía el Presupuesto + Link de Seguimiento por WhatsApp al cliente.
+
+Reparación: El mecánico marca los ítems como realizados en la tablet/celular y sube fotos de las piezas dañadas.
+
+Entrega: Se presiona "Listo". El sistema genera el PDF, avisa al cliente por WhatsApp, mueve el dinero a la Caja Histórica y archiva el vehículo para futuras campañas predictivas.
+
+👨‍💻 Autor
+Desarrollado y diseñado por Basty.
+Pensado para revolucionar la industria automotriz en Chile y por qué no? LATAM!

@@ -1,18 +1,4 @@
-import { Activity, DollarSign, TrendingUp, User } from 'lucide-react'
-
-// Definimos qué datos necesita recibir este componente desde la página principal
-interface ModalTelemetriaProps {
-  onClose: () => void;
-  gananciasEsteMes: number;
-  autosEsteMes: number;
-  ticketPromedio: number;
-  pctServicio: number;
-  pctRepuesto: number;
-  ingresosServicio: number;
-  ingresosRepuesto: number;
-  topMarcas: [string, number][];
-  topMecanicos: [string, number][];
-}
+import { X, BarChart3, TrendingUp, CarFront, Wrench, Package, DollarSign, Wallet, Calendar, CheckCircle2 } from 'lucide-react';
 
 export default function ModalTelemetria({
   onClose,
@@ -24,113 +10,143 @@ export default function ModalTelemetria({
   ingresosServicio,
   ingresosRepuesto,
   topMarcas,
-  topMecanicos
-}: ModalTelemetriaProps) {
-  
+  topMecanicos,
+  historial // 🔥 Recibimos el historial completo aquí
+}: any) {
   return (
-    <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 z-[200]">
-      <div className="bg-slate-900 rounded-[40px] shadow-2xl max-w-6xl w-full border border-slate-800 flex flex-col max-h-[90vh]">
-        <div className="p-8 border-b border-slate-800 flex justify-between items-center bg-slate-900 shrink-0">
-          <div>
-            <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-100 flex items-center gap-2">
-                <Activity className="text-blue-500"/> Telemetría y Rendimiento
-            </h3>
-            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">Métricas operativas en tiempo real</p>
-          </div>
-          <button onClick={onClose} className="text-slate-500 hover:text-red-400 font-black text-xl p-2 bg-slate-800 rounded-full transition-colors border border-slate-700 w-10 h-10 flex items-center justify-center">✕</button>
-        </div>
+    <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 z-[999]">
+      <div className="bg-slate-900 border border-slate-700/50 rounded-[35px] shadow-2xl max-w-4xl w-full relative overflow-hidden flex flex-col max-h-[90vh]">
         
-        <div className="p-8 overflow-y-auto custom-scrollbar-dark flex-1">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+        {/* Fondo decorativo */}
+        <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-emerald-500/10 rounded-full blur-[80px] pointer-events-none z-0"></div>
+
+        <div className="flex justify-between items-center p-6 lg:p-8 border-b border-slate-800/50 relative z-10 shrink-0">
+          <div>
+            <h2 className="text-2xl font-black text-slate-100 uppercase tracking-tighter flex items-center gap-2">
+                <BarChart3 className="text-emerald-500" /> Dashboard & Caja
+            </h2>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Rendimiento financiero del taller</p>
+          </div>
+          <button onClick={onClose} className="text-slate-500 hover:text-emerald-400 bg-slate-950/50 p-2 rounded-full border border-slate-800 transition-all hover:scale-110">
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="p-6 lg:p-8 overflow-y-auto custom-scrollbar-dark relative z-10">
+          
+          {/* Tarjetas Principales */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="bg-slate-950/50 p-5 rounded-3xl border border-emerald-900/30 relative overflow-hidden group">
+              <div className="absolute -right-4 -bottom-4 text-emerald-500/10 group-hover:text-emerald-500/20 transition-colors"><DollarSign size={80}/></div>
+              <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1 relative z-10">Ingresos del Mes</p>
+              <p className="text-3xl font-black text-slate-100 tracking-tighter relative z-10">${gananciasEsteMes.toLocaleString('es-CL')}</p>
+            </div>
+            
+            <div className="bg-slate-950/50 p-5 rounded-3xl border border-blue-900/30 relative overflow-hidden group">
+              <div className="absolute -right-4 -bottom-4 text-blue-500/10 group-hover:text-blue-500/20 transition-colors"><CarFront size={80}/></div>
+              <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1 relative z-10">Autos Reparados</p>
+              <p className="text-3xl font-black text-slate-100 tracking-tighter relative z-10">{autosEsteMes} <span className="text-sm text-slate-500">vehículos</span></p>
+            </div>
+
+            <div className="bg-slate-950/50 p-5 rounded-3xl border border-purple-900/30 relative overflow-hidden group">
+              <div className="absolute -right-4 -bottom-4 text-purple-500/10 group-hover:text-purple-500/20 transition-colors"><TrendingUp size={80}/></div>
+              <p className="text-[10px] font-black text-purple-500 uppercase tracking-widest mb-1 relative z-10">Ticket Promedio</p>
+              <p className="text-3xl font-black text-slate-100 tracking-tighter relative z-10">${ticketPromedio.toLocaleString('es-CL')}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            {/* Split Ingresos */}
+            <div className="bg-slate-800/30 p-6 rounded-3xl border border-slate-700/50">
+              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-5">Distribución de Ingresos</h3>
+              <div className="space-y-4">
+                <div>
+                  <div className="flex justify-between text-xs font-bold mb-2">
+                    <span className="flex items-center gap-1 text-slate-300"><Wrench size={12} className="text-blue-400"/> Mano de Obra ({pctServicio}%)</span>
+                    <span className="text-emerald-400">${ingresosServicio.toLocaleString('es-CL')}</span>
+                  </div>
+                  <div className="h-2 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
+                    <div className="h-full bg-blue-500 rounded-full" style={{ width: `${pctServicio}%` }}></div>
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between text-xs font-bold mb-2">
+                    <span className="flex items-center gap-1 text-slate-300"><Package size={12} className="text-orange-400"/> Venta Repuestos ({pctRepuesto}%)</span>
+                    <span className="text-emerald-400">${ingresosRepuesto.toLocaleString('es-CL')}</span>
+                  </div>
+                  <div className="h-2 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
+                    <div className="h-full bg-orange-500 rounded-full" style={{ width: `${pctRepuesto}%` }}></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Tops */}
+            <div className="grid grid-cols-2 gap-4">
+                <div className="bg-slate-800/30 p-5 rounded-3xl border border-slate-700/50">
+                    <h3 className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-4">Top Marcas</h3>
+                    <div className="space-y-3">
+                        {topMarcas.map((marca: any, i: number) => (
+                            <div key={i} className="flex justify-between items-center text-xs">
+                                <span className="font-bold text-slate-300 capitalize">{i+1}. {marca[0]}</span>
+                                <span className="text-slate-500 font-black">${(marca[1] / 1000).toFixed(0)}k</span>
+                            </div>
+                        ))}
+                        {topMarcas.length === 0 && <p className="text-[10px] text-slate-500 italic">Sin datos suficientes</p>}
+                    </div>
+                </div>
                 
-                {/* GANANCIAS DEL MES */}
-                <div className="bg-slate-950 p-6 rounded-[32px] border border-slate-800 shadow-xl flex flex-col justify-center items-center text-center relative overflow-hidden group hover:border-emerald-500/50 transition-all">
-                    <div className="absolute -inset-10 bg-emerald-500/5 rounded-full blur-3xl group-hover:bg-emerald-500/10 transition-all"></div>
-                    <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 relative z-10 flex items-center gap-1"><DollarSign size={12} className="text-emerald-400"/> Ganancias del Mes</h3>
-                    <p className="text-2xl md:text-3xl font-black text-slate-100 tracking-tighter relative z-10 w-full px-2" title={`$${gananciasEsteMes.toLocaleString('es-CL')}`}>
-                        ${gananciasEsteMes.toLocaleString('es-CL')}
-                    </p>
-                    <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mt-2 relative z-10">{autosEsteMes} vehículos atendidos</p>
-                </div>
-
-                {/* TICKET PROMEDIO */}
-                <div className="bg-slate-950 p-6 rounded-[32px] border border-slate-800 shadow-xl flex flex-col justify-center items-center text-center relative overflow-hidden">
-                    <div className="absolute -inset-10 bg-blue-500/5 rounded-full blur-3xl"></div>
-                    <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 relative z-10 flex items-center gap-1"><TrendingUp size={12} className="text-blue-400"/> Ticket Promedio</h3>
-                    <p className="text-2xl md:text-3xl font-black text-blue-400 tracking-tighter relative z-10 w-full px-2" title={`$${ticketPromedio.toLocaleString('es-CL')}`}>
-                        ${ticketPromedio.toLocaleString('es-CL')}
-                    </p>
-                    <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mt-2 relative z-10">Histórico global</p>
-                </div>
-
-                {/* ORIGEN DE INGRESOS */}
-                <div className="bg-slate-950 p-6 rounded-[32px] border border-slate-800 shadow-xl flex flex-col justify-between">
-                    <div>
-                        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Origen de Ingresos</h3>
-                        <p className="text-sm font-bold text-slate-300 mb-6">Repuestos vs Servicio</p>
-                    </div>
-                    <div className="w-full bg-slate-800 h-4 rounded-full overflow-hidden flex mb-4 border border-slate-700">
-                        <div style={{width: `${pctServicio}%`}} className="bg-blue-500 h-full transition-all duration-1000"></div>
-                        <div style={{width: `${pctRepuesto}%`}} className="bg-emerald-500 h-full transition-all duration-1000"></div>
-                    </div>
-                    <div className="flex justify-between text-xs font-black">
-                        <div className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                            <span className="text-slate-400 uppercase">Servicio ({pctServicio}%)</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                            <span className="text-slate-400 uppercase">Repuesto ({pctRepuesto}%)</span>
-                        </div>
-                    </div>
-                    <div className="mt-4 pt-4 border-t border-slate-800 text-[10px] text-slate-500 flex justify-between font-bold">
-                        <span>${ingresosServicio.toLocaleString('es-CL')}</span>
-                        <span>${ingresosRepuesto.toLocaleString('es-CL')}</span>
-                    </div>
-                </div>
-
-                {/* TOP MARCAS (CORREGIDO PARA FORMATO PRECIO Y ESPACIO) */}
-                <div className="bg-slate-950 p-6 rounded-[32px] border border-slate-800 shadow-xl flex flex-col justify-between">
-                    <div>
-                        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Top Marcas</h3>
-                        <p className="text-sm font-bold text-slate-300 mb-4">Ingresos por Fabricante</p>
-                    </div>
+                <div className="bg-slate-800/30 p-5 rounded-3xl border border-slate-700/50">
+                    <h3 className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-4">Top Mecánicos</h3>
                     <div className="space-y-3">
-                        {topMarcas.length > 0 ? topMarcas.map(([marca, count]: any, idx) => (
-                            <div key={idx} className="flex justify-between items-center bg-slate-800 p-3 rounded-2xl border border-slate-700 gap-2">
-                                <span className="font-black text-xs text-slate-200 uppercase truncate flex-1">{marca}</span>
-                                <span className="bg-slate-900 text-emerald-400 font-black text-[10px] px-2 py-1 rounded-lg shrink-0">
-                                    ${count.toLocaleString('es-CL')}
-                                </span>
+                        {topMecanicos.map((mec: any, i: number) => (
+                            <div key={i} className="flex justify-between items-center text-xs">
+                                <span className="font-bold text-slate-300 capitalize">{i+1}. {mec[0]}</span>
+                                <span className="text-blue-400 font-black">{mec[1]} autos</span>
                             </div>
-                        )) : (
-                            <p className="text-xs text-slate-600 italic">No hay datos suficientes.</p>
-                        )}
-                    </div>
-                </div>
-
-                {/* RENDIMIENTO (TRABAJOS POR MECÁNICO) */}
-                <div className="bg-slate-950 p-6 rounded-[32px] border border-slate-800 shadow-xl flex flex-col justify-between">
-                    <div>
-                        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Rendimiento</h3>
-                        <p className="text-sm font-bold text-slate-300 mb-4">Trabajos por Mecánico</p>
-                    </div>
-                    <div className="space-y-3">
-                        {topMecanicos.length > 0 ? topMecanicos.map(([mecanico, count]: any, idx) => (
-                            <div key={idx} className="flex justify-between items-center bg-slate-800 p-3 rounded-2xl border border-slate-700 gap-2">
-                                <span className="font-black text-xs text-slate-200 uppercase truncate flex items-center gap-1 flex-1">
-                                    <User size={12} className="shrink-0"/> {mecanico}
-                                </span>
-                                <span className="bg-slate-900 text-emerald-400 font-black text-[10px] px-3 py-1 rounded-full shrink-0">
-                                    {count}
-                                </span>
-                            </div>
-                        )) : (
-                            <p className="text-xs text-slate-600 italic">No hay datos suficientes.</p>
-                        )}
+                        ))}
+                        {topMecanicos.length === 0 && <p className="text-[10px] text-slate-500 italic">Sin datos suficientes</p>}
                     </div>
                 </div>
             </div>
+          </div>
+
+          {/* 🔥 NUEVA SECCIÓN: HISTORIAL DE CAJA */}
+          <div className="pt-8 border-t border-slate-800/50">
+              <h3 className="text-sm font-black text-slate-300 uppercase tracking-widest mb-4 flex items-center gap-2">
+                  <Wallet className="text-emerald-500" size={16} /> Flujo de Caja Histórico
+              </h3>
+              
+              <div className="space-y-2">
+                  {historial && historial.length > 0 ? (
+                      historial.map((o: any) => {
+                          const total = o.items_orden?.reduce((sum: number, i: any) => sum + i.precio, 0) || 0;
+                          const fecha = new Date(o.created_at).toLocaleDateString('es-CL');
+                          return (
+                              <div key={o.id} className="flex justify-between items-center bg-slate-950/50 p-4 rounded-2xl border border-slate-800 hover:border-emerald-900 transition-colors">
+                                  <div className="flex items-center gap-3">
+                                      <div className="bg-emerald-900/20 p-2 rounded-full">
+                                          <CheckCircle2 className="text-emerald-500" size={14} />
+                                      </div>
+                                      <div>
+                                          <p className="text-sm font-black text-slate-200 uppercase tracking-wider">{o.vehiculos?.patente} <span className="text-slate-500 font-bold ml-1">{o.vehiculos?.marca}</span></p>
+                                          <p className="text-[10px] text-slate-400 font-bold flex items-center gap-1 uppercase tracking-widest mt-1">
+                                              <Calendar size={10} /> {fecha} • Resp: {o.mecanico || 'Taller'}
+                                          </p>
+                                      </div>
+                                  </div>
+                                  <span className="text-emerald-400 font-black tracking-tighter text-lg">+ ${total.toLocaleString('es-CL')}</span>
+                              </div>
+                          )
+                      })
+                  ) : (
+                      <div className="text-center py-8 bg-slate-950/30 rounded-2xl border border-dashed border-slate-800">
+                          <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">No hay registros de caja aún</p>
+                      </div>
+                  )}
+              </div>
+          </div>
+
         </div>
       </div>
     </div>

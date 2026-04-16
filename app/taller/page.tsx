@@ -12,7 +12,6 @@ import toast, { Toaster } from 'react-hot-toast'
 import Header from '@/components/Header'
 import ModalTelemetria from '@/components/modals/ModalTelemetria'
 import ModalHistorial from '@/components/modals/ModalHistorial'
-import ModalCaja from '@/components/modals/ModalCaja'
 import ModalConfiguracion from '@/components/modals/ModalConfiguracion'
 import ModalVehiculoInfo from '@/components/modals/ModalVehiculoInfo'
 import ModalEvidencia from '@/components/modals/ModalEvidencia'
@@ -39,7 +38,7 @@ const validarRutChileno = (rutCompleto: string) => {
   
   const rutLimpio = rutCompleto.replace(/[^0-9kK]/g, '').toUpperCase();
   
-  // 🔥 Bypass: Si es el RUT genérico, lo dejamos pasar
+  // Bypass: Si es el RUT genérico, lo dejamos pasar
   if (rutLimpio === '111111111') return true;
 
   if (rutLimpio.length < 8) return false;
@@ -95,7 +94,6 @@ export default function CalibreApp() {
 
   const [escuchando, setEscuchando] = useState(false)
 
-  const [modalCaja, setModalCaja] = useState(false)
   const [modalConfiguracion, setModalConfiguracion] = useState(false)
   const [modalHistorial, setModalHistorial] = useState(false)
   const [modalTelemetria, setModalTelemetria] = useState(false)
@@ -997,7 +995,6 @@ export default function CalibreApp() {
         cajaTotal={cajaTotal}
         onOpenTelemetria={() => setModalTelemetria(true)}
         onOpenScanner={() => setModalScanner(true)}
-        onOpenCaja={() => setModalCaja(true)}
         onOpenConfiguracion={() => setModalConfiguracion(true)}
         onOpenMarketing={() => setModalMarketing(true)} 
       />
@@ -1248,7 +1245,8 @@ export default function CalibreApp() {
                                         </div>
                                         
                                         <div className="flex gap-2 shrink-0">
-                                            <button onClick={() => compartirLinkCliente(o)} className="bg-slate-800/50 backdrop-blur-sm p-2.5 rounded-xl hover:bg-blue-900/50 text-blue-400 transition-all border border-slate-700/50 shadow-sm hover:scale-110" title="Compartir Link del Vehículo">                                                <Share2 size={16} />
+                                            <button onClick={() => compartirLinkCliente(o)} className="bg-slate-800/50 backdrop-blur-sm p-2.5 rounded-xl hover:bg-blue-900/50 text-blue-400 transition-all border border-slate-700/50 shadow-sm hover:scale-110" title="Compartir Link del Vehículo">                                                
+                                                <Share2 size={16} />
                                             </button>
                                             <button onClick={() => abrirModalAlerta(o)} className="bg-slate-800/50 backdrop-blur-sm p-2.5 rounded-xl hover:bg-orange-900/50 text-orange-400 transition-all border border-slate-700/50 shadow-sm hover:scale-110" title="Registrar Desgaste">
                                                 <AlertTriangle size={16} />
@@ -1262,7 +1260,7 @@ export default function CalibreApp() {
                                     <div className="flex justify-between items-start bg-slate-800/30 backdrop-blur-sm p-3 rounded-xl mb-4 border border-slate-700/50 group/desc">
                                         <div className="italic text-xs text-slate-400 line-clamp-2" title={o.descripcion}>"{o.descripcion}"</div>
                                         <div className="flex gap-1 shrink-0">
-                                            {/* 🔥 NUEVO BOTÓN: EDITAR ORDEN */}
+                                            {/* 🔥 BOTÓN: EDITAR ORDEN */}
                                             <button 
                                                 onClick={() => abrirModalEditarOrden(o)} 
                                                 className="ml-2 bg-blue-900/30 text-blue-500 hover:bg-blue-500 hover:text-slate-900 p-2 rounded-lg transition-all border border-blue-700/50 shadow-sm" 
@@ -1312,7 +1310,7 @@ export default function CalibreApp() {
                                     <div className="flex items-center gap-2">
                                         <p className="font-black text-emerald-400 text-2xl mb-1">${o.items_orden?.reduce((s:number,i:any)=>s+i.precio,0).toLocaleString()}</p>
                                         
-                                        {/* 🔥 NUEVO BOTÓN: ANULAR ORDEN */}
+                                        {/* 🔥 BOTÓN: ANULAR ORDEN */}
                                         <button 
                                             onClick={() => anularOrden(o.id)} 
                                             className="text-[8px] font-black text-red-400 bg-red-500/10 border border-red-500/30 px-2 py-1 rounded hover:bg-red-500/30 transition-colors uppercase tracking-widest"
@@ -1362,31 +1360,31 @@ export default function CalibreApp() {
                                 </div>
                             </div>
                             
-                            {/* 🔥 NUEVO: Grupo de botones (Compartir + PDF) */}
-                                <div className="flex items-center gap-2 shrink-0">
-                                    <button 
-                                        onClick={() => compartirLinkCliente(o)} 
-                                        className="bg-slate-900 text-slate-500 border border-slate-700/50 p-2.5 rounded-xl hover:border-blue-500 hover:text-blue-400 hover:bg-blue-500/10 transition-all" 
-                                        title="Compartir Link del Vehículo"
-                                    >
-                                        <Share2 size={16} />
-                                    </button>
+                            {/* 🔥 BOTONES (Compartir + PDF) */}
+                            <div className="flex items-center gap-2 shrink-0">
+                                <button 
+                                    onClick={() => compartirLinkCliente(o)} 
+                                    className="bg-slate-900 text-slate-500 border border-slate-700/50 p-2.5 rounded-xl hover:border-blue-500 hover:text-blue-400 hover:bg-blue-500/10 transition-all" 
+                                    title="Compartir Link del Vehículo"
+                                >
+                                    <Share2 size={16} />
+                                </button>
 
-                                    <button 
-                                        onClick={() => generarDocumentoPDF(o, o.resumen_ia, {
-                                            nombreTaller,
-                                            direccion: session?.user?.user_metadata?.direccion_taller || '',
-                                            telefono: session?.user?.user_metadata?.telefono_taller || '',
-                                            garantia: session?.user?.user_metadata?.garantia_taller || '',
-                                            logoUrl: session?.user?.user_metadata?.logo_url || null,
-                                            incluirIva: session?.user?.user_metadata?.incluir_iva || false
-                                        })} 
-                                        className="bg-slate-900 text-slate-500 border border-slate-700/50 p-2.5 rounded-xl hover:border-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all" 
-                                        title="Generar Informe PDF"
-                                    >
-                                        <FileText size={16} />
-                                    </button>
-                                </div>  
+                                <button 
+                                    onClick={() => generarDocumentoPDF(o, o.resumen_ia, {
+                                        nombreTaller,
+                                        direccion: session?.user?.user_metadata?.direccion_taller || '',
+                                        telefono: session?.user?.user_metadata?.telefono_taller || '',
+                                        garantia: session?.user?.user_metadata?.garantia_taller || '',
+                                        logoUrl: session?.user?.user_metadata?.logo_url || null,
+                                        incluirIva: session?.user?.user_metadata?.incluir_iva || false
+                                    })} 
+                                    className="bg-slate-900 text-slate-500 border border-slate-700/50 p-2.5 rounded-xl hover:border-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all" 
+                                    title="Generar Informe PDF"
+                                >
+                                    <FileText size={16} />
+                                </button>
+                            </div>  
                         </div>
                     ))}
                     {historial.length === 0 && <p className="text-xs text-slate-500 italic col-span-full">No hay trabajos finalizados aún.</p>}
@@ -1571,6 +1569,7 @@ export default function CalibreApp() {
             ingresosRepuesto={ingresosRepuesto}
             topMarcas={topMarcas}
             topMecanicos={topMecanicos}
+            historial={historial}
         />
       )}
 
@@ -1588,14 +1587,6 @@ export default function CalibreApp() {
                 logoUrl: session?.user?.user_metadata?.logo_url || null,
                 incluirIva: session?.user?.user_metadata?.incluir_iva || false
             }}
-        />
-      )}
-
-      {modalCaja && (
-        <ModalCaja 
-          onClose={() => setModalCaja(false)}
-          historial={historial}
-          cajaTotal={cajaTotal}
         />
       )}
 
