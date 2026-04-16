@@ -352,21 +352,17 @@ export default function CalibreApp() {
       const patente = o.vehiculos?.patente || 'tu vehículo';
       const mensaje = `¡Hola! Puedes revisar el detalle y seguir el estado de ${patente} en tiempo real aquí:\n👉 ${linkUrl}`;
 
-      // Verificamos si el navegador soporta el menú de compartir nativo (Celulares y PCs modernos)
       if (navigator.share) {
           try {
               await navigator.share({
                   title: `Estado de Reparación - ${nombreTaller}`,
                   text: mensaje,
               });
-              // Si el usuario comparte con éxito
               toast.success("¡Enlace compartido!", { icon: '🚀' });
           } catch (error) {
-              // Si el usuario abre el menú pero se arrepiente y lo cierra, no hacemos nada
               console.log('Menú de compartir cerrado');
           }
       } else {
-          // Fallback: Si el PC es viejo y no soporta el menú nativo, copiamos el texto (como antes)
           navigator.clipboard.writeText(mensaje);
           toast.success("¡Link copiado al portapapeles!", { icon: '🔗' });
       }
@@ -401,7 +397,6 @@ export default function CalibreApp() {
       setModalAlerta(orden);
   }
 
-  // 🔥 NUEVO: Función para abrir el modal de edición de orden
   const abrirModalEditarOrden = (orden: any) => {
       setEditFalla(orden.descripcion || '');
       setEditKm(orden.kilometraje?.toString() || '');
@@ -409,7 +404,6 @@ export default function CalibreApp() {
       setModalEditarOrden(orden);
   }
 
-  // 🔥 NUEVO: Función para guardar los cambios de la edición
   const guardarEdicionOrden = async () => {
       setGuardandoEdicion(true);
       try {
@@ -431,12 +425,10 @@ export default function CalibreApp() {
       }
   }
 
-  // 🔥 NUEVO: Función para anular (eliminar) una orden abierta
   const anularOrden = async (idOrden: string) => {
       if (!window.confirm("¿Estás seguro de ANULAR y borrar esta orden? Esta acción no se puede deshacer y borrará los ítems asociados.")) return;
       
       try {
-          // Borramos en cascada manual por seguridad: fotos -> items -> orden
           await supabase.from('fotos_orden').delete().eq('orden_id', idOrden);
           await supabase.from('items_orden').delete().eq('orden_id', idOrden);
           const { error } = await supabase.from('ordenes_trabajo').delete().eq('id', idOrden);
@@ -1395,6 +1387,13 @@ export default function CalibreApp() {
                                         <FileText size={16} />
                                     </button>
                                 </div>  
+                        </div>
+                    ))}
+                    {historial.length === 0 && <p className="text-xs text-slate-500 italic col-span-full">No hay trabajos finalizados aún.</p>}
+                </div>
+            </section>
+        </div>
+      </div>
 
       {/* MODALES */}
 
