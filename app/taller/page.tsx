@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import imageCompression from 'browser-image-compression'
 import Login from '@/components/Login'
 import CAR_DATA from './autos.json'
-import { Edit2, Lightbulb ,Trash2, FileText, Clock, User, CheckCircle, Search, Bot, Plus, Wrench, ChevronRight, Info, MessageSquare, Mic, AlertTriangle, Megaphone, Settings, ChevronDown, Camera, Share2 } from 'lucide-react'
+import { Edit2, Lightbulb ,Trash2, FileText, Clock, User, CheckCircle, Search, Bot, Plus, Wrench, ChevronRight, Info, MessageSquare, Mic, AlertTriangle, Megaphone, Settings, ChevronDown, Camera, Share2, Circle, CheckCircle2 } from 'lucide-react'
 import toast, { Toaster } from 'react-hot-toast'
 
 // 🚀 COMPONENTES EXTERNOS
@@ -20,46 +20,45 @@ import ModalItem from '@/components/modals/ModalItem'
 import ModalScanner from '@/components/modals/ModalScanner'
 import ModalAlerta from '@/components/modals/ModalAlerta'
 import ModalMarketing from '@/components/modals/ModalMarketing'
-// 🔥 IMPORTAMOS EL NUEVO MODAL DE IA
 import ModalAnalisisIA from '@/components/modals/ModalAnalisisIA'
 import { generarDocumentoPDF } from '@/utils/pdfGenerator'
 
 const MARCAS = Object.keys(CAR_DATA).sort();
 
 const COLOR_ESTADO: Record<string, string> = {
-    'Diagnóstico': 'bg-blue-500/20 text-blue-400 border-blue-500/50',
-    'Pendiente Aprobación': 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50',
-    'Esperando Repuestos': 'bg-orange-500/20 text-orange-400 border-orange-500/50',
-    'En Reparación': 'bg-purple-500/20 text-purple-400 border-purple-500/50',
-    'Listo para Entrega': 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50'
+  'Diagnóstico': 'bg-blue-500/20 text-blue-400 border-blue-500/50',
+  'Pendiente Aprobación': 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50',
+  'Esperando Repuestos': 'bg-orange-500/20 text-orange-400 border-orange-500/50',
+  'En Reparación': 'bg-purple-500/20 text-purple-400 border-purple-500/50',
+  'Listo para Entrega': 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50'
 };
 
 // 🔥 VALIDADOR DE RUT BLINDADO OFICIAL
 const validarRutChileno = (rutCompleto: string) => {
-    if (!rutCompleto) return false;
-    
-    const rutLimpio = rutCompleto.replace(/[^0-9kK]/g, '').toUpperCase();
-    if (rutLimpio.length < 8) return false;
+  if (!rutCompleto) return false;
+  
+  const rutLimpio = rutCompleto.replace(/[^0-9kK]/g, '').toUpperCase();
+  if (rutLimpio.length < 8) return false;
 
-    const cuerpo = rutLimpio.slice(0, -1);
-    const dvIngresado = rutLimpio.slice(-1);
-    
-    let suma = 0;
-    let multiplo = 2;
-    
-    for (let i = 1; i <= cuerpo.length; i++) {
-        const digito = parseInt(cuerpo.charAt(cuerpo.length - i));
-        suma += multiplo * digito;
-        multiplo = multiplo < 7 ? multiplo + 1 : 2;
-    }
-    
-    const dvEsperado = 11 - (suma % 11);
-    let dvCalculado = dvEsperado.toString();
-    
-    if (dvEsperado === 11) dvCalculado = '0';
-    if (dvEsperado === 10) dvCalculado = 'K';
-    
-    return dvCalculado === dvIngresado;
+  const cuerpo = rutLimpio.slice(0, -1);
+  const dvIngresado = rutLimpio.slice(-1);
+  
+  let suma = 0;
+  let multiplo = 2;
+  
+  for (let i = 1; i <= cuerpo.length; i++) {
+    const digito = parseInt(cuerpo.charAt(cuerpo.length - i));
+    suma += multiplo * digito;
+    multiplo = multiplo < 7 ? multiplo + 1 : 2;
+  }
+  
+  const dvEsperado = 11 - (suma % 11);
+  let dvCalculado = dvEsperado.toString();
+  
+  if (dvEsperado === 11) dvCalculado = '0';
+  if (dvEsperado === 10) dvCalculado = 'K';
+  
+  return dvCalculado === dvIngresado;
 }
 
 export default function CalibreApp() {
@@ -81,6 +80,7 @@ export default function CalibreApp() {
   const [descripcionOrden, setDescripcionOrden] = useState('')
   const [valorDiagnostico, setValorDiagnostico] = useState('')
   const [mecanicoAsignado, setMecanicoAsignado] = useState('')
+  const [kilometrajeOrden, setKilometrajeOrden] = useState('') // 🔥 ESTADO DE KILOMETRAJE
   const [creandoOrden, setCreandoOrden] = useState(false)
   
   const [escuchando, setEscuchando] = useState(false)
@@ -182,20 +182,18 @@ export default function CalibreApp() {
 
   // 🔥 NUEVA LÓGICA DE ONBOARDING EN LA CARGA
   const extraerDatosConfiguracion = (metadata: any) => {
-      // Si no hay metadata o el usuario nunca configuró el nombre del taller:
       if (!metadata || !metadata.nombre_taller) {
           setNombreTaller('MI TALLER');
-          setInputTaller(''); // Lo dejamos vacío para que deba llenarlo
+          setInputTaller(''); 
           setEsOnboarding(true);
-          setModalConfiguracion(true); // ¡BOOM! Le abrimos la ventana de bienvenida
+          setModalConfiguracion(true); 
           return;
       }
       
-      // Si ya tiene configuración, cargamos todo normal
       const n = metadata.nombre_taller;
       setNombreTaller(n);
       setInputTaller(n);
-      setEsOnboarding(false); // Ya pasó el onboarding
+      setEsOnboarding(false); 
       
       if (metadata.direccion_taller) setInputDireccion(metadata.direccion_taller);
       if (metadata.telefono_taller) setInputTelefonoConfig(metadata.telefono_taller);
@@ -300,7 +298,7 @@ export default function CalibreApp() {
 
           setNombreTaller(nombreLimpio);
           setLogoFile(null); 
-          setEsOnboarding(false); // Quitamos el estado de onboarding
+          setEsOnboarding(false); 
           
           toast.success(esOnboarding ? "¡Bienvenido a CALIBRE!" : "¡Ajustes guardados exitosamente!", { id: toastId });
           setModalConfiguracion(false);
@@ -369,6 +367,7 @@ export default function CalibreApp() {
       setDescripcionOrden(''); 
       setValorDiagnostico('');
       setMecanicoAsignado('');
+      setKilometrajeOrden(''); // 🔥 Limpiamos el kilometraje
       setModalNuevaOrden(vehiculo);
   }
 
@@ -455,12 +454,14 @@ export default function CalibreApp() {
       }
 
       try {
+          // 🔥 INSERTAMOS LA ORDEN CON EL KILOMETRAJE INCLUIDO
           const { data: nuevaOrden, error: errorOrden } = await supabase.from('ordenes_trabajo').insert([{
               vehiculo_id: modalNuevaOrden.id,
               estado: 'Abierta',
               sub_estado: 'Diagnóstico',
               descripcion: descripcionOrden,
-              mecanico: mecanicoAsignado.trim() || 'Sin asignar'
+              mecanico: mecanicoAsignado.trim() || 'Sin asignar',
+              kilometraje: kilometrajeOrden ? parseInt(kilometrajeOrden) : null 
           }]).select();
           
           if (errorOrden) throw errorOrden;
@@ -612,7 +613,7 @@ export default function CalibreApp() {
         setItemForm({ id: null, orden_id: ordenId, nombre: '', detalle: '', precio: '', tipo_item: 'servicio', procedencia: 'Taller' });
     }
     setModalItemVisible(true);
-}
+  }
 
   const eliminarItemBD = async (idItem: string) => {
       if (!window.confirm("¿Estás seguro de eliminar este ítem de la orden?")) return;
@@ -655,6 +656,17 @@ export default function CalibreApp() {
           toast.error("Error guardando el ítem");
       } finally {
           setGuardandoItem(false);
+      }
+  }
+
+  // 🔥 NUEVA FUNCIÓN PARA MARCAR ITEM COMO REALIZADO EN EL CHECKLIST
+  const toggleItemRealizado = async (idItem: string, estadoActual: boolean) => {
+      try {
+          const { error } = await supabase.from('items_orden').update({ realizado: !estadoActual }).eq('id', idItem);
+          if (error) throw error;
+          await cargarTodo(); 
+      } catch (error) { 
+          toast.error("Error al actualizar la tarea"); 
       }
   }
 
@@ -1062,6 +1074,7 @@ export default function CalibreApp() {
                         </div>
                         
                         <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
+                            {/* 🔥 BOTÓN PARA VER Y EDITAR AL CLIENTE */}
                             <button onClick={() => setVehiculoInfo(v)} className="bg-slate-700/50 text-emerald-400 p-1.5 rounded-lg hover:bg-slate-600 transition-colors" title="Ver Detalles">
                                 <Info size={12} />
                             </button>
@@ -1156,7 +1169,10 @@ export default function CalibreApp() {
                                                 </select>
                                             </div>
 
-                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest truncate">{o.vehiculos?.marca} {o.vehiculos?.modelo}</p>
+                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest truncate">
+                                                {o.vehiculos?.marca} {o.vehiculos?.modelo} 
+                                                {o.kilometraje ? ` • ${o.kilometraje.toLocaleString()} KM` : ''} {/* 🔥 MUESTRA EL KILOMETRAJE AQUÍ */}
+                                            </p>
                                             
                                             <div className="flex items-center gap-1 mt-2 text-[9px] font-bold text-slate-400 bg-slate-950/50 w-fit px-2 py-1 rounded border border-slate-800">
                                                 <Clock size={10} className="text-orange-400" />
@@ -1181,7 +1197,6 @@ export default function CalibreApp() {
                                         </div>
                                     </div>
                                     
-                                    {/* 🔥 BOTÓN DE LA AMPOLLETA IA AQUÍ */}
                                     <div className="flex justify-between items-start bg-slate-800/30 backdrop-blur-sm p-3 rounded-xl mb-4 border border-slate-700/50 group/desc">
                                         <div className="italic text-xs text-slate-400 line-clamp-2" title={o.descripcion}>"{o.descripcion}"</div>
                                         <button 
@@ -1194,14 +1209,23 @@ export default function CalibreApp() {
                                     </div>
                                     
                                     <div className="space-y-2 mb-4 max-h-40 overflow-y-auto custom-scrollbar-dark pr-1">
+                                        {/* 🔥 CHECKLIST: ÍTEMS MARCADOS COMO REALIZADOS SE VEN DISTINTOS */}
                                         {o.items_orden?.map((item: any) => (
-                                            <div key={item.id} className="flex justify-between items-center text-[9px] font-bold bg-slate-950/50 backdrop-blur-sm p-2.5 rounded-xl border border-slate-800/50 group/item transition-colors hover:border-slate-700">
-                                                <div className="flex-1 pr-2 overflow-hidden">
-                                                    <span className="text-slate-300 uppercase block truncate">{item.descripcion}</span>
-                                                    <span className="text-slate-600 block">({item.procedencia})</span>
+                                            <div key={item.id} className={`flex justify-between items-center text-[9px] font-bold backdrop-blur-sm p-2.5 rounded-xl border group/item transition-colors ${item.realizado ? 'bg-emerald-900/10 border-emerald-900/30 opacity-70' : 'bg-slate-950/50 border-slate-800/50 hover:border-slate-700'}`}>
+                                                <div className="flex items-center gap-2 flex-1 pr-2 overflow-hidden">
+                                                    
+                                                    {/* 🔥 BOTÓN CHECKLIST MÁGICO */}
+                                                    <button onClick={() => toggleItemRealizado(item.id, item.realizado)} className="shrink-0 hover:scale-110 transition-transform">
+                                                        {item.realizado ? <CheckCircle2 className="text-emerald-500" size={14} /> : <Circle className="text-slate-600 hover:text-emerald-500/50" size={14} />}
+                                                    </button>
+                                                    
+                                                    <div>
+                                                        <span className={`uppercase block truncate ${item.realizado ? 'text-slate-500 line-through' : 'text-slate-300'}`}>{item.descripcion}</span>
+                                                        {!item.realizado && <span className="text-slate-600 block">({item.procedencia})</span>}
+                                                    </div>
                                                 </div>
                                                 <div className="flex items-center gap-2 shrink-0">
-                                                    <span className="text-emerald-400 mr-1">${item.precio.toLocaleString()}</span>
+                                                    <span className={`mr-1 ${item.realizado ? 'text-slate-500' : 'text-emerald-400'}`}>${item.precio.toLocaleString()}</span>
                                                     <button onClick={() => abrirModalItem(o.id, item)} className="text-slate-600 hover:text-emerald-400 transition-colors p-1" title="Editar">
                                                         <Edit2 size={12} />
                                                     </button>
@@ -1282,7 +1306,7 @@ export default function CalibreApp() {
       {/* MODALES */}
       {modalNuevaOrden && (
           <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-              <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700/50 rounded-[35px] p-8 w-full max-w-md shadow-[0_0_40px_rgba(16,185,129,0.1)] relative overflow-hidden">
+              <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700/50 rounded-[35px] p-8 w-full max-w-lg shadow-[0_0_40px_rgba(16,185,129,0.1)] relative overflow-hidden">
                   <div className="absolute -top-20 -right-20 w-40 h-40 bg-emerald-500/10 rounded-full blur-[50px] pointer-events-none"></div>
                   
                   <h3 className="text-2xl font-black text-slate-100 uppercase tracking-tighter mb-2 relative z-10">Nueva Orden</h3>
@@ -1312,9 +1336,21 @@ export default function CalibreApp() {
                           </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4">
-                          <div>
-                              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Valor Diagnóstico ($)</label>
+                      {/* 🔥 GRILLA DE 3 COLUMNAS CON EL KILOMETRAJE INCORPORADO */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="col-span-1">
+                              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">KM Actual</label>
+                              <input 
+                                  type="number"
+                                  value={kilometrajeOrden}
+                                  onChange={(e) => setKilometrajeOrden(e.target.value)}
+                                  className="w-full p-4 rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm text-sm text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all"
+                                  placeholder="Ej: 120500"
+                              />
+                          </div>
+                          
+                          <div className="col-span-1">
+                              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Diagnóstico ($)</label>
                               <input 
                                   type="number"
                                   value={valorDiagnostico}
@@ -1323,9 +1359,9 @@ export default function CalibreApp() {
                                   placeholder="Ej: 15000"
                               />
                           </div>
-                          {/* 🔥 MEMORIA PREDICTIVA DE MECÁNICOS AQUÍ */}
-                          <div>
-                              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Mecánico Asignado</label>
+                          
+                          <div className="col-span-1">
+                              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Mecánico Asig.</label>
                               <input 
                                   list="lista-mecanicos"
                                   value={mecanicoAsignado}
@@ -1435,10 +1471,12 @@ export default function CalibreApp() {
         />
       )}
 
+      {/* 🔥 MODAL VEHICULO INFO (AHORA CON reCargarGlobal PASADO COMO PROP) */}
       {vehiculoInfo && (
         <ModalVehiculoInfo 
           vehiculoInfo={vehiculoInfo}
           onClose={() => setVehiculoInfo(null)}
+          reCargarGlobal={cargarTodo}
         />
       )}
 
@@ -1485,7 +1523,6 @@ export default function CalibreApp() {
         />
       )}
 
-      {/* 🔥 MODAL DE ANÁLISIS IA AQUÍ ABAJO */}
       {modalAnalisis && (
         <ModalAnalisisIA 
           orden={modalAnalisis} 
