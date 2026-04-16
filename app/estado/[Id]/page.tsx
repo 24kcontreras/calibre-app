@@ -21,15 +21,14 @@ export default function EstadoVehiculoCliente() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    // Si aún no carga el ID de la URL, esperamos.
-    if (!idOrden) return;
+    if (!idOrden) return; // Esperamos a que la URL esté lista
 
     const fetchEstado = async () => {
       try {
-        // 🔥 Corrección: Ahora lee la tabla correcta 'talleres'
+        // 🔥 Consulta ultra-segura, sin pedir el nombre del taller para evitar bloqueos
         const { data, error: err } = await supabase
           .from('ordenes_trabajo')
-          .select('*, vehiculos(*, clientes(nombre)), talleres(nombre_taller)')
+          .select('*, vehiculos(*, clientes(nombre))')
           .eq('id', idOrden)
           .single();
 
@@ -39,7 +38,7 @@ export default function EstadoVehiculoCliente() {
         console.error('Error cargando orden:', err);
         setError('No pudimos encontrar la información de este vehículo. Verifica que el enlace sea correcto.');
       } finally {
-        setCargando(false);
+        setCargando(false); // Siempre detenemos la llave giratoria, haya éxito o error
       }
     };
 
@@ -79,7 +78,6 @@ export default function EstadoVehiculoCliente() {
   const indiceActual = PASOS_PROCESO.findIndex(p => p.id === estadoActual);
   const patenteOculta = orden.vehiculos?.patente ? `${orden.vehiculos.patente.substring(0, 2)}•••${orden.vehiculos.patente.slice(-2)}` : 'S/N';
   const nombreCliente = orden.vehiculos?.clientes?.nombre ? orden.vehiculos.clientes.nombre.split(' ')[0] : 'Cliente';
-  const nombreTallerStr = orden.talleres?.nombre_taller || 'El Taller';
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 font-sans flex flex-col items-center relative overflow-hidden">
@@ -94,7 +92,7 @@ export default function EstadoVehiculoCliente() {
              Estado de tu Vehículo
           </h1>
           <p className="text-emerald-400 font-bold tracking-widest uppercase text-xs">
-            {nombreTallerStr}
+            Actualizado en tiempo real
           </p>
         </header>
 
