@@ -1,4 +1,4 @@
-import { Settings, BarChart3, ScanLine, Megaphone, Wrench } from 'lucide-react';
+import { Settings, BarChart3, ScanLine, Megaphone, Wrench, Wallet } from 'lucide-react';
 
 export default function Header({
     nombreTaller,
@@ -9,47 +9,71 @@ export default function Header({
     onOpenMarketing
 }: any) {
     return (
-        <header className="bg-slate-900/50 backdrop-blur-md border-b border-slate-800 p-4 flex justify-between items-center rounded-3xl mb-6 shadow-xl relative z-10">
-            {/* Logo/Nombre */}
-            <div className="flex items-center gap-3">
-                <div className="bg-emerald-500/20 p-2.5 rounded-xl border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+        <header className="bg-slate-900/50 backdrop-blur-md border-b border-slate-800 p-4 lg:p-5 flex justify-between items-center rounded-3xl mb-6 shadow-2xl relative z-10">
+            
+            {/* 🔥 SECCIÓN IZQUIERDA: LOGO/ÍCONO Y NOMBRE */}
+            <div className="flex items-center gap-4">
+                <div className="bg-emerald-500/20 p-3 rounded-xl border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
                     <Wrench className="text-emerald-500" size={24} />
                 </div>
                 <div>
-                    <h1 className="text-xl font-black text-slate-100 tracking-tighter uppercase">{nombreTaller}</h1>
-                    <p className="text-[9px] font-bold text-emerald-400 tracking-widest uppercase">Calibre OS</p>
+                    <h1 className="text-xl md:text-2xl font-black text-slate-100 tracking-tighter uppercase drop-shadow-md">{nombreTaller}</h1>
+                    <p className="text-[10px] font-bold text-emerald-400 tracking-widest uppercase">Calibre OS</p>
                 </div>
             </div>
 
-            {/* Botones y Métricas */}
-            <div className="flex items-center gap-3">
+            {/* 🔥 SECCIÓN DERECHA: CAJA Y BOTONES COLORIDOS */}
+            <div className="flex items-center gap-2 md:gap-3">
                 
-                {/* Botón de Caja Rápida (Abre Telemetría) */}
+                {/* 💵 CAJA / INGRESOS (Ahora abre la Telemetría) */}
                 <button 
                     onClick={onOpenTelemetria} 
-                    className="hidden md:flex items-center gap-2 bg-slate-950/50 border border-slate-800 px-4 py-2.5 rounded-2xl hover:border-emerald-500/50 hover:bg-emerald-900/20 transition-all group"
-                    title="Ver Flujo de Caja"
+                    className="flex items-center gap-3 bg-emerald-900/30 border border-emerald-700/50 px-3 md:px-5 py-2 md:py-2.5 rounded-2xl hover:bg-emerald-800/40 transition-all shadow-[0_0_15px_rgba(16,185,129,0.15)] group"
+                    title="Ver Dashboard y Flujo de Caja"
                 >
-                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest group-hover:text-emerald-500 transition-colors">Ingresos</span>
-                    <span className="text-emerald-400 font-black tracking-wider">${cajaTotal.toLocaleString('es-CL')}</span>
+                    <div className="bg-emerald-500/20 p-1.5 rounded-lg group-hover:scale-110 transition-transform">
+                        <Wallet className="text-emerald-500" size={18} />
+                    </div>
+                    <div className="hidden md:block text-left">
+                        <p className="text-[9px] font-black text-emerald-500/80 uppercase tracking-widest leading-none mb-1">Caja Actual</p>
+                        <p className="text-emerald-400 font-black tracking-wider text-sm leading-none">${cajaTotal.toLocaleString('es-CL')}</p>
+                    </div>
                 </button>
 
-                {/* Panel de Herramientas */}
-                <div className="flex items-center bg-slate-950/50 rounded-2xl border border-slate-800 p-1">
-                    <button onClick={onOpenScanner} className="p-2.5 text-slate-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-xl transition-all" title="Escáner IA">
-                        <ScanLine size={18} />
-                    </button>
-                    <button onClick={onOpenTelemetria} className="p-2.5 text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-xl transition-all" title="Dashboard Financiero">
-                        <BarChart3 size={18} />
-                    </button>
-                    <button onClick={onOpenMarketing} className="p-2.5 text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 rounded-xl transition-all" title="Campañas Marketing">
-                        <Megaphone size={18} />
-                    </button>
-                    <div className="w-px h-6 bg-slate-800 mx-1"></div>
-                    <button onClick={onOpenConfiguracion} className="p-2.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-xl transition-all" title="Configuración">
-                        <Settings size={18} />
-                    </button>
-                </div>
+                <div className="w-px h-8 bg-slate-800 mx-1 hidden md:block"></div>
+
+                {/* 🧰 HERRAMIENTAS (Tus colores originales) */}
+                <button 
+                    onClick={onOpenScanner} 
+                    className="bg-blue-600 hover:bg-blue-500 p-2.5 md:p-3 rounded-xl text-white transition-all shadow-[0_0_15px_rgba(37,99,235,0.3)] hover:scale-105" 
+                    title="Escáner IA"
+                >
+                    <ScanLine size={18} />
+                </button>
+                
+                <button 
+                    onClick={onOpenTelemetria} 
+                    className="bg-purple-600 hover:bg-purple-500 p-2.5 md:p-3 rounded-xl text-white transition-all shadow-[0_0_15px_rgba(147,51,234,0.3)] hover:scale-105" 
+                    title="Dashboard y Telemetría"
+                >
+                    <BarChart3 size={18} />
+                </button>
+                
+                <button 
+                    onClick={onOpenMarketing} 
+                    className="bg-cyan-700 hover:bg-cyan-600 p-2.5 md:p-3 rounded-xl text-white transition-all shadow-[0_0_15px_rgba(8,145,178,0.3)] hover:scale-105" 
+                    title="Campañas de Marketing"
+                >
+                    <Megaphone size={18} />
+                </button>
+
+                <button 
+                    onClick={onOpenConfiguracion} 
+                    className="bg-slate-800 hover:bg-slate-700 p-2.5 md:p-3 rounded-xl text-slate-300 transition-all border border-slate-700/50 hover:scale-105 ml-1" 
+                    title="Configuración"
+                >
+                    <Settings size={18} />
+                </button>
             </div>
         </header>
     );
