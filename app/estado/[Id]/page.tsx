@@ -1,6 +1,5 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { CheckCircle2, Circle, Clock, Wrench, Search, Package, CheckSquare, CarFront, AlertCircle } from 'lucide-react'
 
@@ -13,19 +12,23 @@ const PASOS_PROCESO = [
 ];
 
 export default function EstadoVehiculoCliente() {
-  const params = useParams();
-  const idOrden = params?.id as string;
-
   const [orden, setOrden] = useState<any>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!idOrden) return; // Esperamos a que la URL esté lista
+    // 🔥 Lógica a prueba de balas: Sacamos el ID directamente del navegador
+    const ruta = window.location.pathname;
+    const idOrden = ruta.split('/').pop();
+
+    if (!idOrden || idOrden === 'estado') {
+        setError('Enlace incompleto o inválido.');
+        setCargando(false);
+        return;
+    }
 
     const fetchEstado = async () => {
       try {
-        // 🔥 Consulta ultra-segura, sin pedir el nombre del taller para evitar bloqueos
         const { data, error: err } = await supabase
           .from('ordenes_trabajo')
           .select('*, vehiculos(*, clientes(nombre))')
@@ -38,7 +41,7 @@ export default function EstadoVehiculoCliente() {
         console.error('Error cargando orden:', err);
         setError('No pudimos encontrar la información de este vehículo. Verifica que el enlace sea correcto.');
       } finally {
-        setCargando(false); // Siempre detenemos la llave giratoria, haya éxito o error
+        setCargando(false); // 🔥 Esto garantiza que la llave deje de girar SIEMPRE
       }
     };
 
@@ -53,7 +56,7 @@ export default function EstadoVehiculoCliente() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [idOrden]);
+  }, []);
 
   if (cargando) {
     return (
