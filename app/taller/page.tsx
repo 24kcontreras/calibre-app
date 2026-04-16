@@ -347,11 +347,29 @@ export default function CalibreApp() {
     setHistorial(oFinalizadas || [])
   }
 
-  const copiarLinkCliente = (ordenId: string) => {
-      const linkUrl = `${window.location.origin}/estado/${ordenId}`;
-      const mensaje = `¡Hola! Puedes revisar el detalle y seguir el estado de tu vehículo en tiempo real aquí:\n👉 ${linkUrl}`;
-      navigator.clipboard.writeText(mensaje);
-      toast.success("¡Link copiado al portapapeles!", { icon: '🔗' });
+  const compartirLinkCliente = async (o: any) => {
+      const linkUrl = `${window.location.origin}/estado/${o.id}`;
+      const patente = o.vehiculos?.patente || 'tu vehículo';
+      const mensaje = `¡Hola! Puedes revisar el detalle y seguir el estado de ${patente} en tiempo real aquí:\n👉 ${linkUrl}`;
+
+      // Verificamos si el navegador soporta el menú de compartir nativo (Celulares y PCs modernos)
+      if (navigator.share) {
+          try {
+              await navigator.share({
+                  title: `Estado de Reparación - ${nombreTaller}`,
+                  text: mensaje,
+              });
+              // Si el usuario comparte con éxito
+              toast.success("¡Enlace compartido!", { icon: '🚀' });
+          } catch (error) {
+              // Si el usuario abre el menú pero se arrepiente y lo cierra, no hacemos nada
+              console.log('Menú de compartir cerrado');
+          }
+      } else {
+          // Fallback: Si el PC es viejo y no soporta el menú nativo, copiamos el texto (como antes)
+          navigator.clipboard.writeText(mensaje);
+          toast.success("¡Link copiado al portapapeles!", { icon: '🔗' });
+      }
   }
 
   const handleRutChange = (e: any) => {
@@ -1238,8 +1256,7 @@ export default function CalibreApp() {
                                         </div>
                                         
                                         <div className="flex gap-2 shrink-0">
-                                            <button onClick={() => copiarLinkCliente(o.id)} className="bg-slate-800/50 backdrop-blur-sm p-2.5 rounded-xl hover:bg-blue-900/50 text-blue-400 transition-all border border-slate-700/50 shadow-sm hover:scale-110" title="Copiar Link para el Cliente">
-                                                <Share2 size={16} />
+                                            <button onClick={() => compartirLinkCliente(o)} className="bg-slate-800/50 backdrop-blur-sm p-2.5 rounded-xl hover:bg-blue-900/50 text-blue-400 transition-all border border-slate-700/50 shadow-sm hover:scale-110" title="Compartir Link del Vehículo">                                                <Share2 size={16} />
                                             </button>
                                             <button onClick={() => abrirModalAlerta(o)} className="bg-slate-800/50 backdrop-blur-sm p-2.5 rounded-xl hover:bg-orange-900/50 text-orange-400 transition-all border border-slate-700/50 shadow-sm hover:scale-110" title="Registrar Desgaste">
                                                 <AlertTriangle size={16} />
@@ -1353,23 +1370,31 @@ export default function CalibreApp() {
                                 </div>
                             </div>
                             
-                            <button onClick={() => generarDocumentoPDF(o, o.resumen_ia, {
-                                nombreTaller,
-                                direccion: session?.user?.user_metadata?.direccion_taller || '',
-                                telefono: session?.user?.user_metadata?.telefono_taller || '',
-                                garantia: session?.user?.user_metadata?.garantia_taller || '',
-                                logoUrl: session?.user?.user_metadata?.logo_url || null,
-                                incluirIva: session?.user?.user_metadata?.incluir_iva || false
-                            })} className="bg-slate-900 text-slate-500 border border-slate-700/50 p-2.5 rounded-xl hover:border-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all shrink-0" title="Generar Informe PDF">
-                                <FileText size={16} />
-                            </button>
-                        </div>
-                    ))}
-                    {historial.length === 0 && <p className="text-xs text-slate-500 italic col-span-full">No hay trabajos finalizados aún.</p>}
-                </div>
-            </section>
-        </div>
-      </div>
+                            {/* 🔥 NUEVO: Grupo de botones (Compartir + PDF) */}
+                                <div className="flex items-center gap-2 shrink-0">
+                                    <button 
+                                        onClick={() => compartirLinkCliente(o)} 
+                                        className="bg-slate-900 text-slate-500 border border-slate-700/50 p-2.5 rounded-xl hover:border-blue-500 hover:text-blue-400 hover:bg-blue-500/10 transition-all" 
+                                        title="Compartir Link del Vehículo"
+                                    >
+                                        <Share2 size={16} />
+                                    </button>
+
+                                    <button 
+                                        onClick={() => generarDocumentoPDF(o, o.resumen_ia, {
+                                            nombreTaller,
+                                            direccion: session?.user?.user_metadata?.direccion_taller || '',
+                                            telefono: session?.user?.user_metadata?.telefono_taller || '',
+                                            garantia: session?.user?.user_metadata?.garantia_taller || '',
+                                            logoUrl: session?.user?.user_metadata?.logo_url || null,
+                                            incluirIva: session?.user?.user_metadata?.incluir_iva || false
+                                        })} 
+                                        className="bg-slate-900 text-slate-500 border border-slate-700/50 p-2.5 rounded-xl hover:border-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all" 
+                                        title="Generar Informe PDF"
+                                    >
+                                        <FileText size={16} />
+                                    </button>
+                                </div>  
 
       {/* MODALES */}
 
