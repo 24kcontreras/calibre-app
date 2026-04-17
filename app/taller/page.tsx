@@ -38,7 +38,6 @@ const validarRutChileno = (rutCompleto: string) => {
   
   const rutLimpio = rutCompleto.replace(/[^0-9kK]/g, '').toUpperCase();
   
-  // Bypass: Si es el RUT genérico, lo dejamos pasar
   if (rutLimpio === '111111111') return true;
 
   if (rutLimpio.length < 8) return false;
@@ -85,6 +84,14 @@ export default function CalibreApp() {
   const [kilometrajeOrden, setKilometrajeOrden] = useState('') 
   const [creandoOrden, setCreandoOrden] = useState(false)
   
+  // 🔥 NUEVOS ESTADOS PARA ACTA DE RECEPCIÓN Y FOTOS
+  const [mostrarActa, setMostrarActa] = useState(false)
+  const [nivelCombustible, setNivelCombustible] = useState('1/2')
+  const [objetosValor, setObjetosValor] = useState('')
+  const [danosPrevios, setDanosPrevios] = useState('')
+  const [fotosRecepcion, setFotosRecepcion] = useState<File[]>([])
+  const [previewsRecepcion, setPreviewsRecepcion] = useState<string[]>([])
+
   // 🔥 ESTADOS PARA EDITAR LA ORDEN
   const [modalEditarOrden, setModalEditarOrden] = useState<any | null>(null)
   const [editFalla, setEditFalla] = useState('')
@@ -382,11 +389,18 @@ export default function CalibreApp() {
       }
   }
 
+  // 🔥 ACTUALIZADO: Resetear los estados del acta al abrir modal
   const abrirOrden = (vehiculo: any) => {
       setDescripcionOrden(''); 
       setValorDiagnostico('');
       setMecanicoAsignado('');
       setKilometrajeOrden('');
+      setMostrarActa(false);
+      setNivelCombustible('1/2');
+      setObjetosValor('');
+      setDanosPrevios('');
+      setFotosRecepcion([]);
+      setPreviewsRecepcion([]);
       setModalNuevaOrden(vehiculo);
   }
 
@@ -498,6 +512,7 @@ export default function CalibreApp() {
       }
   }
 
+  // 🔥 ACTUALIZADO: Función de guardar con soporte para Acta de Recepción y Fotos
   const confirmarNuevaOrden = async () => {
       if (!modalNuevaOrden) return;
       setCreandoOrden(true);
@@ -518,21 +533,50 @@ export default function CalibreApp() {
       }
 
       try {
-          const { data: nuevaOrden, error: errorOrden } = await supabase.from('ordenes_trabajo').insert([{
+          const payloadOrden = {
               vehiculo_id: modalNuevaOrden.id,
               estado: 'Abierta',
               sub_estado: 'Diagnóstico',
               descripcion: descripcionOrden,
               mecanico: mecanicoAsignado.trim() || 'Sin asignar',
-              kilometraje: kilometrajeOrden ? parseInt(kilometrajeOrden) : null 
-          }]).select();
+              kilometraje: kilometrajeOrden ? parseInt(kilometrajeOrden) : null,
+              nivel_combustible: mostrarActa ? nivelCombustible : null,
+              objetos_valor: mostrarActa ? objetosValor : null,
+              danos_previos: mostrarActa ? danosPrevios : null
+          };
+
+          const { data: nuevaOrden, error: errorOrden } = await supabase.from('ordenes_trabajo').insert([payloadOrden]).select();
           
           if (errorOrden) throw errorOrden;
           
+          const ordenId = nuevaOrden[0].id;
+
+          // 🔥 Subir fotos de recepción si existen
+          if (mostrarActa && fotosRecepcion.length > 0) {
+              toast.loading("Subiendo fotos de recepción...", { id: toastId });
+              for (const foto of fotosRecepcion) {
+                  const options = { maxSizeMB: 0.3, maxWidthOrHeight: 1280, useWebWorker: true };
+                  const compressedFile = await imageCompression(foto, options);
+                  
+                  const fileName = `${ordenId}/recepcion_${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+                  const { error: sErr } = await supabase.storage.from('evidencia').upload(fileName, compressedFile);
+                  
+                  if (!sErr) {
+                      const { data: { publicUrl } } = supabase.storage.from('evidencia').getPublicUrl(fileName);
+                      await supabase.from('fotos_orden').insert([{ 
+                          orden_id: ordenId, 
+                          url: publicUrl, 
+                          descripcion: "Estado Inicial (Recepción)" 
+                      }]);
+                  }
+              }
+          }
+
+          // Crear item de diagnóstico si hay valor
           const valorInt = valorDiagnostico ? parseInt(valorDiagnostico) : 0;
-          if (nuevaOrden && nuevaOrden.length > 0 && valorInt > 0) {
+          if (valorInt > 0) {
               const { error: errorItem } = await supabase.from('items_orden').insert([{
-                  orden_id: nuevaOrden[0].id,
+                  orden_id: ordenId,
                   descripcion: 'Diagnóstico',
                   precio: valorInt,
                   tipo_item: 'servicio',
@@ -1453,21 +1497,20 @@ export default function CalibreApp() {
           </div>
       )}
 
-      {/* MODAL NUEVA ORDEN */}
+      {/* 🔥 MODAL NUEVA ORDEN CON ACTA DE RECEPCIÓN */}
       {modalNuevaOrden && (
-          <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-              <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700/50 rounded-[35px] p-8 w-full max-w-lg shadow-[0_0_40px_rgba(16,185,129,0.1)] relative overflow-hidden">
+          <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
+              <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700/50 rounded-[35px] p-6 md:p-8 w-full max-w-xl shadow-[0_0_40px_rgba(16,185,129,0.1)] relative my-auto max-h-[95vh] overflow-y-auto custom-scrollbar-dark">
                   <div className="absolute -top-20 -right-20 w-40 h-40 bg-emerald-500/10 rounded-full blur-[50px] pointer-events-none"></div>
                   
-                  <h3 className="text-2xl font-black text-slate-100 uppercase tracking-tighter mb-2 relative z-10">Nueva Orden</h3>
-                  <p className="text-sm text-slate-400 mb-6 relative z-10 font-bold">
+                  <h3 className="text-2xl font-black text-slate-100 uppercase tracking-tighter mb-1 relative z-10">Nueva Orden</h3>
+                  <p className="text-sm text-slate-400 mb-5 relative z-10 font-bold">
                       {modalNuevaOrden.marca} {modalNuevaOrden.modelo} <span className="text-emerald-400 ml-1">{modalNuevaOrden.patente}</span>
                   </p>
 
                   <div className="space-y-4 relative z-10">
                       <div>
                           <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Problema Reportado</label>
-                          
                           <div className="relative">
                               <textarea 
                                   value={descripcionOrden}
@@ -1493,49 +1536,145 @@ export default function CalibreApp() {
                                   type="number"
                                   value={kilometrajeOrden}
                                   onChange={(e) => setKilometrajeOrden(e.target.value)}
-                                  className="w-full p-4 rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm text-sm text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all"
+                                  className="w-full p-3 rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm text-sm text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all"
                                   placeholder="Ej: 120500"
                               />
                           </div>
-                          
                           <div className="col-span-1">
                               <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Diagnóstico ($)</label>
                               <input 
                                   type="number"
                                   value={valorDiagnostico}
                                   onChange={(e) => setValorDiagnostico(e.target.value)}
-                                  className="w-full p-4 rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm text-sm text-emerald-400 font-bold outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all"
+                                  className="w-full p-3 rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm text-sm text-emerald-400 font-bold outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all"
                                   placeholder="Ej: 15000"
                               />
                           </div>
-                          
                           <div className="col-span-1">
                               <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Mecánico Asig.</label>
                               <input 
                                   list="lista-mecanicos"
                                   value={mecanicoAsignado}
                                   onChange={(e) => setMecanicoAsignado(e.target.value)}
-                                  className="w-full p-4 rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm text-sm text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all"
+                                  className="w-full p-3 rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm text-sm text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all"
                                   placeholder="Opcional"
                               />
-                              <datalist id="lista-mecanicos">
-                                  {mecanicosUnicos.map(m => <option key={m} value={m} />)}
-                              </datalist>
                           </div>
                       </div>
 
-                      <div className="flex gap-3 pt-4">
+                      {/* 🔥 ACTA DE RECEPCIÓN INTERACTIVA */}
+                      <div className="pt-2">
                           <button 
-                              onClick={() => setModalNuevaOrden(null)}
+                              type="button"
+                              onClick={() => setMostrarActa(!mostrarActa)}
+                              className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all w-full justify-center py-3 rounded-2xl border ${mostrarActa ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400' : 'bg-slate-800/50 border-slate-700/50 text-slate-400 hover:bg-slate-700/50'}`}
+                          >
+                              {mostrarActa ? <CheckCircle size={14} /> : <Camera size={14} />}
+                              {mostrarActa ? "Acta de Recepción Activa" : "Registrar Estado Inicial (Opcional)"}
+                          </button>
+
+                          {mostrarActa && (
+                              <div className="mt-4 p-5 bg-slate-950/50 border border-slate-800 rounded-[25px] space-y-6 animate-in fade-in zoom-in-95 duration-300">
+                                  
+                                  {/* ⛽ Selector de Combustible Visual */}
+                                  <div>
+                                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 block flex items-center gap-2">
+                                         <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div> Nivel de Combustible
+                                      </label>
+                                      <div className="flex bg-slate-900 p-1.5 rounded-2xl border border-slate-800">
+                                          {['E', '1/4', '1/2', '3/4', 'F'].map((nivel) => (
+                                              <button 
+                                                  key={nivel}
+                                                  type="button"
+                                                  onClick={() => setNivelCombustible(nivel)}
+                                                  className={`flex-1 py-3 text-xs font-black rounded-xl transition-all ${nivelCombustible === nivel ? 'bg-emerald-600 text-slate-950 shadow-[0_0_15px_rgba(16,185,129,0.4)] scale-105' : 'text-slate-500 hover:text-slate-300'}`}
+                                              >
+                                                  {nivel === 'E' ? 'Vacio' : nivel === 'F' ? 'Lleno' : nivel}
+                                              </button>
+                                          ))}
+                                      </div>
+                                  </div>
+
+                                  {/* 📸 Fotos de Daños/Estado (Integrado) */}
+                                  <div>
+                                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 block flex items-center gap-2">
+                                         <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div> Evidencia de Recepción (Opcional)
+                                      </label>
+                                      
+                                      <div className="grid grid-cols-3 gap-2">
+                                          {previewsRecepcion.map((src, i) => (
+                                              <div key={i} className="relative aspect-square rounded-xl overflow-hidden border border-slate-700">
+                                                  <img src={src} className="w-full h-full object-cover" />
+                                                  <button 
+                                                      type="button"
+                                                      onClick={() => {
+                                                          setFotosRecepcion(fotosRecepcion.filter((_, idx) => idx !== i));
+                                                          setPreviewsRecepcion(previewsRecepcion.filter((_, idx) => idx !== i));
+                                                      }}
+                                                      className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full"
+                                                  >
+                                                      <X size={10} />
+                                                  </button>
+                                              </div>
+                                          ))}
+                                          
+                                          {fotosRecepcion.length < 3 && (
+                                              <label className="aspect-square rounded-xl border-2 border-dashed border-slate-800 flex flex-col items-center justify-center text-slate-600 hover:border-blue-500/50 hover:text-blue-400 cursor-pointer transition-all bg-slate-900/30">
+                                                  <Camera size={20} />
+                                                  <span className="text-[8px] font-black uppercase mt-1">Añadir</span>
+                                                  <input 
+                                                      type="file" 
+                                                      accept="image/*" 
+                                                      capture="environment" 
+                                                      multiple 
+                                                      className="hidden" 
+                                                      onChange={(e) => {
+                                                          const files = Array.from(e.target.files || []);
+                                                          setFotosRecepcion([...fotosRecepcion, ...files]);
+                                                          setPreviewsRecepcion([...previewsRecepcion, ...files.map(f => URL.createObjectURL(f))]);
+                                                      }}
+                                                  />
+                                              </label>
+                                          )}
+                                      </div>
+                                  </div>
+
+                                  {/* Notas Rápidas */}
+                                  <div className="grid grid-cols-1 gap-4">
+                                      <input 
+                                          type="text" 
+                                          value={danosPrevios} 
+                                          onChange={(e) => setDanosPrevios(e.target.value)} 
+                                          placeholder="Notas de daños (ej: Rayón parachoques)" 
+                                          className="w-full p-3 rounded-xl border border-slate-800 bg-slate-900 text-xs text-slate-200 outline-none focus:border-emerald-500/50" 
+                                      />
+                                      <input 
+                                          type="text" 
+                                          value={objetosValor} 
+                                          onChange={(e) => setObjetosValor(e.target.value)} 
+                                          placeholder="Objetos de valor (ej: Radio, Gata)" 
+                                          className="w-full p-3 rounded-xl border border-slate-800 bg-slate-900 text-xs text-slate-200 outline-none focus:border-emerald-500/50" 
+                                      />
+                                  </div>
+                              </div>
+                          )}
+                      </div>
+
+                      {/* Botones de Acción */}
+                      <div className="flex gap-3 pt-4 border-t border-slate-800/50">
+                          <button 
+                              type="button"
+                              onClick={() => { setModalNuevaOrden(null); setMostrarActa(false); }}
                               disabled={creandoOrden}
-                              className="flex-1 bg-transparent border border-slate-700/50 hover:border-slate-500 text-slate-400 py-4 rounded-full text-xs font-black uppercase tracking-wider transition-colors disabled:opacity-50"
+                              className="flex-1 bg-transparent border border-slate-700/50 hover:border-slate-500 text-slate-400 py-3 md:py-4 rounded-full text-xs font-black uppercase tracking-wider transition-colors disabled:opacity-50"
                           >
                               Cancelar
                           </button>
                           <button 
+                              type="button"
                               onClick={confirmarNuevaOrden}
                               disabled={creandoOrden || !descripcionOrden.trim()}
-                              className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-slate-950 py-4 rounded-full text-xs font-black uppercase tracking-wider shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:shadow-[0_0_25px_rgba(16,185,129,0.5)] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                              className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-slate-950 py-3 md:py-4 rounded-full text-xs font-black uppercase tracking-wider shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                           >
                               {creandoOrden ? 'Creando...' : 'Abrir Orden'}
                           </button>

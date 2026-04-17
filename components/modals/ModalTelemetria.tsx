@@ -111,6 +111,10 @@ export default function ModalTelemetria({
             </div>
           </div>
 
+
+
+          
+
           {/* 🔥 NUEVA SECCIÓN: HISTORIAL DE CAJA */}
           <div className="pt-8 border-t border-slate-800/50">
               <h3 className="text-sm font-black text-slate-300 uppercase tracking-widest mb-4 flex items-center gap-2">

@@ -1,4 +1,6 @@
 import { Settings, BarChart3, ScanLine, Megaphone, Wrench, Wallet } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 
 export default function Header({
     nombreTaller,
@@ -8,14 +10,45 @@ export default function Header({
     onOpenConfiguracion,
     onOpenMarketing
 }: any) {
+    const [logoUrl, setLogoUrl] = useState<string | null>(null);
+
+    // 🔥 El Header busca el logo por su cuenta para no molestar a page.tsx
+    useEffect(() => {
+        const fetchLogo = async () => {
+            const { data } = await supabase.auth.getSession();
+            const url = data?.session?.user?.user_metadata?.logo_url;
+            if (url) setLogoUrl(url);
+        };
+        
+        fetchLogo();
+
+        // Escucha si el logo cambia en la configuración
+        const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+            const url = session?.user?.user_metadata?.logo_url;
+            setLogoUrl(url || null);
+        });
+
+        return () => {
+            authListener.subscription?.unsubscribe();
+        };
+    }, []);
+
     return (
         <header className="bg-slate-900/50 backdrop-blur-md border-b border-slate-800 p-4 lg:p-5 flex justify-between items-center rounded-3xl mb-6 shadow-2xl relative z-10">
             
             {/* 🔥 SECCIÓN IZQUIERDA: LOGO/ÍCONO Y NOMBRE */}
             <div className="flex items-center gap-4">
-                <div className="bg-emerald-500/20 p-3 rounded-xl border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
-                    <Wrench className="text-emerald-500" size={24} />
-                </div>
+                {logoUrl ? (
+                    <img 
+                        src={logoUrl} 
+                        alt="Logo Taller" 
+                        className="w-12 h-12 rounded-xl object-cover border border-slate-700/50 shadow-lg bg-white" 
+                    />
+                ) : (
+                    <div className="bg-emerald-500/20 p-3 rounded-xl border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                        <Wrench className="text-emerald-500" size={24} />
+                    </div>
+                )}
                 <div>
                     <h1 className="text-xl md:text-2xl font-black text-slate-100 tracking-tighter uppercase drop-shadow-md">{nombreTaller}</h1>
                     <p className="text-[10px] font-bold text-emerald-400 tracking-widest uppercase">Calibre OS</p>

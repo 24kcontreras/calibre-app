@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { CheckCircle2, Circle, Clock, Wrench, Search, Package, CheckSquare, CarFront, AlertCircle } from 'lucide-react'
+import CalificacionCliente from '@/components/CalificacionCliente';
 
 const PASOS_PROCESO = [
   { id: 'Diagnóstico', nombre: 'Diagnóstico en curso', icono: Search, desc: 'Revisando el vehículo detalladamente.' },
@@ -114,7 +115,7 @@ export default function EstadoVehiculoCliente() {
             </div>
         </section>
 
-        <section className="bg-slate-900/40 backdrop-blur-md rounded-3xl p-6 border border-slate-800 shadow-xl mb-12">
+        <section className="bg-slate-900/40 backdrop-blur-md rounded-3xl p-6 border border-slate-800 shadow-xl mb-8">
             <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-6 border-b border-slate-800 pb-4">Progreso de la Reparación</h3>
             
             <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-800 before:to-transparent">
@@ -150,7 +151,20 @@ export default function EstadoVehiculoCliente() {
             </div>
         </section>
 
-        <footer className="text-center pb-8">
+        {/* 🔥 SECCIÓN DE FEEDBACK / CALIFICACIÓN INTEGRADA */}
+        {orden.estado === 'Abierta' && orden.sub_estado === 'En Reparación' && (
+            <div className="mb-12">
+                <CalificacionCliente ordenId={orden.id} tipo="intermedio" />
+            </div>
+        )}
+
+        {orden.estado === 'Finalizada' && (
+            <div className="mb-12">
+                <CalificacionCliente ordenId={orden.id} tipo="final" />
+            </div>
+        )}
+
+        <footer className="text-center pb-8 mt-4">
             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Transparencia garantizada por</p>
             <div className="flex items-center justify-center gap-2 text-slate-300">
                 <Wrench className="text-emerald-500" size={16} />

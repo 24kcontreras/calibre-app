@@ -1,7 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 //usaremos githubbb
+
+
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,9 +16,23 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CALIBRE",
-  description: "Software de gestión de talleres",
-};
+  title: 'CALIBRE | Neural Garage OS',
+  description: 'Gestión inteligente para talleres mecánicos',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'CALIBRE'
+  },
+}
+
+export const viewport: Viewport = {
+  themeColor: '#020617', // Pinta la barra de arriba del mismo color slate-950
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1, // Esto bloquea el zoom automático al escribir
+  userScalable: false,
+}
 
 export default function RootLayout({
   children,
