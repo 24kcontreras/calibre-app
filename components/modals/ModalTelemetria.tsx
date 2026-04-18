@@ -1,4 +1,4 @@
-import { X, BarChart3, TrendingUp, CarFront, Wrench, Package, DollarSign, Wallet, Calendar, CheckCircle2 } from 'lucide-react';
+import { X, BarChart3, TrendingUp, CarFront, Wrench, Package, DollarSign, Wallet, Calendar, CheckCircle2, Star } from 'lucide-react';
 
 export default function ModalTelemetria({
   onClose,
@@ -11,8 +11,31 @@ export default function ModalTelemetria({
   ingresosRepuesto,
   topMarcas,
   topMecanicos,
-  historial // 🔥 Recibimos el historial completo aquí
+  historial
 }: any) {
+
+  // 🔥 CÁLCULOS V2: Productividad Real ($) por Mecánico
+  const ingresosPorMecanico = historial.reduce((acc: any, o: any) => {
+    const m = o.mecanico && o.mecanico !== 'Sin asignar' ? o.mecanico.toUpperCase() : 'TALLER';
+    const totalOrden = o.items_orden?.reduce((s: number, i: any) => s + i.precio, 0) || 0;
+    acc[m] = (acc[m] || 0) + totalOrden;
+    return acc;
+  }, {});
+
+  const rendimientoMecanicos = Object.entries(ingresosPorMecanico)
+    .sort((a: any, b: any) => b[1] - a[1]);
+
+  // 🔥 CÁLCULOS V2: NPS / Satisfacción del Cliente
+  const ordenesConFeedback = historial.filter((o: any) => o.feedback_final_estrellas > 0);
+  
+  const promedioEstrellas = ordenesConFeedback.length > 0 
+    ? (ordenesConFeedback.reduce((acc: number, o: any) => acc + o.feedback_final_estrellas, 0) / ordenesConFeedback.length).toFixed(1)
+    : "0.0";
+
+  const ultimosComentarios = ordenesConFeedback
+    .filter((o: any) => o.feedback_final_texto && o.feedback_final_texto.trim() !== '')
+    .slice(0, 5);
+
   return (
     <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 z-[999]">
       <div className="bg-slate-900 border border-slate-700/50 rounded-[35px] shadow-2xl max-w-4xl w-full relative overflow-hidden flex flex-col max-h-[90vh]">
@@ -34,7 +57,7 @@ export default function ModalTelemetria({
 
         <div className="p-6 lg:p-8 overflow-y-auto custom-scrollbar-dark relative z-10">
           
-          {/* Tarjetas Principales */}
+          {/* 💰 TARJETAS PRINCIPALES */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="bg-slate-950/50 p-5 rounded-3xl border border-emerald-900/30 relative overflow-hidden group">
               <div className="absolute -right-4 -bottom-4 text-emerald-500/10 group-hover:text-emerald-500/20 transition-colors"><DollarSign size={80}/></div>
@@ -55,8 +78,8 @@ export default function ModalTelemetria({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            {/* Split Ingresos */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            {/* 📊 SPLIT INGRESOS */}
             <div className="bg-slate-800/30 p-6 rounded-3xl border border-slate-700/50">
               <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-5">Distribución de Ingresos</h3>
               <div className="space-y-4">
@@ -81,11 +104,11 @@ export default function ModalTelemetria({
               </div>
             </div>
 
-            {/* Tops */}
+            {/* 🏆 TOPS Y PRODUCTIVIDAD */}
             <div className="grid grid-cols-2 gap-4">
-                <div className="bg-slate-800/30 p-5 rounded-3xl border border-slate-700/50">
+                <div className="bg-slate-800/30 p-5 rounded-3xl border border-slate-700/50 flex flex-col">
                     <h3 className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-4">Top Marcas</h3>
-                    <div className="space-y-3">
+                    <div className="space-y-3 flex-1">
                         {topMarcas.map((marca: any, i: number) => (
                             <div key={i} className="flex justify-between items-center text-xs">
                                 <span className="font-bold text-slate-300 capitalize">{i+1}. {marca[0]}</span>
@@ -96,26 +119,61 @@ export default function ModalTelemetria({
                     </div>
                 </div>
                 
-                <div className="bg-slate-800/30 p-5 rounded-3xl border border-slate-700/50">
-                    <h3 className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-4">Top Mecánicos</h3>
-                    <div className="space-y-3">
-                        {topMecanicos.map((mec: any, i: number) => (
+                {/* Productividad (Reemplaza al Top Mecánicos simple) */}
+                <div className="bg-slate-800/30 p-5 rounded-3xl border border-slate-700/50 flex flex-col">
+                    <h3 className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-4">Productividad</h3>
+                    <div className="space-y-3 flex-1 max-h-32 overflow-y-auto custom-scrollbar-dark pr-1">
+                        {rendimientoMecanicos.map(([nombre, total]: any, i: number) => (
                             <div key={i} className="flex justify-between items-center text-xs">
-                                <span className="font-bold text-slate-300 capitalize">{i+1}. {mec[0]}</span>
-                                <span className="text-blue-400 font-black">{mec[1]} autos</span>
+                                <div className="flex items-center gap-1 overflow-hidden">
+                                  <span className="font-bold text-slate-300 capitalize truncate">{nombre}</span>
+                                </div>
+                                <span className="text-emerald-400 font-black shrink-0">${(total / 1000).toFixed(0)}k</span>
                             </div>
                         ))}
-                        {topMecanicos.length === 0 && <p className="text-[10px] text-slate-500 italic">Sin datos suficientes</p>}
+                        {rendimientoMecanicos.length === 0 && <p className="text-[10px] text-slate-500 italic">Sin datos suficientes</p>}
                     </div>
                 </div>
             </div>
           </div>
 
+          {/* ⭐ FEEDBACK: SATISFACCIÓN DEL CLIENTE */}
+          <div className="bg-slate-800/30 p-6 rounded-3xl border border-slate-700/50 mb-8">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Satisfacción del Cliente</h3>
+              <div className="flex items-center gap-1 bg-yellow-500/10 border border-yellow-500/30 px-3 py-1 rounded-full">
+                <span className="text-yellow-400 font-black text-sm">{promedioEstrellas}</span>
+                <Star className="text-yellow-400 fill-yellow-400" size={14} />
+              </div>
+            </div>
 
+            {ultimosComentarios.length === 0 ? (
+              <p className="text-xs text-slate-500 italic text-center py-4 border border-dashed border-slate-700/50 rounded-xl">Aún no hay comentarios de clientes.</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-48 overflow-y-auto custom-scrollbar-dark pr-2">
+                {ultimosComentarios.map((o: any) => (
+                  <div key={o.id} className="bg-slate-900/50 p-4 rounded-xl border border-slate-700/50">
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">{o.vehiculos?.patente}</span>
+                      <div className="flex">
+                        {[...Array(5)].map((_, i) => (
+                          <Star 
+                            key={i} 
+                            size={10} 
+                            className={i < o.feedback_final_estrellas ? "text-yellow-400 fill-yellow-400" : "text-slate-700"} 
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-300 italic">"{o.feedback_final_texto}"</p>
+                    <p className="text-[8px] text-slate-500 font-bold uppercase tracking-widest mt-2">Atendido por: <span className="text-slate-400">{o.mecanico}</span></p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
-          
-
-          {/* 🔥 NUEVA SECCIÓN: HISTORIAL DE CAJA */}
+          {/* 🔥 HISTORIAL DE CAJA */}
           <div className="pt-8 border-t border-slate-800/50">
               <h3 className="text-sm font-black text-slate-300 uppercase tracking-widest mb-4 flex items-center gap-2">
                   <Wallet className="text-emerald-500" size={16} /> Flujo de Caja Histórico

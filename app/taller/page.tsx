@@ -1749,6 +1749,7 @@ export default function CalibreApp() {
           incluirIva={incluirIva}
           setIncluirIva={setIncluirIva}
           esOnboarding={esOnboarding} 
+          vehiculos={vehiculos}
         />
       )}
 

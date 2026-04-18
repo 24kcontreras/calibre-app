@@ -1,4 +1,4 @@
-import { Settings, Save, LogOut, Upload, FileText, Percent, Image as ImageIcon, MapPin, Phone, Sparkles } from 'lucide-react'
+import { Settings, Save, LogOut, Upload, FileText, Percent, Image as ImageIcon, MapPin, Phone, Sparkles, Download } from 'lucide-react'
 
 interface ModalConfiguracionProps {
   onClose: () => void;
@@ -18,9 +18,8 @@ interface ModalConfiguracionProps {
   setInputGarantia?: (val: string) => void;
   incluirIva?: boolean;
   setIncluirIva?: (val: boolean) => void;
-  
-  // 🔥 Nuevo prop para saber si es usuario nuevo
   esOnboarding?: boolean; 
+  vehiculos?: any[]; // 🔥 Agregado para recibir los vehículos y exportarlos
 }
 
 export default function ModalConfiguracion({
@@ -41,9 +40,44 @@ export default function ModalConfiguracion({
   setInputGarantia,
   incluirIva,
   setIncluirIva,
-  esOnboarding = false // Por defecto es falso
+  esOnboarding = false,
+  vehiculos = [] // 🔥 Destructurado aquí
 }: ModalConfiguracionProps) {
 
+  // 🔥 FUNCIÓN DE EXPORTACIÓN (CSV/EXCEL)
+  const exportarDatosCSV = () => {
+    if (!vehiculos || vehiculos.length === 0) {
+      alert("No hay clientes o vehículos registrados para exportar.");
+      return;
+    }
+
+    const headers = ["Patente", "Marca", "Modelo", "Anho", "Nombre Cliente", "RUT", "Telefono"];
+    
+    const filas = vehiculos.map((v: any) => [
+      v.patente || '',
+      v.marca || '',
+      v.modelo || '',
+      v.anho || 'N/A',
+      v.clientes?.nombre || 'Sin Nombre',
+      v.clientes?.rut || 'Sin RUT',
+      v.clientes?.telefono || 'Sin Telefono'
+    ]);
+
+    const contenidoCSV = [
+      headers.join(";"), 
+      ...filas.map(f => f.join(";"))
+    ].join("\n");
+
+    const blob = new Blob(["\uFEFF" + contenidoCSV], { type: 'text/csv;charset=utf-8;' }); 
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Exportacion_Calibre_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+  
   return (
     <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 z-[200]">
       <div className="bg-slate-900 rounded-[40px] shadow-2xl max-w-md w-full border border-slate-800 flex flex-col max-h-[90vh] overflow-hidden relative">
@@ -64,7 +98,6 @@ export default function ModalConfiguracion({
             )}
           </div>
           
-          {/* 🔥 Si es Onboarding, escondemos la X para que no pueda cerrar sin guardar */}
           {!esOnboarding && (
               <button onClick={onClose} className="text-slate-500 hover:text-red-400 font-black text-xl p-2 bg-slate-800 rounded-full transition-colors border border-slate-700 w-10 h-10 flex items-center justify-center">✕</button>
           )}
@@ -156,6 +189,7 @@ export default function ModalConfiguracion({
 
         {/* FOOTER DEL MODAL (Fijo abajo con botones de acción) */}
         <div className="p-6 border-t border-slate-800 bg-slate-900 shrink-0 space-y-3 relative z-10">
+            
             <button 
                 onClick={guardarConfiguracion} 
                 disabled={guardandoConfiguracion || !inputTaller.trim()}
@@ -164,9 +198,20 @@ export default function ModalConfiguracion({
                 <Save size={16} /> {guardandoConfiguracion ? 'Guardando...' : (esOnboarding ? 'Guardar y Comenzar' : 'Guardar Ajustes')}
             </button>
 
+            {/* 🔥 BOTÓN DE EXPORTAR EXCEL */}
+            {!esOnboarding && (
+                <button 
+                    type="button"
+                    onClick={exportarDatosCSV}
+                    className="w-full py-3 flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl border border-slate-700 transition-all text-[10px] font-black uppercase tracking-widest shadow-sm"
+                >
+                    <Download size={14} className="text-emerald-400" /> Exportar Base de Datos a Excel
+                </button>
+            )}
+
             <button 
                 onClick={handleLogout} 
-                className="w-full py-3 text-slate-500 hover:text-red-400 rounded-xl font-black text-[10px] uppercase tracking-widest transition-colors flex items-center justify-center gap-2 bg-transparent"
+                className="w-full py-3 text-slate-500 hover:text-red-400 rounded-xl font-black text-[10px] uppercase tracking-widest transition-colors flex items-center justify-center gap-2 bg-transparent mt-2"
             >
                 <LogOut size={14} /> {esOnboarding ? 'Cancelar y Salir' : 'Cerrar Sesión'}
             </button>
