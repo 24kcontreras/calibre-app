@@ -1,7 +1,7 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { ArrowRight, Mail, Lock, AlertCircle } from 'lucide-react' // Quitamos Wrench
+import { ArrowRight, Mail, Lock, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 
@@ -10,6 +10,17 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
+
+  // 🔥 SOLUCIÓN AL RECARGAR: Si ya hay sesión activa, entra directo a la pizarra
+  useEffect(() => {
+    const checkSess = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        window.location.reload(); // Fuerza la recarga para que el page.tsx principal vea la sesión
+      }
+    }
+    checkSess();
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -28,7 +39,8 @@ export default function Login() {
             return
         }
         
-        window.location.href = '/taller'
+        // 🔥 Lo mandamos a la raíz (/) que es donde vive tu página principal
+        window.location.href = '/'
     } catch (err) {
         setErrorMsg('Ocurrió un error inesperado al iniciar sesión.')
         setLoading(false)
@@ -44,8 +56,8 @@ export default function Login() {
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                // 🔥 EL CAMBIO ESTÁ AQUÍ: Lo mandamos directo a /taller
-                redirectTo: `${window.location.origin}/taller`
+                // 🔥 Redirección correcta a la raíz del proyecto
+                redirectTo: `${window.location.origin}/`
             }
         })
 
@@ -81,7 +93,6 @@ export default function Login() {
                     className="object-contain drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]"
                 />
             </div>
-            {/* 🔥 VUELVE EL TEXTO ORIGINAL */}
             <h1 className="text-3xl font-black uppercase tracking-tighter">Calibre<span className="text-emerald-500">.</span></h1>
             <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-2">Acceso Operadores</h2>
         </div>

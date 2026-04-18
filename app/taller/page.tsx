@@ -961,9 +961,10 @@ export default function CalibreApp() {
   }, {});
   const topMecanicos = Object.entries(conteoMecanicos).sort((a: any, b: any) => b[1] - a[1]).slice(0, 3) as [string, number][];
 
+  // 🔥 AGENDA PREDICTIVA 2.0 (TIEMPOS AGRESIVOS)
   const hoy = new Date();
-  const hace6Meses = new Date();
-  hace6Meses.setMonth(hoy.getMonth() - 6);
+  const hace5Meses = new Date();
+  hace5Meses.setMonth(hoy.getMonth() - 5); // Aviso preventivo al mes 5 en vez de los 6
 
   const oportunidadesVenta = vehiculos.filter(v => {
       const alertasPendientes = v.alertas_desgaste?.filter((a: any) => a.estado === 'Pendiente') || [];
@@ -972,15 +973,15 @@ export default function CalibreApp() {
           const diasTranscurridos = (hoy.getTime() - fechaAlerta.getTime()) / (1000 * 3600 * 24);
           
           if (alerta.nivel_riesgo === 'Amarillo') {
-              return diasTranscurridos >= 90;
+              return diasTranscurridos >= 30; // Antes 90 días, ahora 30 para desgastes menores
           } else if (alerta.nivel_riesgo === 'Rojo') {
-              return diasTranscurridos >= 15;
+              return diasTranscurridos >= 5;  // Antes 15 días, ahora 5 días para emergencias
           }
           return false;
       });
       
       const ultimaOrden = historial.find(o => o.vehiculo_id === v.id);
-      const muchoTiempo = ultimaOrden && new Date(ultimaOrden.created_at) < hace6Meses;
+      const muchoTiempo = ultimaOrden && new Date(ultimaOrden.created_at) < hace5Meses;
 
       return alertaMadura || muchoTiempo;
   });
