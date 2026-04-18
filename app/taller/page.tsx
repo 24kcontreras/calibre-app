@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import imageCompression from 'browser-image-compression'
 import Login from '@/components/Login'
 import CAR_DATA from './autos.json'
-import { Edit2, Lightbulb ,Trash2, FileText, Clock, User, CheckCircle, Search, Bot, Plus, Wrench, ChevronRight, Info, MessageSquare, Mic, AlertTriangle, Megaphone, Settings, ChevronDown, Camera, Share2, Circle, CheckCircle2, X } from 'lucide-react'
+import { Edit2, Lightbulb ,Trash2, FileText, Clock, User, CheckCircle, Search, Bot, Plus, Wrench, ChevronRight, Info, MessageSquare, Mic, AlertTriangle, Megaphone, Settings, ChevronDown, Camera, Share2, Circle, CheckCircle2, X, ClipboardList } from 'lucide-react'
 import toast, { Toaster } from 'react-hot-toast'
 
 // 🚀 COMPONENTES EXTERNOS
@@ -20,6 +20,7 @@ import ModalScanner from '@/components/modals/ModalScanner'
 import ModalAlerta from '@/components/modals/ModalAlerta'
 import ModalMarketing from '@/components/modals/ModalMarketing'
 import ModalAnalisisIA from '@/components/modals/ModalAnalisisIA'
+import ModalActaRecepcion from '@/components/modals/ModalActaRecepcion' // 🔥 IMPORTAMOS EL NUEVO MODAL
 import { generarDocumentoPDF } from '@/utils/pdfGenerator'
 
 const MARCAS = Object.keys(CAR_DATA).sort();
@@ -91,6 +92,9 @@ export default function CalibreApp() {
   const [danosPrevios, setDanosPrevios] = useState('')
   const [fotosRecepcion, setFotosRecepcion] = useState<File[]>([])
   const [previewsRecepcion, setPreviewsRecepcion] = useState<string[]>([])
+
+  // 🔥 ESTADO PARA VER EL ACTA
+  const [modalActa, setModalActa] = useState<any | null>(null)
 
   // 🔥 ESTADOS PARA EDITAR LA ORDEN
   const [modalEditarOrden, setModalEditarOrden] = useState<any | null>(null)
@@ -389,7 +393,6 @@ export default function CalibreApp() {
       }
   }
 
-  // 🔥 ACTUALIZADO: Resetear los estados del acta al abrir modal
   const abrirOrden = (vehiculo: any) => {
       setDescripcionOrden(''); 
       setValorDiagnostico('');
@@ -512,7 +515,6 @@ export default function CalibreApp() {
       }
   }
 
-  // 🔥 ACTUALIZADO: Función de guardar con soporte para Acta de Recepción y Fotos
   const confirmarNuevaOrden = async () => {
       if (!modalNuevaOrden) return;
       setCreandoOrden(true);
@@ -551,7 +553,6 @@ export default function CalibreApp() {
           
           const ordenId = nuevaOrden[0].id;
 
-          // 🔥 Subir fotos de recepción si existen
           if (mostrarActa && fotosRecepcion.length > 0) {
               toast.loading("Subiendo fotos de recepción...", { id: toastId });
               for (const foto of fotosRecepcion) {
@@ -572,7 +573,6 @@ export default function CalibreApp() {
               }
           }
 
-          // Crear item de diagnóstico si hay valor
           const valorInt = valorDiagnostico ? parseInt(valorDiagnostico) : 0;
           if (valorInt > 0) {
               const { error: errorItem } = await supabase.from('items_orden').insert([{
@@ -961,10 +961,9 @@ export default function CalibreApp() {
   }, {});
   const topMecanicos = Object.entries(conteoMecanicos).sort((a: any, b: any) => b[1] - a[1]).slice(0, 3) as [string, number][];
 
-  // 🔥 AGENDA PREDICTIVA 2.0 (TIEMPOS AGRESIVOS)
   const hoy = new Date();
   const hace5Meses = new Date();
-  hace5Meses.setMonth(hoy.getMonth() - 5); // Aviso preventivo al mes 5 en vez de los 6
+  hace5Meses.setMonth(hoy.getMonth() - 5); 
 
   const oportunidadesVenta = vehiculos.filter(v => {
       const alertasPendientes = v.alertas_desgaste?.filter((a: any) => a.estado === 'Pendiente') || [];
@@ -973,9 +972,9 @@ export default function CalibreApp() {
           const diasTranscurridos = (hoy.getTime() - fechaAlerta.getTime()) / (1000 * 3600 * 24);
           
           if (alerta.nivel_riesgo === 'Amarillo') {
-              return diasTranscurridos >= 30; // Antes 90 días, ahora 30 para desgastes menores
+              return diasTranscurridos >= 30; 
           } else if (alerta.nivel_riesgo === 'Rojo') {
-              return diasTranscurridos >= 5;  // Antes 15 días, ahora 5 días para emergencias
+              return diasTranscurridos >= 5;  
           }
           return false;
       });
@@ -1290,6 +1289,11 @@ export default function CalibreApp() {
                                         </div>
                                         
                                         <div className="flex gap-2 shrink-0">
+                                            {/* 🔥 BOTÓN PARA VER ACTA (Pizarra) */}
+                                            <button onClick={() => setModalActa(o)} className="bg-slate-800/50 backdrop-blur-sm p-2.5 rounded-xl hover:bg-cyan-900/50 text-cyan-400 transition-all border border-slate-700/50 shadow-sm hover:scale-110" title="Ver Acta de Recepción">
+                                                <ClipboardList size={16} />
+                                            </button>
+
                                             <button onClick={() => compartirLinkCliente(o)} className="bg-slate-800/50 backdrop-blur-sm p-2.5 rounded-xl hover:bg-blue-900/50 text-blue-400 transition-all border border-slate-700/50 shadow-sm hover:scale-110" title="Compartir Link del Vehículo">                                                
                                                 <Share2 size={16} />
                                             </button>
@@ -1405,8 +1409,16 @@ export default function CalibreApp() {
                                 </div>
                             </div>
                             
-                            {/* 🔥 BOTONES (Compartir + PDF) */}
+                            {/* 🔥 BOTONES (Acta + Compartir + PDF) */}
                             <div className="flex items-center gap-2 shrink-0">
+                                <button 
+                                    onClick={() => setModalActa(o)} 
+                                    className="bg-slate-900 text-slate-500 border border-slate-700/50 p-2.5 rounded-xl hover:border-cyan-500 hover:text-cyan-400 hover:bg-cyan-500/10 transition-all" 
+                                    title="Ver Acta de Recepción"
+                                >
+                                    <ClipboardList size={16} />
+                                </button>
+
                                 <button 
                                     onClick={() => compartirLinkCliente(o)} 
                                     className="bg-slate-900 text-slate-500 border border-slate-700/50 p-2.5 rounded-xl hover:border-blue-500 hover:text-blue-400 hover:bg-blue-500/10 transition-all" 
@@ -1439,6 +1451,14 @@ export default function CalibreApp() {
       </div>
 
       {/* MODALES */}
+
+      {/* 🔥 NUEVO MODAL: ACTA DE RECEPCIÓN */}
+      {modalActa && (
+        <ModalActaRecepcion 
+          orden={modalActa} 
+          onClose={() => setModalActa(null)} 
+        />
+      )}
 
       {/* 🔥 MODAL PARA EDITAR ORDEN */}
       {modalEditarOrden && (
