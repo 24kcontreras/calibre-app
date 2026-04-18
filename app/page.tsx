@@ -1,9 +1,42 @@
 'use client'
+import { useState, useEffect } from 'react' // 🔥 IMPORTAMOS useState y useEffect
+import { useRouter } from 'next/navigation' // 🔥 IMPORTAMOS el router
+import { supabase } from '@/lib/supabase' // 🔥 IMPORTAMOS supabase
 import Link from 'next/link'
-import Image from 'next/image' // 🔥 IMPORTAMOS IMAGE
-import { ArrowRight, Bot, FileText, CheckCircle, Star, Shield, LineChart, LayoutDashboard, Lock, BookOpen, Database, MessageCircle } from 'lucide-react' // Quitamos Wrench
+import Image from 'next/image' 
+import { ArrowRight, Bot, FileText, CheckCircle, Star, Shield, LineChart, LayoutDashboard, Lock, BookOpen, Database, MessageCircle, Loader2 } from 'lucide-react' // 🔥 Agregamos Loader2
 
 export default function LandingPage() {
+  const router = useRouter()
+  // 🔥 ESTADO PARA LA PANTALLA NEGRA DE CARGA (Evita el parpadeo de la landing)
+  const [comprobandoSesion, setComprobandoSesion] = useState(true)
+
+  // 🔥 EL GUARDIA DE SEGURIDAD
+  useEffect(() => {
+    const revisarSiYaTieneLlave = async () => {
+      const { data } = await supabase.auth.getSession();
+      
+      if (data.session) {
+        // Si el usuario ya está logueado, lo mandamos al panel de control (taller) sin mostrarle publicidad
+        router.push('/taller'); 
+      } else {
+        // Si NO está logueado, quitamos la pantalla de carga y le mostramos la Landing
+        setComprobandoSesion(false);
+      }
+    };
+    
+    revisarSiYaTieneLlave();
+  }, [router]);
+
+  // 🔥 MIENTRAS PIENSA EL SISTEMA, MOSTRAMOS PANTALLA OSCURA LIMPIA
+  if (comprobandoSesion) {
+      return (
+          <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+              <Loader2 className="text-emerald-500 animate-spin" size={48} />
+          </div>
+      );
+  }
+
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-emerald-500 selection:text-slate-950 overflow-hidden">
         
@@ -245,7 +278,7 @@ export default function LandingPage() {
                 <Link href="/soporte" className="text-[10px] font-black text-slate-500 hover:text-emerald-400 uppercase tracking-widest transition-all hover:translate-y-[-1px]">
                     Soporte
                 </Link>
-                <Link href="/terminos" className="text-[10px] font-black text-slate-500 hover:text-emerald-400 uppercase tracking-widest transition-all hover:translate-y-[-1px]">
+                <Link href="/privacidad" className="text-[10px] font-black text-slate-500 hover:text-emerald-400 uppercase tracking-widest transition-all hover:translate-y-[-1px]">
                     Privacidad
                 </Link>
                 <Link href="/terminos" className="text-[10px] font-black text-slate-500 hover:text-emerald-400 uppercase tracking-widest transition-all hover:translate-y-[-1px]">
