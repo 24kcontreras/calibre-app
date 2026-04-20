@@ -1,26 +1,22 @@
 'use client'
-import { useState, useEffect } from 'react' // 🔥 IMPORTAMOS useState y useEffect
-import { useRouter } from 'next/navigation' // 🔥 IMPORTAMOS el router
-import { supabase } from '@/lib/supabase' // 🔥 IMPORTAMOS supabase
+import { useState, useEffect } from 'react' 
+import { useRouter } from 'next/navigation' 
+import { supabase } from '@/lib/supabase' 
 import Link from 'next/link'
 import Image from 'next/image' 
-import { ArrowRight, Bot, FileText, CheckCircle, Star, Shield, LineChart, LayoutDashboard, Lock, BookOpen, Database, MessageCircle, Loader2 } from 'lucide-react' // 🔥 Agregamos Loader2
+import { ArrowRight, Bot, FileText, CheckCircle, Star, Shield, LineChart, LayoutDashboard, Lock, BookOpen, Database, MessageCircle, Loader2 } from 'lucide-react' 
 
 export default function LandingPage() {
   const router = useRouter()
-  // 🔥 ESTADO PARA LA PANTALLA NEGRA DE CARGA (Evita el parpadeo de la landing)
   const [comprobandoSesion, setComprobandoSesion] = useState(true)
 
-  // 🔥 EL GUARDIA DE SEGURIDAD
   useEffect(() => {
     const revisarSiYaTieneLlave = async () => {
       const { data } = await supabase.auth.getSession();
       
       if (data.session) {
-        // Si el usuario ya está logueado, lo mandamos al panel de control (taller) sin mostrarle publicidad
         router.push('/taller'); 
       } else {
-        // Si NO está logueado, quitamos la pantalla de carga y le mostramos la Landing
         setComprobandoSesion(false);
       }
     };
@@ -28,7 +24,6 @@ export default function LandingPage() {
     revisarSiYaTieneLlave();
   }, [router]);
 
-  // 🔥 MIENTRAS PIENSA EL SISTEMA, MOSTRAMOS PANTALLA OSCURA LIMPIA
   if (comprobandoSesion) {
       return (
           <div className="min-h-screen bg-slate-950 flex items-center justify-center">
@@ -43,7 +38,6 @@ export default function LandingPage() {
       {/* 🟢 BARRA DE NAVEGACIÓN */}
       <nav className="w-full border-b border-slate-800 bg-slate-950/80 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-            {/* 🔥 MARCA CON LOGO Y TEXTO */}
             <div className="flex items-center gap-2.5">
                 <Image 
                     src="/logo-calibre.png" 
@@ -86,16 +80,20 @@ export default function LandingPage() {
             </Link>
         </div>
 
-        {/* 🟢 PRUEBA SOCIAL */}
-        <div className="flex flex-col items-center gap-3 mb-16 opacity-80">
+        {/* 🔥 PRUEBA SOCIAL ACTUALIZADA (Más profesional B2B) */}
+        <div className="flex flex-col items-center gap-3 mb-16">
             <div className="flex -space-x-3">
-                {[1,2,3,4,5].map(i => (
-                    <div key={i} className="w-10 h-10 rounded-full bg-slate-800 border-2 border-slate-950 flex items-center justify-center text-xs">🧑‍🔧</div>
+                {['TM', 'AM', 'RC', 'MS'].map((initials, i) => (
+                    <div key={i} className="w-10 h-10 rounded-full bg-slate-800 border-2 border-slate-950 flex items-center justify-center text-[10px] font-black text-slate-300 tracking-widest">
+                        {initials}
+                    </div>
                 ))}
             </div>
             <div className="flex items-center gap-2 text-sm font-bold text-slate-300">
-                <div className="flex text-emerald-500"><Star size={16} fill="currentColor"/><Star size={16} fill="currentColor"/><Star size={16} fill="currentColor"/><Star size={16} fill="currentColor"/><Star size={16} fill="currentColor"/></div>
-                <span>Más de 50 talleres confían en nosotros</span>
+                <div className="flex text-emerald-500">
+                    <Star size={16} fill="currentColor"/><Star size={16} fill="currentColor"/><Star size={16} fill="currentColor"/><Star size={16} fill="currentColor"/><Star size={16} fill="currentColor"/>
+                </div>
+                <span>Talleres a lo largo del país ya operan con Calibre</span>
             </div>
         </div>
 
@@ -106,7 +104,7 @@ export default function LandingPage() {
                 <div className="w-3 h-3 rounded-full bg-yellow-500/50"></div>
                 <div className="w-3 h-3 rounded-full bg-green-500/50"></div>
                 <div className="ml-4 bg-slate-900 border border-slate-700 px-3 py-1 rounded-md text-[10px] text-slate-500 font-mono flex-1 text-center max-w-sm mx-auto flex items-center justify-center gap-2">
-                    <Lock size={10} className="text-emerald-500" /> calibreapp.cl/taller
+                    <Lock size={10} className="text-emerald-500" /> calibreos.com/taller
                 </div>
             </div>
             <div className="p-4 md:p-8 grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-950 opacity-90">
@@ -129,7 +127,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* 🟢 SECCIÓN DE BENEFICIOS (BENTO GRID EXPANDIDO) */}
+      {/* 🟢 SECCIÓN DE BENEFICIOS (🔥 CARRUSEL MÓVIL APLICADO) */}
       <section id="beneficios" className="w-full bg-slate-900 border-t border-slate-800 py-24 relative z-10">
         <div className="max-w-7xl mx-auto px-6">
             <div className="text-center mb-16">
@@ -137,11 +135,11 @@ export default function LandingPage() {
                 <p className="mt-4 text-slate-400 font-bold">Un ecosistema completo diseñado para que dejes de apagar incendios y empieces a crecer.</p>
             </div>
 
-            {/* Grid de 6 columnas */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* 🔥 EL GRID AHORA ES UN CARRUSEL EN MÓVIL (hide-scrollbar) */}
+            <div className="flex overflow-x-auto snap-x snap-mandatory md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 pb-6 w-full -mx-4 px-4 md:mx-0 md:px-0 hide-scrollbar">
                 
                 {/* 1. Pizarra */}
-                <div className="bg-slate-950 p-8 rounded-[40px] border border-slate-800 hover:border-emerald-500/50 transition-colors group">
+                <div className="snap-center min-w-[85vw] md:min-w-0 bg-slate-950 p-8 rounded-[40px] border border-slate-800 hover:border-emerald-500/50 transition-colors group">
                     <div className="bg-slate-900 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-slate-800">
                         <LayoutDashboard className="text-emerald-500" size={32} />
                     </div>
@@ -150,25 +148,25 @@ export default function LandingPage() {
                 </div>
 
                 {/* 2. diagnóstico IA */}
-                <div className="bg-slate-950 p-8 rounded-[40px] border border-slate-800 hover:border-blue-500/50 transition-colors group">
+                <div className="snap-center min-w-[85vw] md:min-w-0 bg-slate-950 p-8 rounded-[40px] border border-slate-800 hover:border-blue-500/50 transition-colors group">
                     <div className="bg-slate-900 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-slate-800">
                         <Bot className="text-blue-500" size={32} />
                     </div>
-                    <h3 className="text-xl font-black uppercase tracking-tighter mb-4">Diagnóstico IA (OBD2)</h3>
+                    <h3 className="text-xl font-black uppercase tracking-tighter mb-4">Diagnóstico IA</h3>
                     <p className="text-sm font-bold text-slate-400 leading-relaxed">Ingresa códigos de falla o síntomas, y nuestra IA te entregará probabilidades de diagnóstico, torques referenciales y pasos a seguir.</p>
                 </div>
 
                 {/* 3. manual */}
-                <div className="bg-slate-950 p-8 rounded-[40px] border border-slate-800 hover:border-purple-500/50 transition-colors group">
+                <div className="snap-center min-w-[85vw] md:min-w-0 bg-slate-950 p-8 rounded-[40px] border border-slate-800 hover:border-purple-500/50 transition-colors group">
                     <div className="bg-slate-900 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-slate-800">
                         <BookOpen className="text-purple-500" size={32} />
                     </div>
-                    <h3 className="text-xl font-black uppercase tracking-tighter mb-4">Manual tecnico IA</h3>
-                    <p className="text-sm font-bold text-slate-400 leading-relaxed">Accede a especificaciones exactas en segundos. Consulta torques de apriete, luz de válvulas, capacidades de fluidos y más, sin perder horas buscando en foros de internet.</p>
+                    <h3 className="text-xl font-black uppercase tracking-tighter mb-4">Manual Técnico IA</h3>
+                    <p className="text-sm font-bold text-slate-400 leading-relaxed">Accede a especificaciones exactas en segundos. Consulta torques de apriete, luz de válvulas y capacidades sin perder horas en internet.</p>
                 </div>
 
                 {/* 4. Base de Datos / Historial */}
-                <div className="bg-slate-950 p-8 rounded-[40px] border border-slate-800 hover:border-cyan-500/50 transition-colors group">
+                <div className="snap-center min-w-[85vw] md:min-w-0 bg-slate-950 p-8 rounded-[40px] border border-slate-800 hover:border-cyan-500/50 transition-colors group">
                     <div className="bg-slate-900 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-slate-800">
                         <Database className="text-cyan-500" size={32} />
                     </div>
@@ -177,7 +175,7 @@ export default function LandingPage() {
                 </div>
 
                 {/* 5. Conexión WhatsApp */}
-                <div className="bg-slate-950 p-8 rounded-[40px] border border-slate-800 hover:border-green-500/50 transition-colors group">
+                <div className="snap-center min-w-[85vw] md:min-w-0 bg-slate-950 p-8 rounded-[40px] border border-slate-800 hover:border-green-500/50 transition-colors group">
                     <div className="bg-slate-900 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-slate-800">
                         <MessageCircle className="text-green-500" size={32} />
                     </div>
@@ -186,7 +184,7 @@ export default function LandingPage() {
                 </div>
 
                 {/* 6. Informes PDF */}
-                <div className="bg-slate-950 p-8 rounded-[40px] border border-slate-800 hover:border-orange-500/50 transition-colors group">
+                <div className="snap-center min-w-[85vw] md:min-w-0 bg-slate-950 p-8 rounded-[40px] border border-slate-800 hover:border-orange-500/50 transition-colors group">
                     <div className="bg-slate-900 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-slate-800">
                         <FileText className="text-orange-500" size={32} />
                     </div>
@@ -255,8 +253,6 @@ export default function LandingPage() {
       {/* 🟢 FOOTER CORPORATIVO */}
       <footer className="w-full bg-slate-950 border-t border-slate-900 py-12 relative z-10">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
-            
-            {/* 🔥 MARCA CON LOGO Y TEXTO EN EL FOOTER */}
             <div className="flex items-center gap-2 group cursor-default">
                 <Image 
                     src="/logo-calibre.png" 
@@ -285,10 +281,8 @@ export default function LandingPage() {
                     Términos
                 </Link>
             </div>
-            
         </div>
       </footer>
-
     </main>
   )
 }
