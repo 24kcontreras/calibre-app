@@ -1,36 +1,25 @@
 'use client'
-import { useState, useEffect, useRef } from 'react' 
+import { useState, useEffect } from 'react' 
 import { useRouter } from 'next/navigation' 
 import { supabase } from '@/lib/supabase' 
 import Link from 'next/link'
 import Image from 'next/image' 
-import { ArrowRight, Bot, FileText, CheckCircle, Star, Shield, LineChart, LayoutDashboard, Lock, BookOpen, Database, MessageCircle, Loader2 } from 'lucide-react' 
+import { ArrowRight, Bot, FileText, CheckCircle, Star, Shield, LineChart, LayoutDashboard, Lock, BookOpen, Database, MessageCircle, Loader2, ChevronLeft, ChevronRight } from 'lucide-react' 
 
 export default function LandingPage() {
   const router = useRouter()
   const [comprobandoSesion, setComprobandoSesion] = useState(true)
 
-  // 🔥 REFERENCIA PARA EL CARRUSEL
-  const carruselRef = useRef<HTMLDivElement>(null);
+  // 🔥 ESTADO PARA EL CARRUSEL MÓVIL
+  const [slideActivo, setSlideActivo] = useState(0);
 
-  // 🔥 EFECTO DEL GUIÑO (SCROLL HINTING)
-  useEffect(() => {
-      const timer = setTimeout(() => {
-          if (carruselRef.current) {
-              // Desplaza 100 píxeles a la derecha suavemente
-              carruselRef.current.scrollBy({ left: 100, behavior: 'smooth' });
-              
-              // Lo devuelve a su lugar medio segundo después
-              setTimeout(() => {
-                  if (carruselRef.current) {
-                      carruselRef.current.scrollBy({ left: -100, behavior: 'smooth' });
-                  }
-              }, 600);
-          }
-      }, 2500); 
-
-      return () => clearTimeout(timer);
-  }, []);
+  const slideAnterior = () => {
+      setSlideActivo((prev) => (prev === 0 ? 5 : prev - 1));
+  };
+  
+  const slideSiguiente = () => {
+      setSlideActivo((prev) => (prev === 5 ? 0 : prev + 1));
+  };
 
   useEffect(() => {
     const revisarSiYaTieneLlave = async () => {
@@ -119,7 +108,7 @@ export default function LandingPage() {
             </div>
         </div>
 
-        {/* 🟢 MOCKUP VISUAL DEL SISTEMA (🔥 Oculto en móviles con hidden md:block) */}
+        {/* 🟢 MOCKUP VISUAL DEL SISTEMA (Oculto en móviles con hidden md:block) */}
         <div className="hidden md:block w-full max-w-5xl bg-slate-900 border border-slate-700 rounded-t-3xl rounded-b-lg shadow-2xl overflow-hidden relative">
             <div className="bg-slate-800/50 border-b border-slate-700 px-4 py-3 flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-red-500/50"></div>
@@ -149,19 +138,97 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* 🟢 SECCIÓN DE BENEFICIOS */}
-      <section id="beneficios" className="w-full bg-slate-900 border-t border-slate-800 py-24 relative z-10">
+      {/* 🟢 SECCIÓN DE BENEFICIOS CON CARRUSEL INTERACTIVO */}
+      <section id="beneficios" className="w-full bg-slate-900 border-t border-slate-800 py-24 relative z-10 overflow-hidden">
         <div className="max-w-7xl mx-auto px-6">
-            <div className="text-center mb-16">
+            <div className="text-center mb-12 md:mb-16">
                 <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter text-slate-100">Por qué elegir <span className="text-emerald-500">Calibre</span></h2>
-                <p className="mt-4 text-slate-400 font-bold">Un ecosistema completo diseñado para que dejes de apagar incendios y empieces a crecer.</p>
+                <p className="mt-4 text-slate-400 font-bold max-w-2xl mx-auto">Un ecosistema completo diseñado para que dejes de apagar incendios y empieces a crecer.</p>
             </div>
 
-            {/* 🔥 CARRUSEL EN MÓVIL (Con referencia para la animación) */}
-            <div ref={carruselRef} className="flex overflow-x-auto snap-x snap-mandatory md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 pb-6 w-full -mx-4 px-4 md:mx-0 md:px-0 hide-scrollbar">
-                
+            {/* 🔥 VISTA MÓVIL: CARRUSEL CONTROLADO */}
+            <div className="md:hidden relative w-full pb-12">
+                <div className="overflow-hidden rounded-[40px] border border-slate-800 bg-slate-950 relative min-h-[380px]">
+                    <div 
+                        className="flex transition-transform duration-500 ease-in-out h-full"
+                        style={{ transform: `translateX(-${slideActivo * 100}%)` }}
+                    >
+                        {/* Slide 1 */}
+                        <div className="w-full flex-shrink-0 p-8 flex flex-col justify-center">
+                            <div className="bg-slate-900 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 border border-slate-800 mx-auto">
+                                <LayoutDashboard className="text-emerald-500" size={32} />
+                            </div>
+                            <h3 className="text-xl font-black uppercase tracking-tighter mb-4 text-center">Pizarra Inteligente</h3>
+                            <p className="text-sm font-bold text-slate-400 leading-relaxed text-center">Visualiza todos los vehículos en tiempo real. Asigna mecánicos, actualiza estados y controla los tiempos de entrega con un solo clic.</p>
+                        </div>
+                        {/* Slide 2 */}
+                        <div className="w-full flex-shrink-0 p-8 flex flex-col justify-center">
+                            <div className="bg-slate-900 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 border border-slate-800 mx-auto">
+                                <Bot className="text-blue-500" size={32} />
+                            </div>
+                            <h3 className="text-xl font-black uppercase tracking-tighter mb-4 text-center">Diagnóstico IA</h3>
+                            <p className="text-sm font-bold text-slate-400 leading-relaxed text-center">Ingresa códigos de falla o síntomas, y nuestra IA te entregará probabilidades de diagnóstico, torques referenciales y pasos a seguir.</p>
+                        </div>
+                        {/* Slide 3 */}
+                        <div className="w-full flex-shrink-0 p-8 flex flex-col justify-center">
+                            <div className="bg-slate-900 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 border border-slate-800 mx-auto">
+                                <BookOpen className="text-purple-500" size={32} />
+                            </div>
+                            <h3 className="text-xl font-black uppercase tracking-tighter mb-4 text-center">Manual Técnico IA</h3>
+                            <p className="text-sm font-bold text-slate-400 leading-relaxed text-center">Accede a especificaciones exactas en segundos. Consulta torques de apriete, luz de válvulas y capacidades sin perder horas en internet.</p>
+                        </div>
+                        {/* Slide 4 */}
+                        <div className="w-full flex-shrink-0 p-8 flex flex-col justify-center">
+                            <div className="bg-slate-900 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 border border-slate-800 mx-auto">
+                                <Database className="text-cyan-500" size={32} />
+                            </div>
+                            <h3 className="text-xl font-black uppercase tracking-tighter mb-4 text-center">Historial Clínico Auto</h3>
+                            <p className="text-sm font-bold text-slate-400 leading-relaxed text-center">Mantén un registro inmutable de mantenimientos, kilometrajes y reparaciones previas por cada vehículo que visita tus instalaciones.</p>
+                        </div>
+                        {/* Slide 5 */}
+                        <div className="w-full flex-shrink-0 p-8 flex flex-col justify-center">
+                            <div className="bg-slate-900 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 border border-slate-800 mx-auto">
+                                <MessageCircle className="text-green-500" size={32} />
+                            </div>
+                            <h3 className="text-xl font-black uppercase tracking-tighter mb-4 text-center">Enlaces a WhatsApp</h3>
+                            <p className="text-sm font-bold text-slate-400 leading-relaxed text-center">Envía recordatorios, presupuestos y notificaciones de vehículo listo directo al celular de tu cliente en segundos.</p>
+                        </div>
+                        {/* Slide 6 */}
+                        <div className="w-full flex-shrink-0 p-8 flex flex-col justify-center">
+                            <div className="bg-slate-900 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 border border-slate-800 mx-auto">
+                                <FileText className="text-orange-500" size={32} />
+                            </div>
+                            <h3 className="text-xl font-black uppercase tracking-tighter mb-4 text-center">Informes Profesionales</h3>
+                            <p className="text-sm font-bold text-slate-400 leading-relaxed text-center">Genera reportes técnicos en formato PDF con el logo de tu taller. Transmite transparencia y justifica el valor de tus servicios.</p>
+                        </div>
+                    </div>
+
+                    {/* Controles de Flechas Flotantes */}
+                    <button onClick={slideAnterior} className="absolute top-1/2 left-2 -translate-y-1/2 w-10 h-10 bg-slate-900/80 rounded-full flex items-center justify-center text-slate-400 hover:text-emerald-400 border border-slate-700/50 backdrop-blur-sm z-10 transition-colors">
+                        <ChevronLeft size={24} />
+                    </button>
+                    <button onClick={slideSiguiente} className="absolute top-1/2 right-2 -translate-y-1/2 w-10 h-10 bg-slate-900/80 rounded-full flex items-center justify-center text-slate-400 hover:text-emerald-400 border border-slate-700/50 backdrop-blur-sm z-10 transition-colors">
+                        <ChevronRight size={24} />
+                    </button>
+                </div>
+
+                {/* Indicadores (Puntos) */}
+                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex space-x-2">
+                    {[0, 1, 2, 3, 4, 5].map((index) => (
+                        <button 
+                            key={index} 
+                            onClick={() => setSlideActivo(index)}
+                            className={`h-2 rounded-full transition-all duration-300 ${slideActivo === index ? 'w-6 bg-emerald-500' : 'w-2 bg-slate-700 hover:bg-slate-500'}`}
+                            aria-label={`Ir al slide ${index + 1}`}
+                        />
+                    ))}
+                </div>
+            </div>
+
+            {/* 🔥 VISTA PC: GRILLA NORMAL */}
+            <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {/* 1. Pizarra */}
-                <div className="snap-center min-w-[85vw] md:min-w-0 bg-slate-950 p-8 rounded-[40px] border border-slate-800 hover:border-emerald-500/50 transition-colors group">
+                <div className="bg-slate-950 p-8 rounded-[40px] border border-slate-800 hover:border-emerald-500/50 transition-colors group">
                     <div className="bg-slate-900 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-slate-800">
                         <LayoutDashboard className="text-emerald-500" size={32} />
                     </div>
@@ -170,7 +237,7 @@ export default function LandingPage() {
                 </div>
 
                 {/* 2. diagnóstico IA */}
-                <div className="snap-center min-w-[85vw] md:min-w-0 bg-slate-950 p-8 rounded-[40px] border border-slate-800 hover:border-blue-500/50 transition-colors group">
+                <div className="bg-slate-950 p-8 rounded-[40px] border border-slate-800 hover:border-blue-500/50 transition-colors group">
                     <div className="bg-slate-900 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-slate-800">
                         <Bot className="text-blue-500" size={32} />
                     </div>
@@ -179,7 +246,7 @@ export default function LandingPage() {
                 </div>
 
                 {/* 3. manual */}
-                <div className="snap-center min-w-[85vw] md:min-w-0 bg-slate-950 p-8 rounded-[40px] border border-slate-800 hover:border-purple-500/50 transition-colors group">
+                <div className="bg-slate-950 p-8 rounded-[40px] border border-slate-800 hover:border-purple-500/50 transition-colors group">
                     <div className="bg-slate-900 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-slate-800">
                         <BookOpen className="text-purple-500" size={32} />
                     </div>
@@ -188,7 +255,7 @@ export default function LandingPage() {
                 </div>
 
                 {/* 4. Base de Datos / Historial */}
-                <div className="snap-center min-w-[85vw] md:min-w-0 bg-slate-950 p-8 rounded-[40px] border border-slate-800 hover:border-cyan-500/50 transition-colors group">
+                <div className="bg-slate-950 p-8 rounded-[40px] border border-slate-800 hover:border-cyan-500/50 transition-colors group">
                     <div className="bg-slate-900 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-slate-800">
                         <Database className="text-cyan-500" size={32} />
                     </div>
@@ -197,7 +264,7 @@ export default function LandingPage() {
                 </div>
 
                 {/* 5. Conexión WhatsApp */}
-                <div className="snap-center min-w-[85vw] md:min-w-0 bg-slate-950 p-8 rounded-[40px] border border-slate-800 hover:border-green-500/50 transition-colors group">
+                <div className="bg-slate-950 p-8 rounded-[40px] border border-slate-800 hover:border-green-500/50 transition-colors group">
                     <div className="bg-slate-900 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-slate-800">
                         <MessageCircle className="text-green-500" size={32} />
                     </div>
@@ -206,14 +273,13 @@ export default function LandingPage() {
                 </div>
 
                 {/* 6. Informes PDF */}
-                <div className="snap-center min-w-[85vw] md:min-w-0 bg-slate-950 p-8 rounded-[40px] border border-slate-800 hover:border-orange-500/50 transition-colors group">
+                <div className="bg-slate-950 p-8 rounded-[40px] border border-slate-800 hover:border-orange-500/50 transition-colors group">
                     <div className="bg-slate-900 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-slate-800">
                         <FileText className="text-orange-500" size={32} />
                     </div>
                     <h3 className="text-xl font-black uppercase tracking-tighter mb-4">Informes Profesionales</h3>
                     <p className="text-sm font-bold text-slate-400 leading-relaxed">Genera reportes técnicos en formato PDF con el logo de tu taller. Transmite transparencia y justifica el valor de tus servicios.</p>
                 </div>
-
             </div>
         </div>
       </section>
