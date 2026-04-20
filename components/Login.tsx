@@ -22,11 +22,25 @@ export default function Login() {
     checkSess();
   }, []);
 
+  // 🔥 LA LLAVE MAESTRA: Validador Regex B2B
+  const validarContrasena = (pass: string) => {
+      // 8+ caracteres, 1 mayúscula, 1 número, 1 símbolo especial
+      const regex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+{}:;<>,.?~\\/-]).{8,}$/;
+      return regex.test(pass);
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setErrorMsg('')
     
+    // 🔥 FILTRO 1: No molestamos a la base de datos si la clave no cumple el estándar
+    if (!validarContrasena(password)) {
+        setErrorMsg('La contraseña no cumple el formato corporativo. Revisa los requisitos.');
+        setLoading(false);
+        return;
+    }
+
     try {
         const { error } = await supabase.auth.signInWithPassword({ 
             email, 
@@ -34,12 +48,17 @@ export default function Login() {
         })
         
         if (error) {
-            setErrorMsg('Credenciales incorrectas. Verifica tu correo y contraseña.')
+            // 🔥 FILTRO 2: Supabase nos avisa si el usuario no ha verificado su correo
+            if (error.message.includes("Email not confirmed")) {
+                setErrorMsg('Por seguridad, debes confirmar tu correo. Revisa tu bandeja de entrada o carpeta de Spam.');
+            } else {
+                setErrorMsg('Credenciales incorrectas. Verifica tu correo y contraseña.');
+            }
             setLoading(false)
             return
         }
         
-        // 🔥 Lo mandamos a la raíz (/) que es donde vive tu página principal
+        // Lo mandamos a la raíz (/) que es donde vive tu página principal
         window.location.href = '/'
     } catch (err) {
         setErrorMsg('Ocurrió un error inesperado al iniciar sesión.')
@@ -56,7 +75,6 @@ export default function Login() {
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                // 🔥 Redirección correcta a la raíz del proyecto
                 redirectTo: `${window.location.origin}/`
             }
         })
@@ -121,13 +139,17 @@ export default function Login() {
                     placeholder="Contraseña" 
                     className="w-full p-4 pl-12 rounded-2xl border border-slate-800 bg-slate-950 text-sm text-slate-200 outline-none focus:border-emerald-500 transition-colors font-bold"
                 />
+                {/* 🔥 UX: Guía visual para el usuario antes de que se equivoque */}
+                <p className="text-[9px] text-slate-500 mt-2 ml-2 font-bold uppercase tracking-wider">
+                    Mínimo 8 caracteres, 1 mayúscula, 1 número y 1 símbolo (!@#$)
+                </p>
             </div>
 
             {/* 🔴 Mensaje de Error Visual */}
             {errorMsg && (
-                <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 p-3 rounded-xl text-xs font-bold animate-pulse">
-                    <AlertCircle size={16} className="shrink-0" />
-                    <span>{errorMsg}</span>
+                <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/30 text-red-400 p-3 rounded-xl text-xs font-bold animate-pulse">
+                    <AlertCircle size={16} className="shrink-0 mt-0.5" />
+                    <span className="leading-relaxed">{errorMsg}</span>
                 </div>
             )}
 

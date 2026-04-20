@@ -14,25 +14,33 @@ export default function Registro() {
   const [errorMsg, setErrorMsg] = useState('')
   const [successMsg, setSuccessMsg] = useState(false)
 
+  // 🔥 LA LLAVE MAESTRA: Validador Regex B2B
+  const validarContrasena = (pass: string) => {
+      // 8+ caracteres, 1 mayúscula, 1 número, 1 símbolo especial
+      const regex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+{}:;<>,.?~\\/-]).{8,}$/;
+      return regex.test(pass);
+  };
+
   const handleRegistro = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setErrorMsg('')
     
-    // 1. Validación básica
+    // 1. Validación de coincidencia
     if (password !== confirmPassword) {
         setErrorMsg('Las contraseñas no coinciden.')
         setLoading(false)
         return
     }
 
-    if (password.length < 6) {
-        setErrorMsg('La contraseña debe tener al menos 6 caracteres.')
+    // 2. 🔥 Validación de Seguridad B2B
+    if (!validarContrasena(password)) {
+        setErrorMsg('La contraseña no cumple el formato corporativo. Revisa los requisitos.')
         setLoading(false)
         return
     }
 
-    // 2. Creación en Supabase
+    // 3. Creación en Supabase
     const { error } = await supabase.auth.signUp({ 
         email, 
         password,
@@ -112,6 +120,10 @@ export default function Registro() {
                         placeholder="Contraseña" 
                         className="w-full p-4 pl-12 rounded-2xl border border-slate-800 bg-slate-950 text-sm text-slate-200 outline-none focus:border-emerald-500 transition-colors font-bold"
                     />
+                    {/* 🔥 UX: Guía visual de requisitos */}
+                    <p className="text-[9px] text-slate-500 mt-2 ml-2 font-bold uppercase tracking-wider">
+                        Mínimo 8 caracteres, 1 mayúscula, 1 número y 1 símbolo (!@#$)
+                    </p>
                 </div>
 
                 <div className="relative">
@@ -126,10 +138,11 @@ export default function Registro() {
                     />
                 </div>
 
+                {/* 🔴 Mensaje de Error Visual (Alineado para textos largos) */}
                 {errorMsg && (
-                    <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 p-3 rounded-xl text-xs font-bold animate-pulse">
-                        <AlertCircle size={16} className="shrink-0" />
-                        <span>{errorMsg}</span>
+                    <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/30 text-red-400 p-3 rounded-xl text-xs font-bold animate-pulse">
+                        <AlertCircle size={16} className="shrink-0 mt-0.5" />
+                        <span className="leading-relaxed">{errorMsg}</span>
                     </div>
                 )}
 
