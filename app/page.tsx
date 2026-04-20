@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react' 
+import { useState, useEffect, useRef } from 'react' 
 import { useRouter } from 'next/navigation' 
 import { supabase } from '@/lib/supabase' 
 import Link from 'next/link'
@@ -9,6 +9,28 @@ import { ArrowRight, Bot, FileText, CheckCircle, Star, Shield, LineChart, Layout
 export default function LandingPage() {
   const router = useRouter()
   const [comprobandoSesion, setComprobandoSesion] = useState(true)
+
+  // 🔥 REFERENCIA PARA EL CARRUSEL
+  const carruselRef = useRef<HTMLDivElement>(null);
+
+  // 🔥 EFECTO DEL GUIÑO (SCROLL HINTING)
+  useEffect(() => {
+      const timer = setTimeout(() => {
+          if (carruselRef.current) {
+              // Desplaza 100 píxeles a la derecha suavemente
+              carruselRef.current.scrollBy({ left: 100, behavior: 'smooth' });
+              
+              // Lo devuelve a su lugar medio segundo después
+              setTimeout(() => {
+                  if (carruselRef.current) {
+                      carruselRef.current.scrollBy({ left: -100, behavior: 'smooth' });
+                  }
+              }, 600);
+          }
+      }, 2500); 
+
+      return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const revisarSiYaTieneLlave = async () => {
@@ -135,13 +157,8 @@ export default function LandingPage() {
                 <p className="mt-4 text-slate-400 font-bold">Un ecosistema completo diseñado para que dejes de apagar incendios y empieces a crecer.</p>
             </div>
 
-            {/* 🔥 INDICADOR DE SWIPE (Solo visible en móviles) */}
-            <div className="md:hidden flex items-center justify-center gap-2 text-[10px] text-emerald-500 font-black uppercase tracking-widest mb-6 animate-pulse">
-                Desliza para explorar <ArrowRight size={14} />
-            </div>
-
-            {/* 🔥 CARRUSEL EN MÓVIL */}
-            <div className="flex overflow-x-auto snap-x snap-mandatory md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 pb-6 w-full -mx-4 px-4 md:mx-0 md:px-0 hide-scrollbar">
+            {/* 🔥 CARRUSEL EN MÓVIL (Con referencia para la animación) */}
+            <div ref={carruselRef} className="flex overflow-x-auto snap-x snap-mandatory md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 pb-6 w-full -mx-4 px-4 md:mx-0 md:px-0 hide-scrollbar">
                 
                 {/* 1. Pizarra */}
                 <div className="snap-center min-w-[85vw] md:min-w-0 bg-slate-950 p-8 rounded-[40px] border border-slate-800 hover:border-emerald-500/50 transition-colors group">
