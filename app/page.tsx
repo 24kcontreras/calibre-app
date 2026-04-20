@@ -80,7 +80,7 @@ export default function LandingPage() {
             </Link>
         </div>
 
-        {/* 🔥 PRUEBA SOCIAL ACTUALIZADA (Más profesional B2B) */}
+        {/* 🔥 PRUEBA SOCIAL ACTUALIZADA */}
         <div className="flex flex-col items-center gap-3 mb-16">
             <div className="flex -space-x-3">
                 {['TM', 'AM', 'RC', 'MS'].map((initials, i) => (
@@ -97,8 +97,8 @@ export default function LandingPage() {
             </div>
         </div>
 
-        {/* 🟢 MOCKUP VISUAL DEL SISTEMA */}
-        <div className="w-full max-w-5xl bg-slate-900 border border-slate-700 rounded-t-3xl rounded-b-lg shadow-2xl overflow-hidden relative">
+        {/* 🟢 MOCKUP VISUAL DEL SISTEMA (🔥 Oculto en móviles con hidden md:block) */}
+        <div className="hidden md:block w-full max-w-5xl bg-slate-900 border border-slate-700 rounded-t-3xl rounded-b-lg shadow-2xl overflow-hidden relative">
             <div className="bg-slate-800/50 border-b border-slate-700 px-4 py-3 flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-red-500/50"></div>
                 <div className="w-3 h-3 rounded-full bg-yellow-500/50"></div>
@@ -127,7 +127,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* 🟢 SECCIÓN DE BENEFICIOS (🔥 CARRUSEL MÓVIL APLICADO) */}
+      {/* 🟢 SECCIÓN DE BENEFICIOS */}
       <section id="beneficios" className="w-full bg-slate-900 border-t border-slate-800 py-24 relative z-10">
         <div className="max-w-7xl mx-auto px-6">
             <div className="text-center mb-16">
@@ -135,7 +135,12 @@ export default function LandingPage() {
                 <p className="mt-4 text-slate-400 font-bold">Un ecosistema completo diseñado para que dejes de apagar incendios y empieces a crecer.</p>
             </div>
 
-            {/* 🔥 EL GRID AHORA ES UN CARRUSEL EN MÓVIL (hide-scrollbar) */}
+            {/* 🔥 INDICADOR DE SWIPE (Solo visible en móviles) */}
+            <div className="md:hidden flex items-center justify-center gap-2 text-[10px] text-emerald-500 font-black uppercase tracking-widest mb-6 animate-pulse">
+                Desliza para explorar <ArrowRight size={14} />
+            </div>
+
+            {/* 🔥 CARRUSEL EN MÓVIL */}
             <div className="flex overflow-x-auto snap-x snap-mandatory md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 pb-6 w-full -mx-4 px-4 md:mx-0 md:px-0 hide-scrollbar">
                 
                 {/* 1. Pizarra */}
