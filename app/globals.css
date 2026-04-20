@@ -54,3 +54,12 @@ body {
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(16, 185, 129, 0.8); /* Brilla al pasar el mouse */
 }
+
+/* Ocultar barra de scroll para el carrusel móvil */
+.hide-scrollbar::-webkit-scrollbar { 
+    display: none; 
+}
+.hide-scrollbar { 
+    -ms-overflow-style: none; 
+    scrollbar-width: none; 
+}
