@@ -154,7 +154,7 @@ export default function LandingPage() {
                         style={{ transform: `translateX(-${slideActivo * 100}%)` }}
                     >
                         {/* Slide 1 */}
-                        <div className="w-full flex-shrink-0 p-8 flex flex-col justify-center">
+                        <div className="w-full flex-shrink-0 py-8 px-12 flex flex-col justify-center">
                             <div className="bg-slate-900 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 border border-slate-800 mx-auto">
                                 <LayoutDashboard className="text-emerald-500" size={32} />
                             </div>
@@ -162,7 +162,7 @@ export default function LandingPage() {
                             <p className="text-sm font-bold text-slate-400 leading-relaxed text-center">Visualiza todos los vehículos en tiempo real. Asigna mecánicos, actualiza estados y controla los tiempos de entrega con un solo clic.</p>
                         </div>
                         {/* Slide 2 */}
-                        <div className="w-full flex-shrink-0 p-8 flex flex-col justify-center">
+                        <div className="w-full flex-shrink-0 py-8 px-12 flex flex-col justify-center">
                             <div className="bg-slate-900 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 border border-slate-800 mx-auto">
                                 <Bot className="text-blue-500" size={32} />
                             </div>
@@ -170,7 +170,7 @@ export default function LandingPage() {
                             <p className="text-sm font-bold text-slate-400 leading-relaxed text-center">Ingresa códigos de falla o síntomas, y nuestra IA te entregará probabilidades de diagnóstico, torques referenciales y pasos a seguir.</p>
                         </div>
                         {/* Slide 3 */}
-                        <div className="w-full flex-shrink-0 p-8 flex flex-col justify-center">
+                        <div className="w-full flex-shrink-0 py-8 px-12 flex flex-col justify-center">
                             <div className="bg-slate-900 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 border border-slate-800 mx-auto">
                                 <BookOpen className="text-purple-500" size={32} />
                             </div>
@@ -178,7 +178,7 @@ export default function LandingPage() {
                             <p className="text-sm font-bold text-slate-400 leading-relaxed text-center">Accede a especificaciones exactas en segundos. Consulta torques de apriete, luz de válvulas y capacidades sin perder horas en internet.</p>
                         </div>
                         {/* Slide 4 */}
-                        <div className="w-full flex-shrink-0 p-8 flex flex-col justify-center">
+                        <div className="w-full flex-shrink-0 py-8 px-12 flex flex-col justify-center">
                             <div className="bg-slate-900 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 border border-slate-800 mx-auto">
                                 <Database className="text-cyan-500" size={32} />
                             </div>
@@ -186,7 +186,7 @@ export default function LandingPage() {
                             <p className="text-sm font-bold text-slate-400 leading-relaxed text-center">Mantén un registro inmutable de mantenimientos, kilometrajes y reparaciones previas por cada vehículo que visita tus instalaciones.</p>
                         </div>
                         {/* Slide 5 */}
-                        <div className="w-full flex-shrink-0 p-8 flex flex-col justify-center">
+                        <div className="w-full flex-shrink-0 py-8 px-12 flex flex-col justify-center">
                             <div className="bg-slate-900 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 border border-slate-800 mx-auto">
                                 <MessageCircle className="text-green-500" size={32} />
                             </div>
@@ -194,7 +194,7 @@ export default function LandingPage() {
                             <p className="text-sm font-bold text-slate-400 leading-relaxed text-center">Envía recordatorios, presupuestos y notificaciones de vehículo listo directo al celular de tu cliente en segundos.</p>
                         </div>
                         {/* Slide 6 */}
-                        <div className="w-full flex-shrink-0 p-8 flex flex-col justify-center">
+                        <div className="w-full flex-shrink-0 py-8 px-12 flex flex-col justify-center">
                             <div className="bg-slate-900 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 border border-slate-800 mx-auto">
                                 <FileText className="text-orange-500" size={32} />
                             </div>
@@ -203,12 +203,12 @@ export default function LandingPage() {
                         </div>
                     </div>
 
-                    {/* Controles de Flechas Flotantes */}
-                    <button onClick={slideAnterior} className="absolute top-1/2 left-2 -translate-y-1/2 w-10 h-10 bg-slate-900/80 rounded-full flex items-center justify-center text-slate-400 hover:text-emerald-400 border border-slate-700/50 backdrop-blur-sm z-10 transition-colors">
-                        <ChevronLeft size={24} />
+                    {/* Controles de Flechas Flotantes (Más sutiles y con espacio) */}
+                    <button onClick={slideAnterior} className="absolute top-1/2 left-2 -translate-y-1/2 w-8 h-8 bg-slate-900/90 rounded-full flex items-center justify-center text-slate-400 hover:text-emerald-400 border border-slate-700/50 backdrop-blur-md z-10 transition-colors">
+                        <ChevronLeft size={20} />
                     </button>
-                    <button onClick={slideSiguiente} className="absolute top-1/2 right-2 -translate-y-1/2 w-10 h-10 bg-slate-900/80 rounded-full flex items-center justify-center text-slate-400 hover:text-emerald-400 border border-slate-700/50 backdrop-blur-sm z-10 transition-colors">
-                        <ChevronRight size={24} />
+                    <button onClick={slideSiguiente} className="absolute top-1/2 right-2 -translate-y-1/2 w-8 h-8 bg-slate-900/90 rounded-full flex items-center justify-center text-slate-400 hover:text-emerald-400 border border-slate-700/50 backdrop-blur-md z-10 transition-colors">
+                        <ChevronRight size={20} />
                     </button>
                 </div>
 
