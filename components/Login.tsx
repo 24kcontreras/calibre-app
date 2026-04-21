@@ -139,10 +139,6 @@ export default function Login() {
                     placeholder="Contraseña" 
                     className="w-full p-4 pl-12 rounded-2xl border border-slate-800 bg-slate-950 text-sm text-slate-200 outline-none focus:border-emerald-500 transition-colors font-bold"
                 />
-                {/* 🔥 UX: Guía visual para el usuario antes de que se equivoque */}
-                <p className="text-[9px] text-slate-500 mt-2 ml-2 font-bold uppercase tracking-wider">
-                    Mínimo 8 caracteres, 1 mayúscula, 1 número y 1 símbolo (!@#$)
-                </p>
             </div>
 
             {/* 🔴 Mensaje de Error Visual */}
