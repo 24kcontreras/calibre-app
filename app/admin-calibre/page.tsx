@@ -23,6 +23,13 @@ export default function AdminCalibre() {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       
+      // 🔥 MODO DETECTIVE ACTIVADO
+      console.log("=== DEBUG GOD MODE ===")
+      console.log("1. ¿Hay sesión activa?:", !!session)
+      console.log("2. Correo que ve Supabase:", session?.user?.email)
+      console.log("3. Correo que pide el código:", ADMIN_EMAIL)
+      console.log("======================")
+
       // Si no hay sesión o el correo no coincide, lo pateamos al login
       if (!session || session.user.email !== ADMIN_EMAIL) {
         toast.error("Acceso Denegado. Solo nivel Dios.")
