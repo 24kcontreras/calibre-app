@@ -10,7 +10,6 @@ interface ModalScannerProps {
   consultarScanner: (e: React.FormEvent, tipo: 'scanner' | 'manual') => void;
   cargandoScanner: boolean;
   resultadoScanner: any;
-  // 🔥 Nuevo Prop para poder limpiar el resultado al cambiar de pestaña
   setResultadoScanner: (val: any) => void; 
 }
 
@@ -18,19 +17,18 @@ export default function ModalScanner({
   onClose, codigoScanner, setCodigoScanner, vehiculoScanner, setVehiculoScanner, consultarScanner, cargandoScanner, resultadoScanner, setResultadoScanner
 }: ModalScannerProps) {
   
-  // 🔥 ESTADO PARA LAS PESTAÑAS
   const [modoActivo, setModoActivo] = useState<'scanner' | 'manual'>('scanner');
 
-  // 🔥 LAS 8 SUGERENCIAS DE DATOS DUROS ACORDADAS
+  // 🔥 LAS NUEVAS SUGERENCIAS ESTRATÉGICAS
   const sugerenciasManual = [
-    "Torque pernos culata",
-    "Torque biela y bancada",
+    "Tipo de Aceite motor",
+    "Torques de apriete",
+    "Distribución / Puesta a punto",
+    "Equivalencia de Filtro",
+    "Torque de culata",
     "Luz de válvulas",
-    "Presión de compresión",
-    "Viscosidad aceite motor",
-    "Tipo de aceite caja",
-    "Orden de encendido",
-    "Presión de combustible"
+    "Presión de combustible",
+    "Tipo de aceite caja"
   ];
 
   const handleSugerencia = (sugerencia: string) => {
@@ -44,21 +42,18 @@ export default function ModalScanner({
 
   return (
     <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 z-[200]">
-      {/* 🟢 AJUSTE: Padding responsivo en el modal p-5 md:p-8 */}
       <div className="bg-slate-900 p-5 md:p-8 rounded-[30px] md:rounded-[40px] shadow-2xl max-w-lg w-full border border-slate-800 relative flex flex-col max-h-[90vh]">
         
-        {/* 🟢 AJUSTE: Posición de la X en móvil */}
         <button onClick={onClose} className="absolute top-4 right-4 md:top-6 md:right-6 text-slate-500 hover:text-emerald-400 transition-colors z-10">
           <X size={24} />
         </button>
 
-        {/* 🔥 SELECTOR DE HERRAMIENTAS (PESTAÑAS) */}
         <div className="flex bg-slate-950 p-1 rounded-2xl mb-5 md:mb-6 shrink-0">
           <button 
             onClick={() => { 
                 setModoActivo('scanner'); 
                 setCodigoScanner(''); 
-                setResultadoScanner(null); // 🔥 Limpiamos el resultado viejo
+                setResultadoScanner(null); 
             }}
             className={`flex-1 py-2 md:py-3 flex items-center justify-center gap-1.5 md:gap-2 font-black text-[10px] md:text-xs uppercase tracking-widest rounded-xl transition-all ${modoActivo === 'scanner' ? 'bg-emerald-600 text-slate-950 shadow-lg' : 'text-slate-500 hover:text-emerald-400'}`}
           >
@@ -68,7 +63,7 @@ export default function ModalScanner({
             onClick={() => { 
                 setModoActivo('manual'); 
                 setCodigoScanner(''); 
-                setResultadoScanner(null); // 🔥 Limpiamos el resultado viejo
+                setResultadoScanner(null); 
             }}
             className={`flex-1 py-2 md:py-3 flex items-center justify-center gap-1.5 md:gap-2 font-black text-[10px] md:text-xs uppercase tracking-widest rounded-xl transition-all ${modoActivo === 'manual' ? 'bg-blue-600 text-slate-950 shadow-lg' : 'text-slate-500 hover:text-blue-400'}`}
           >
@@ -76,7 +71,6 @@ export default function ModalScanner({
           </button>
         </div>
 
-        {/* CABECERA DINÁMICA */}
         <div className="mb-5 md:mb-6 shrink-0">
           <h3 className={`text-xl md:text-2xl font-black tracking-tighter uppercase flex items-center gap-2 ${modoActivo === 'scanner' ? 'text-emerald-400' : 'text-blue-400'}`}>
             <Bot /> {modoActivo === 'scanner' ? 'Diagnóstico IA' : 'Biblioteca Técnica'}
@@ -123,7 +117,6 @@ export default function ModalScanner({
           )}
         </form>
 
-        {/* 🔥 ÁREA DEL RESULTADO */}
         <div className="mt-5 md:mt-6 flex-1 overflow-y-auto custom-scrollbar-dark rounded-xl md:rounded-2xl bg-slate-950/80 border border-slate-800 p-4 md:p-6 relative min-h-[150px] md:min-h-[200px]">
           {cargandoScanner ? (
             <div className={`h-full flex flex-col items-center justify-center animate-pulse ${modoActivo === 'scanner' ? 'text-emerald-500/50' : 'text-blue-500/50'}`}>
@@ -134,7 +127,6 @@ export default function ModalScanner({
             </div>
           ) : resultadoScanner?.resultado ? (
             <div className="pb-8">
-              {/* Renderizamos el HTML que nos manda el backend */}
               <div 
                 className="text-xs md:text-sm text-slate-300 leading-relaxed font-sans"
                 dangerouslySetInnerHTML={{ __html: resultadoScanner.resultado }} 
@@ -146,7 +138,6 @@ export default function ModalScanner({
             </div>
           )}
           
-          {/* 🔥 EL DISCLAIMER LEGAL GIGANTE */}
           {(!cargandoScanner && resultadoScanner?.resultado) && (
             <div className="mt-4 md:mt-6 pt-4 border-t border-slate-800/50 flex items-start gap-2 text-[8px] md:text-[9px] text-slate-500 font-bold leading-tight">
               <AlertOctagon size={14} className="shrink-0 text-red-900" />

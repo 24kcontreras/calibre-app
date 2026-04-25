@@ -1,7 +1,6 @@
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
-// Interfaz para la configuración del PDF (Evita errores de TypeScript)
 interface ConfigPDF {
     nombreTaller: string;
     direccion: string;
@@ -11,7 +10,6 @@ interface ConfigPDF {
     incluirIva: boolean;
 }
 
-// Funciones de soporte
 const urlABase64PNG = async (url: string) => {
     try {
         const res = await fetch(url);
@@ -39,7 +37,14 @@ const urlABase64JPEG = (url: string) => {
     });
 };
 
-// FUNCIÓN PRINCIPAL EXPORTADA (Ahora recibe configPDF)
+// 🔥 MAPEO DE TESTIGOS PARA EL PDF
+const MAPA_TESTIGOS: Record<string, string> = {
+    'check_engine': 'Check Engine',
+    'aceite': 'Presión de Aceite',
+    'bateria': 'Batería',
+    'abs': 'Frenos ABS'
+};
+
 export const generarDocumentoPDF = async (o: any, resumenIA: string = "", configPDF: ConfigPDF) => {
     try {
         const doc = new jsPDF();
@@ -54,17 +59,15 @@ export const generarDocumentoPDF = async (o: any, resumenIA: string = "", config
         // --- MANEJO DEL LOGO DEL TALLER ---
         if (configPDF.logoUrl) {
             try {
-                // Intentamos procesar el logo. Como puede ser PNG (fondo transparente), usamos la función PNG
                 const logoB64 = await urlABase64PNG(configPDF.logoUrl);
                 const props = doc.getImageProperties(logoB64);
-                const anchoDeseado = 40; // Ancho máximo del logo
+                const anchoDeseado = 40; 
                 const altoCalculado = (props.height * anchoDeseado) / props.width;
                 
                 doc.addImage(logoB64, 'PNG', 14, 12, anchoDeseado, altoCalculado);
-                posicionYHeader = 12 + altoCalculado + 8; // Empujamos el texto hacia abajo
+                posicionYHeader = 12 + altoCalculado + 8; 
             } catch (err) {
                 console.error("Error al cargar el logo del taller para el PDF", err);
-                // Si falla el logo, no detenemos el PDF, seguimos normal
             }
         }
 
@@ -90,7 +93,6 @@ export const generarDocumentoPDF = async (o: any, resumenIA: string = "", config
         const fechaHoy = new Date().toLocaleDateString('es-CL');
         doc.text(`Fecha de emisión: ${fechaHoy}`, pageWidth - 14, 24, { align: 'right' });
         
-        // Dirección y Teléfono
         if (configPDF.direccion) {
             doc.text(configPDF.direccion, pageWidth - 14, 30, { align: 'right' });
         }
@@ -132,62 +134,173 @@ export const generarDocumentoPDF = async (o: any, resumenIA: string = "", config
 
         doc.setFont("helvetica", "normal");
         doc.setTextColor(15, 23, 42);
-        // 🔥 CORRECCIÓN DEL KILOMETRAJE AQUÍ (cambiamos kilometraje_entrada a kilometraje)
         doc.text(o.kilometraje ? `${o.kilometraje.toLocaleString('es-CL')} km` : 'No registrado', 135, startYCaja + 7);
         doc.text(`${o.mecanico && o.mecanico !== 'Sin asignar' ? o.mecanico.toUpperCase() : 'TALLER'}`, 135, startYCaja + 14);
         doc.text(`#${o.id.toString().slice(0, 8).toUpperCase()}`, 135, startYCaja + 21);
 
-        // --- TABLA DE PRECIOS Y CÁLCULO DE IVA ---
-        const totalItemsMonto = o.items_orden?.reduce((sum: number, item: any) => sum + item.precio, 0) || 0;
+        let finalY = startYCaja + 30;
+
+        // 🔥 NUEVA SECCIÓN: ACTA DE RECEPCIÓN (EL RESPALDO LEGAL)
+        doc.setFontSize(10);
+        doc.setTextColor(15, 23, 42);
+        doc.setFont("helvetica", "bold");
+        doc.text("ACTA DE RECEPCIÓN (ESTADO INICIAL)", 14, finalY);
+        finalY += 4;
+
+        doc.setFillColor(241, 245, 249);
+        doc.roundedRect(14, finalY, pageWidth - 28, 16, 2, 2, 'FD');
+
+        // Procesar datos de recepción
+        const nivelBencina = o.nivel_combustible ? `${o.nivel_combustible}%` : 'No reg.';
+        let testigosArr: string[] = [];
+        try { testigosArr = typeof o.testigos === 'string' ? JSON.parse(o.testigos) : (o.testigos || []); } catch(e){}
+        const luces = testigosArr.length > 0 ? testigosArr.map((t: string) => MAPA_TESTIGOS[t] || t).join(', ') : 'Ninguna';
+        const danos = o.danos_previos ? o.danos_previos.substring(0, 50) + (o.danos_previos.length > 50 ? '...' : '') : 'Sin daños reportados';
+
+        doc.setFontSize(8);
+        doc.setTextColor(71, 85, 105);
+        doc.setFont("helvetica", "bold");
+        doc.text("Combustible:", 18, finalY + 6);
+        doc.text("Testigos encendidos:", 60, finalY + 6);
+        doc.text("Daños Carrocería:", 18, finalY + 12);
+        doc.text("Objetos de Valor:", 110, finalY + 12);
+
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(15, 23, 42);
+        doc.text(nivelBencina, 40, finalY + 6);
+        doc.text(luces, 95, finalY + 6);
+        doc.text(danos, 45, finalY + 12);
+        doc.text(o.objetos_valor || 'Sin objetos', 135, finalY + 12);
+
+        finalY += 24;
+
+        // --- PREPARACIÓN DE DATOS (FASE 5) ---
+        // Separamos servicios de repuestos y sumamos los montos
+        const items = o.items_orden || [];
+        const servicios = items.filter((i: any) => i.tipo_item === 'servicio');
+        const repuestos = items.filter((i: any) => i.tipo_item === 'repuesto');
         
-        let footData: any[][] = [];
+        const subtotalServicios = servicios.reduce((sum: number, item: any) => sum + item.precio, 0);
+        // Aunque no le mostremos el precio del repuesto al cliente línea a línea, lo sumamos al cobro general.
+        const subtotalRepuestos = repuestos.reduce((sum: number, item: any) => sum + item.precio, 0);
+        const costoRevision = o.costo_revision || 0;
+        const descuento = o.descuento || 0;
+
+        const subtotalBruto = subtotalServicios + subtotalRepuestos + costoRevision;
+        const totalNeto = subtotalBruto - descuento;
+
+        // --- TABLA 1: SERVICIOS Y MANO DE OBRA ---
+        if (servicios.length > 0 || costoRevision > 0) {
+            doc.setFontSize(10);
+            doc.setTextColor(15, 23, 42);
+            doc.setFont("helvetica", "bold");
+            doc.text("MANO DE OBRA Y SERVICIOS", 14, finalY);
+            finalY += 2;
+
+            let bodyServicios = servicios.map((i: any) => [
+                i.descripcion.toUpperCase(),
+                `$${i.precio.toLocaleString('es-CL')}`
+            ]);
+
+            // Si hay costo de revisión, lo metemos a mano como un servicio más en la tabla
+            if (costoRevision > 0) {
+                bodyServicios.unshift([
+                    "DIAGNÓSTICO Y REVISIÓN TÉCNICA INICIAL",
+                    `$${costoRevision.toLocaleString('es-CL')}`
+                ]);
+            }
+
+            autoTable(doc, {
+                startY: finalY,
+                head: [['Descripción del Servicio', 'Valor']],
+                body: bodyServicios,
+                theme: 'grid',
+                styles: { fontSize: 8, cellPadding: 2 },
+                headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255], fontStyle: 'bold' },
+                alternateRowStyles: { fillColor: [248, 250, 252] },
+                columnStyles: { 1: { halign: 'right', cellWidth: 40 } }
+            });
+            finalY = (doc as any).lastAutoTable.finalY + 10;
+        }
+
+        // --- TABLA 2: REPUESTOS E INSUMOS (Ocultamiento Estratégico) ---
+        if (repuestos.length > 0) {
+            doc.setFontSize(10);
+            doc.setTextColor(15, 23, 42);
+            doc.setFont("helvetica", "bold");
+            doc.text("REPUESTOS E INSUMOS UTILIZADOS", 14, finalY);
+            finalY += 2;
+
+            autoTable(doc, {
+                startY: finalY,
+                // 🔥 No hay columna de precio
+                head: [['Descripción del Repuesto', 'Procedencia']],
+                body: repuestos.map((i: any) => [
+                    i.descripcion.toUpperCase(),
+                    i.procedencia.toUpperCase()
+                ]),
+                theme: 'grid',
+                styles: { fontSize: 8, cellPadding: 2 },
+                headStyles: { fillColor: [71, 85, 105], textColor: [255, 255, 255], fontStyle: 'bold' }, // Un gris más claro para diferenciar
+                alternateRowStyles: { fillColor: [248, 250, 252] }
+            });
+            finalY = (doc as any).lastAutoTable.finalY + 10;
+        }
+
+        // --- CUADRO FINAL DE COBROS Y DESCUENTOS ---
+        // Empujamos el cuadro a la derecha de la hoja
+        const xStartCobros = pageWidth - 90;
+        
+        let footerCobros = [];
         
         if (configPDF.incluirIva) {
-            const iva = Math.round(totalItemsMonto * 0.19);
-            const totalConIva = totalItemsMonto + iva;
-            footData = [
-                ['', '', 'SUBTOTAL', `$${totalItemsMonto.toLocaleString('es-CL')}`],
-                ['', '', 'IVA (19%)', `$${iva.toLocaleString('es-CL')}`],
-                ['', '', 'TOTAL A PAGAR', `$${totalConIva.toLocaleString('es-CL')}`]
+            const iva = Math.round(totalNeto * 0.19);
+            const totalConIva = totalNeto + iva;
+            
+            footerCobros = [
+                ['SUBTOTAL NETO', `$${totalNeto.toLocaleString('es-CL')}`],
+                ['IVA (19%)', `$${iva.toLocaleString('es-CL')}`],
+                ['TOTAL A PAGAR', `$${totalConIva.toLocaleString('es-CL')}`]
             ];
         } else {
-            footData = [['', '', 'TOTAL A PAGAR', `$${totalItemsMonto.toLocaleString('es-CL')}`]];
+            footerCobros = [['TOTAL A PAGAR', `$${totalNeto.toLocaleString('es-CL')}`]];
+        }
+
+        // Si hay descuento, lo mostramos explícitamente arriba del Total
+        if (descuento > 0) {
+            footerCobros.unshift(['DESCUENTO APLICADO', `-$${descuento.toLocaleString('es-CL')}`]);
         }
 
         autoTable(doc, {
-            startY: startYCaja + 32,
-            head: [['Descripción del Trabajo / Repuesto', 'Tipo', 'Origen', 'Monto']],
-            body: o.items_orden?.map((i: any) => [
-                i.descripcion.toUpperCase(),
-                i.tipo_item,
-                i.procedencia,
-                `$${i.precio.toLocaleString('es-CL')}`
-            ]) || [],
-            foot: footData,
-            theme: 'grid',
-            styles: { fontSize: 8, cellPadding: 2 },
-            headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255], fontStyle: 'bold' },
-            footStyles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], fontStyle: 'bold' },
-            alternateRowStyles: { fillColor: [248, 250, 252] },
+            startY: finalY,
+            margin: { left: xStartCobros },
+            body: footerCobros,
+            theme: 'plain',
+            styles: { fontSize: 9, cellPadding: 2, halign: 'right' },
+            columnStyles: { 
+                0: { fontStyle: 'bold', textColor: [71, 85, 105] }, 
+                1: { fontStyle: 'bold', textColor: [15, 23, 42] } 
+            },
             didParseCell: function (data) {
-                // Pintar la última fila del footer (el TOTAL A PAGAR) de verde
-                if (data.section === 'foot' && data.row.index === footData.length - 1) {
+                // Pintar la última fila (TOTAL) de verde
+                if (data.row.index === footerCobros.length - 1) {
                     data.cell.styles.fillColor = [16, 185, 129];
                     data.cell.styles.textColor = [255, 255, 255];
                     data.cell.styles.fontSize = 10;
                 }
+                // Si es la fila de descuento, la pintamos de naranja suave
+                if (descuento > 0 && data.row.index === 0) {
+                    data.cell.styles.textColor = [234, 88, 12]; // Naranja
+                }
             }
         });
 
-        let finalY = (doc as any).lastAutoTable.finalY || 70;
+        finalY = (doc as any).lastAutoTable.finalY || finalY + 20;
 
         // --- BLOQUE 1: DIAGNÓSTICO Y RECOMENDACIONES (IA) ---
-        const textoFinalIA = resumenIA && resumenIA.length > 10 ? resumenIA : `Se han completado los servicios y reemplazos indicados en la tabla superior para el vehículo patente ${o.vehiculos?.patente}, asegurando el cumplimiento de los estándares de seguridad recomendados.`;
+        const textoFinalIA = resumenIA && resumenIA.length > 10 ? resumenIA : `Se han completado los servicios y reemplazos indicados para el vehículo patente ${o.vehiculos?.patente}, asegurando el cumplimiento de los estándares de seguridad recomendados.`;
 
-        if (finalY + 15 > 265) {
-            doc.addPage();
-            finalY = 20;
-        }
+        if (finalY + 15 > 265) { doc.addPage(); finalY = 20; }
 
         finalY += 15;
         doc.setFontSize(12);
@@ -203,10 +316,7 @@ export const generarDocumentoPDF = async (o: any, resumenIA: string = "", config
         finalY += 7; 
 
         for (let i = 0; i < lineasIA.length; i++) {
-            if (finalY > 275) {
-                doc.addPage();
-                finalY = 20;
-            }
+            if (finalY > 275) { doc.addPage(); finalY = 20; }
             doc.text(lineasIA[i], 14, finalY);
             finalY += 5; 
         }
@@ -258,7 +368,6 @@ export const generarDocumentoPDF = async (o: any, resumenIA: string = "", config
             });
         }
 
-
         // --- BLOQUE 3: EVIDENCIA FOTOGRÁFICA ---
         if (o.fotos_orden?.length > 0) {
             if (finalY > 230) { doc.addPage(); finalY = 20; } else { finalY += 15; }
@@ -290,7 +399,7 @@ export const generarDocumentoPDF = async (o: any, resumenIA: string = "", config
                     console.error("Error cargando imagen en PDF");
                 }
             }
-            finalY = y; // Actualizar finalY por si hay garantía después
+            finalY = y; 
         }
 
         // --- BLOQUE 4: TÉRMINOS DE GARANTÍA (LETRA CHICA) ---
@@ -298,7 +407,7 @@ export const generarDocumentoPDF = async (o: any, resumenIA: string = "", config
             if (finalY > 260) { doc.addPage(); finalY = 20; } else { finalY += 15; }
             
             doc.setFontSize(7);
-            doc.setTextColor(148, 163, 184); // Gris claro
+            doc.setTextColor(148, 163, 184); 
             doc.setFont("helvetica", "italic");
             
             const lineasGarantia = doc.splitTextToSize(`Condiciones y Garantía: ${configPDF.garantia}`, pageWidth - 28);

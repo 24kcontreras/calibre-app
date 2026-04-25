@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
   try {
-    // 🔥 Ahora recibimos el "tipo" de consulta (scanner o manual)
     const { codigo, vehiculo, tipo } = await req.json();
     
     const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
@@ -19,16 +18,16 @@ export async function POST(req: Request) {
       Estructura exactamente así:
       <b>🔍 DIAGNÓSTICO:</b><br>(explicación)<br><br><b>⚠️ CAUSAS COMUNES:</b><br>- (causa)<br><br><b>🛠️ PASOS DE REVISIÓN:</b><br>1. (paso)`;
     } else {
-      // 🔥 EL NUEVO CEREBRO DEL MANUAL (Equilibrado entre utilidad y seguridad)
+      // 🔥 EL NUEVO CEREBRO DEL MANUAL (Reglas de Torque y MANN Filter inyectadas)
       prompt = `Eres el Asistente Técnico de CALIBRE. Vehículo: ${vehiculo || 'No especificado'}. 
       Consulta técnica del mecánico: ${codigo}.
       
-      REGLAS DE RESPUESTA:
-      1. Si te piden un dato numérico (capacidad de aceite, torques, etc.) y ese vehículo tiene múltiples motorizaciones posibles, NO ocultes la información. Entrega los datos para los motores más comunes de ese año y modelo (Ej: "Para el motor 1.5L (1NZ-FE) son 3.7 Litros. Para el 1.3L (2NZ-FE) son 3.2 Litros").
-      2. Agrega siempre una nota breve indicando al mecánico que verifique el código de motor grabado en el bloque antes de proceder.
-      3. SOLO niégate a dar el dato si es información confidencial inexistente en manuales públicos.
-      4. Formatea tu respuesta ESTRICTAMENTE con HTML simple (usa <b>para negritas</b> y <br> para saltos de línea. ESTÁ PROHIBIDO USAR MARKDOWN O ASTERISCOS **).
-      5. Termina con un <b>💡 TIP TÉCNICO:</b> breve.`;
+      REGLAS DE RESPUESTA ESTRICTAS:
+      1. REGLA DE TORQUES (Nm): Si la consulta es sobre aprietes o torques, entrega SIEMPRE los valores priorizando la medida en Newton-Metro (Nm), asumiendo que el taller utilizará los pernos antiguos/reutilizados. Si el manual exige grados obligatorios, menciónalo como advertencia secundaria.
+      2. REGLA DE FILTROS (MANN): Si te piden buscar, cruzar o identificar un código de repuesto/filtro, utiliza SIEMPRE como estándar principal el catálogo de MANN FILTER. Si no existe una equivalencia exacta en MANN, entrega alternativas de marcas premium reconocidas (Mahle, Bosch, HK, etc.) indicando por qué.
+      3. MOTORES MÚLTIPLES: Si te piden un dato numérico (capacidad, medidas) y ese vehículo tiene múltiples motorizaciones posibles, NO ocultes la información. Entrega los datos para los motores más comunes de ese año y modelo detallando el código de motor.
+      4. FORMATO VISUAL: Formatea tu respuesta ESTRICTAMENTE con HTML simple (usa <b>para negritas</b> y <br> para saltos de línea. ESTÁ PROHIBIDO USAR MARKDOWN O ASTERISCOS **).
+      5. CIERRE: Termina siempre con un <b>💡 TIP TÉCNICO:</b> breve relacionado a la consulta.`;
     }
 
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {

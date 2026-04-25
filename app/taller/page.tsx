@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import imageCompression from 'browser-image-compression'
 import Login from '@/components/Login'
 import CAR_DATA from './autos.json'
-import { Edit2, Lightbulb ,Trash2, FileText, Clock, User, CheckCircle, Search, Bot, Plus, Wrench, ChevronRight, Info, MessageSquare, Mic, AlertTriangle, Megaphone, Settings, ChevronDown, Camera, Share2, Circle, CheckCircle2, X, ClipboardList } from 'lucide-react'
+import { Edit2, Lightbulb ,Trash2, FileText, Clock, User, CheckCircle, Search, Bot, Plus, Wrench, ChevronRight, Info, MessageSquare, Mic, AlertTriangle, Megaphone, Settings, ChevronDown, Camera, Share2, Circle, CheckCircle2, X, ClipboardList, BatteryWarning, Droplets, AlertCircle, Send, PhoneForwarded, Car, Thermometer, CircleDot, LifeBuoy, Zap, Wind, Activity } from 'lucide-react'
 import toast, { Toaster } from 'react-hot-toast'
 
 // 🚀 COMPONENTES EXTERNOS
@@ -20,8 +20,10 @@ import ModalScanner from '@/components/modals/ModalScanner'
 import ModalAlerta from '@/components/modals/ModalAlerta'
 import ModalMarketing from '@/components/modals/ModalMarketing'
 import ModalAnalisisIA from '@/components/modals/ModalAnalisisIA'
-import ModalActaRecepcion from '@/components/modals/ModalActaRecepcion' // 🔥 IMPORTAMOS EL NUEVO MODAL
+import ModalActaRecepcion from '@/components/modals/ModalActaRecepcion' 
 import { generarDocumentoPDF } from '@/utils/pdfGenerator'
+import Car3DViewer from '@/components/Car3DViewer'
+
 
 const MARCAS = Object.keys(CAR_DATA).sort();
 
@@ -33,14 +35,26 @@ const COLOR_ESTADO: Record<string, string> = {
   'Listo para Entrega': 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50'
 };
 
+const TESTIGOS_CONFIG = [
+    { id: 'check_engine', icon: AlertCircle, label: 'Check Engine', type: 'rojo' },
+    { id: 'aceite', icon: Droplets, label: 'Aceite', type: 'rojo' },
+    { id: 'bateria', icon: BatteryWarning, label: 'Batería', type: 'rojo' },
+    { id: 'temperatura', icon: Thermometer, label: 'Temp.', type: 'rojo' },
+    { id: 'frenos', icon: CircleDot, label: 'Frenos', type: 'rojo' },
+    { id: 'airbag', icon: LifeBuoy, label: 'Airbag', type: 'rojo' },
+    { id: 'abs', icon: AlertCircle, label: 'ABS', type: 'amarillo' },
+    { id: 'tpms', icon: Settings, label: 'Neum. TPMS', type: 'amarillo' },
+    { id: 'precalentamiento', icon: Zap, label: 'Bujías Pre.', type: 'amarillo' },
+    { id: 'dpf', icon: Wind, label: 'Filtro DPF', type: 'amarillo' },
+    { id: 'eps', icon: Activity, label: 'Dir. EPS', type: 'amarillo' }
+];
+
 // 🔥 VALIDADOR DE RUT CON BYPASS PARA EXTRANJEROS
 const validarRutChileno = (rutCompleto: string) => {
   if (!rutCompleto) return false;
   
   const rutLimpio = rutCompleto.replace(/[^0-9kK]/g, '').toUpperCase();
-  
   if (rutLimpio === '111111111') return true;
-
   if (rutLimpio.length < 8) return false;
 
   const cuerpo = rutLimpio.slice(0, -1);
@@ -68,6 +82,10 @@ export default function CalibreApp() {
   const [session, setSession] = useState<any>(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [loading, setLoading] = useState(false)
+  
+  // 🔥 ESTADO DE LOCK-IN COMERCIAL (FASE 1)
+  const [soloLectura, setSoloLectura] = useState(false)
+
   const [subiendoFoto, setSubiendoFoto] = useState(false)
   const [generandoPDF, setGenerandoPDF] = useState(false)
   const [busqueda, setBusqueda] = useState('')
@@ -85,23 +103,32 @@ export default function CalibreApp() {
   const [kilometrajeOrden, setKilometrajeOrden] = useState('') 
   const [creandoOrden, setCreandoOrden] = useState(false)
   
-  // 🔥 NUEVOS ESTADOS PARA ACTA DE RECEPCIÓN Y FOTOS
   const [mostrarActa, setMostrarActa] = useState(false)
-  const [nivelCombustible, setNivelCombustible] = useState('1/2')
+  // 🔥 ESTADOS DE RECEPCIÓN
+  const [nivelCombustible, setNivelCombustible] = useState<number>(50)
+  const [testigosSeleccionados, setTestigosSeleccionados] = useState<string[]>([])
   const [objetosValor, setObjetosValor] = useState('')
   const [danosPrevios, setDanosPrevios] = useState('')
+  
+  // 🔥 ESTADO MAPA DE DAÑOS 3D
+  const [marcadoresDanos, setMarcadoresDanos] = useState<any[]>([])
+  const [vistaAuto, setVistaAuto] = useState('superior') // Mantengo el estado por si acaso, aunque no se usa en 3D
+  
   const [fotosRecepcion, setFotosRecepcion] = useState<File[]>([])
   const [previewsRecepcion, setPreviewsRecepcion] = useState<string[]>([])
 
-  // 🔥 ESTADO PARA VER EL ACTA
   const [modalActa, setModalActa] = useState<any | null>(null)
-
-  // 🔥 ESTADOS PARA EDITAR LA ORDEN
   const [modalEditarOrden, setModalEditarOrden] = useState<any | null>(null)
   const [editFalla, setEditFalla] = useState('')
   const [editKm, setEditKm] = useState('')
   const [editMecanico, setEditMecanico] = useState('')
   const [guardandoEdicion, setGuardandoEdicion] = useState(false)
+
+  // 🔥 ESTADO PESTAÑAS ALERTAS/AGENDA
+  const [tabIzquierda, setTabIzquierda] = useState<'alertas' | 'agenda'>('alertas')
+
+  // 🔥 NUEVO ESTADO: BITÁCORA DE COMENTARIOS
+  const [comentarioInputs, setComentarioInputs] = useState<Record<string, string>>({})
 
   const [escuchando, setEscuchando] = useState(false)
 
@@ -120,6 +147,7 @@ export default function CalibreApp() {
   const [nombreInput, setNombreInput] = useState('')
   const [rutInput, setRutInput] = useState('')
   const [telefonoInput, setTelefonoInput] = useState('+569')
+  const [correoInput, setCorreoInput] = useState('') // 🔥 FASE 3.1
   const [patenteInput, setPatenteInput] = useState('')
 
   const [marcaInput, setMarcaInput] = useState('')
@@ -156,6 +184,15 @@ export default function CalibreApp() {
       ...historial.map(o => o.mecanico)
   ])).filter(m => m && m !== 'Sin asignar');
 
+  // 🔥 FUNCIÓN PARA LOS TESTIGOS
+  const toggleTestigo = (testigoId: string) => {
+    if (testigosSeleccionados.includes(testigoId)) {
+        setTestigosSeleccionados(testigosSeleccionados.filter(t => t !== testigoId));
+    } else {
+        setTestigosSeleccionados([...testigosSeleccionados, testigoId]);
+    }
+  }
+
   const iniciarDictado = (setField: (val: string) => void, currentVal: string) => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -182,14 +219,10 @@ export default function CalibreApp() {
 
     recognition.onerror = (event: any) => {
       setEscuchando(false);
-      if (event.error === 'no-speech') toast.error("No se escuchó nada. El micrófono podría estar silenciado.");
-      else if (event.error === 'audio-capture') toast.error("No se detectó ningún micrófono.");
-      else if (event.error === 'not-allowed') toast.error("El navegador bloqueó el permiso.");
-      else toast.error(`Error de voz: ${event.error}`);
+      toast.error(`Error de voz: ${event.error}`);
     };
 
     recognition.onend = () => setEscuchando(false);
-
     try { recognition.start(); } 
     catch (e) {
       setEscuchando(false);
@@ -262,7 +295,6 @@ export default function CalibreApp() {
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
-      
       const previewUrl = URL.createObjectURL(file);
       setLogoPreview(previewUrl);
       setLogoFile(file);
@@ -335,6 +367,13 @@ export default function CalibreApp() {
     const currentTallerId = tId || session?.user?.id;
     if (!currentTallerId) return;
 
+    // 🔥 VERIFICACIÓN MODO SOLO LECTURA (LOCK-IN)
+    const { data: tData } = await supabase.from('talleres').select('pago_confirmado, fecha_vencimiento').eq('id', currentTallerId).single();
+    if (tData) {
+        const vencido = tData.fecha_vencimiento ? new Date(tData.fecha_vencimiento) < new Date() : false;
+        setSoloLectura(!tData.pago_confirmado || vencido);
+    }
+
     const { data: vData } = await supabase.from('vehiculos')
       .select('*, clientes(*), alertas_desgaste(*)') 
       .eq('taller_id', currentTallerId)
@@ -342,18 +381,72 @@ export default function CalibreApp() {
     setVehiculos(vData || [])
 
     const { data: oAbiertas } = await supabase.from('ordenes_trabajo')
-      .select('*, vehiculos!inner(*, clientes(*), alertas_desgaste(*)), items_orden(*), fotos_orden(*)') 
+      .select('*, vehiculos!inner(*, clientes(*), alertas_desgaste(*)), items_orden(*), fotos_orden(*), comentarios_orden(*)') 
       .eq('estado', 'Abierta')
       .eq('vehiculos.taller_id', currentTallerId)
       .order('created_at', { ascending: false })
     setOrdenesAbiertas(oAbiertas || [])
 
     const { data: oFinalizadas } = await supabase.from('ordenes_trabajo')
-      .select('*, vehiculos!inner(*, clientes(*), alertas_desgaste(*)), items_orden(*), fotos_orden(*)') 
+      .select('*, vehiculos!inner(*, clientes(*), alertas_desgaste(*)), items_orden(*), fotos_orden(*), comentarios_orden(*)') 
       .eq('estado', 'Finalizada')
       .eq('vehiculos.taller_id', currentTallerId)
       .order('created_at', { ascending: false }).limit(200) 
     setHistorial(oFinalizadas || [])
+  }
+
+  const actualizarCobrosBD = async (ordenId: string, campo: 'costo_revision' | 'descuento', valor: string) => {
+      if (soloLectura) return;
+      const num = parseInt(valor) || 0;
+      try {
+          await supabase.from('ordenes_trabajo').update({ [campo]: num }).eq('id', ordenId);
+          await cargarTodo();
+          toast.success("Monto actualizado", { position: 'bottom-left' });
+      } catch (error) {
+          toast.error("Error al actualizar monto");
+      }
+  }
+
+  const enviarComentario = async (ordenId: string) => {
+      const texto = comentarioInputs[ordenId];
+      if (!texto || !texto.trim() || soloLectura) return;
+      
+      const autor = session?.user?.user_metadata?.nombre_taller || 'Mecánico';
+      try {
+          await supabase.from('comentarios_orden').insert([{ 
+              orden_id: ordenId, 
+              taller_id: session?.user?.id, 
+              texto: texto.trim(), 
+              autor_nombre: autor 
+          }]);
+          setComentarioInputs(prev => ({...prev, [ordenId]: ''}));
+          await cargarTodo();
+      } catch (error) {
+          toast.error("Error al enviar nota");
+      }
+  }
+
+  const llamarARevisionWhatsapp = (vehiculo: any) => {
+      const telefono = vehiculo.clientes?.telefono;
+      const cliente = vehiculo.clientes?.nombre || 'Estimado(a)';
+      const modelo = `${vehiculo.marca} ${vehiculo.modelo}`;
+      
+      const msj = `Hola ${cliente} 👋, te escribimos de ${nombreTaller}. \nTe contactamos porque tenemos registrado que a tu ${modelo} (Patente: ${vehiculo.patente}) le corresponde una revisión pendiente. ¿Te gustaría agendar una cita esta semana? 🔧`;
+      
+      if (telefono && telefono.startsWith('+569') && telefono.length === 12) {
+          window.open(`https://wa.me/${telefono.replace('+', '')}?text=${encodeURIComponent(msj)}`, '_blank');
+      } else {
+          toast.error("El cliente no tiene un teléfono válido registrado.");
+      }
+  }
+
+  const resolverAlertaDirecta = async (alertaId: string) => {
+      if (soloLectura) return;
+      try {
+          await supabase.from('alertas_desgaste').update({ estado: 'Resuelta' }).eq('id', alertaId);
+          toast.success("¡Alerta marcada como resuelta!");
+          await cargarTodo();
+      } catch (error) { toast.error("Error al actualizar la alerta"); }
   }
 
   const compartirLinkCliente = async (o: any) => {
@@ -390,29 +483,40 @@ export default function CalibreApp() {
           if (vehiculoConCliente.clientes.telefono) {
               setTelefonoInput(vehiculoConCliente.clientes.telefono);
           }
+          if (vehiculoConCliente.clientes.correo) { // 🔥 FASE 3.1
+              setCorreoInput(vehiculoConCliente.clientes.correo);
+          }
       }
   }
 
   const abrirOrden = (vehiculo: any) => {
+      if (soloLectura) {
+          toast.error("Modo Solo Lectura: No puedes abrir nuevas órdenes.");
+          return;
+      }
       setDescripcionOrden(''); 
       setValorDiagnostico('');
       setMecanicoAsignado('');
       setKilometrajeOrden('');
       setMostrarActa(false);
-      setNivelCombustible('1/2');
+      setNivelCombustible(50);
+      setTestigosSeleccionados([]);
       setObjetosValor('');
       setDanosPrevios('');
+      setMarcadoresDanos([]); 
       setFotosRecepcion([]);
       setPreviewsRecepcion([]);
       setModalNuevaOrden(vehiculo);
   }
 
   const abrirModalAlerta = (orden: any) => {
+      if (soloLectura) return;
       setAlertaForm({ pieza: '', nivel_riesgo: 'Amarillo', observacion: '' });
       setModalAlerta(orden);
   }
 
   const abrirModalEditarOrden = (orden: any) => {
+      if (soloLectura) return;
       setEditFalla(orden.descripcion || '');
       setEditKm(orden.kilometraje?.toString() || '');
       setEditMecanico(orden.mecanico && orden.mecanico !== 'Sin asignar' ? orden.mecanico : '');
@@ -420,6 +524,7 @@ export default function CalibreApp() {
   }
 
   const guardarEdicionOrden = async () => {
+      if (soloLectura) return;
       setGuardandoEdicion(true);
       try {
           const { error } = await supabase.from('ordenes_trabajo').update({
@@ -441,6 +546,7 @@ export default function CalibreApp() {
   }
 
   const anularOrden = async (idOrden: string) => {
+      if (soloLectura) return;
       if (!window.confirm("¿Estás seguro de ANULAR y borrar esta orden? Esta acción no se puede deshacer y borrará los ítems asociados.")) return;
       
       try {
@@ -459,7 +565,7 @@ export default function CalibreApp() {
 
   const guardarAlertaBD = async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
-      if (!modalAlerta || guardandoAlerta) return;
+      if (!modalAlerta || guardandoAlerta || soloLectura) return;
       setGuardandoAlerta(true);
 
       try {
@@ -504,6 +610,7 @@ export default function CalibreApp() {
   }
 
   const resolverAlertaBD = async (alertaId: string) => {
+      if (soloLectura) return;
       try {
           const { error } = await supabase.from('alertas_desgaste').update({ estado: 'Resuelta' }).eq('id', alertaId);
           if (error) throw error;
@@ -516,7 +623,7 @@ export default function CalibreApp() {
   }
 
   const confirmarNuevaOrden = async () => {
-      if (!modalNuevaOrden) return;
+      if (!modalNuevaOrden || soloLectura) return;
       setCreandoOrden(true);
       const toastId = toast.loading("Creando orden...", { id: 'orden' });
 
@@ -543,8 +650,11 @@ export default function CalibreApp() {
               mecanico: mecanicoAsignado.trim() || 'Sin asignar',
               kilometraje: kilometrajeOrden ? parseInt(kilometrajeOrden) : null,
               nivel_combustible: mostrarActa ? nivelCombustible : null,
+              testigos: mostrarActa ? JSON.stringify(testigosSeleccionados) : null,
               objetos_valor: mostrarActa ? objetosValor : null,
-              danos_previos: mostrarActa ? danosPrevios : null
+              danos_previos: mostrarActa ? danosPrevios : null,
+              danos_carroceria: mostrarActa ? JSON.stringify(marcadoresDanos) : null,
+              costo_revision: valorDiagnostico ? parseInt(valorDiagnostico) : 0 
           };
 
           const { data: nuevaOrden, error: errorOrden } = await supabase.from('ordenes_trabajo').insert([payloadOrden]).select();
@@ -573,18 +683,6 @@ export default function CalibreApp() {
               }
           }
 
-          const valorInt = valorDiagnostico ? parseInt(valorDiagnostico) : 0;
-          if (valorInt > 0) {
-              const { error: errorItem } = await supabase.from('items_orden').insert([{
-                  orden_id: ordenId,
-                  descripcion: 'Diagnóstico',
-                  precio: valorInt,
-                  tipo_item: 'servicio',
-                  procedencia: 'Taller'
-              }]);
-              if (errorItem) throw errorItem;
-          }
-          
           toast.success("¡Orden ingresada a la Pizarra!", { id: toastId });
           await cargarTodo(); 
           setModalNuevaOrden(null); 
@@ -597,7 +695,10 @@ export default function CalibreApp() {
 
   const registrarTodo = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    if (loading) return; 
+    if (loading || soloLectura) {
+        if (soloLectura) toast.error("Modo Solo Lectura: No puedes registrar vehículos.");
+        return;
+    }
 
     if (rutInput && !validarRutChileno(rutInput)) {
         toast.error("El RUT ingresado no es válido. Revísalo o déjalo en blanco.");
@@ -626,9 +727,12 @@ export default function CalibreApp() {
     const tId = session?.user?.id;
     try {
         if (!finalId) {
-            const { data: nC, error: errC } = await supabase.from('clientes').insert([{ nombre: nombreInput, telefono: telefonoInput, rut: rutInput, taller_id: tId }]).select();
+            const payloadCliente = { nombre: nombreInput, telefono: telefonoInput, correo: correoInput || null, rut: rutInput, taller_id: tId }; // 🔥 FASE 3.1
+            const { data: nC, error: errC } = await supabase.from('clientes').insert([payloadCliente]).select();
             if (errC) throw errC;
             finalId = nC ? nC[0].id : null;
+        } else if (correoInput) {
+            await supabase.from('clientes').update({ correo: correoInput }).eq('id', finalId);
         }
         if (finalId) {
             const { data: nV, error: errV } = await supabase.from('vehiculos').insert([{ 
@@ -650,6 +754,7 @@ export default function CalibreApp() {
                 setNombreInput('');
                 setRutInput('');
                 setTelefonoInput('+569');
+                setCorreoInput(''); 
                 setPatenteInput('');
                 
                 abrirOrden(nV[0]); 
@@ -660,6 +765,7 @@ export default function CalibreApp() {
   }
 
   const handleAsignarMecanico = async (ordenId: string, actual: string) => {
+    if (soloLectura) return;
     const nuevoMecanico = window.prompt("Ingrese el nombre del mecánico a cargo:", actual === 'Sin asignar' ? '' : actual);
     if (nuevoMecanico !== null) { 
         await supabase.from('ordenes_trabajo').update({ mecanico: nuevoMecanico.trim() || 'Sin asignar' }).eq('id', ordenId);
@@ -669,6 +775,7 @@ export default function CalibreApp() {
   }
 
   const cambiarSubEstado = async (ordenId: string, nuevoEstado: string) => {
+      if (soloLectura) return;
       const { error } = await supabase.from('ordenes_trabajo').update({ sub_estado: nuevoEstado }).eq('id', ordenId);
       if (!error) {
           toast.success(`Estado actualizado`);
@@ -689,23 +796,26 @@ export default function CalibreApp() {
   }
 
   const solicitarAprobacion = (o: any) => {
-      const total = o.items_orden?.reduce((sum: number, item: any) => sum + item.precio, 0) || 0;
+      const subtotalItems = o.items_orden?.reduce((sum: number, item: any) => sum + item.precio, 0) || 0;
+      const totalFinal = subtotalItems + (o.costo_revision || 0) - (o.descuento || 0); 
+      
       const telefono = o.vehiculos?.clientes?.telefono;
       const cliente = o.vehiculos?.clientes?.nombre || 'Estimado(a)';
       const vehiculo = `${o.vehiculos?.marca} ${o.vehiculos?.modelo}`;
       const linkUrl = `${window.location.origin}/estado/${o.id}`;
       
-      const msj = `Hola ${cliente}, te escribimos de ${nombreTaller}. 🔧\nEl presupuesto preliminar para tu ${vehiculo} (Patente: ${o.vehiculos?.patente}) es de *$${total.toLocaleString('es-CL')}*.\n\nPuedes revisar el detalle y seguir el estado de tu vehículo en tiempo real aquí:\n👉 ${linkUrl}\n\n¿Nos confirmas por aquí para proceder con el trabajo? Quedamos atentos.`;
+      const msj = `Hola ${cliente}, te escribimos de ${nombreTaller}. 🔧\nEl presupuesto preliminar para tu ${vehiculo} (Patente: ${o.vehiculos?.patente}) es de *$${totalFinal.toLocaleString('es-CL')}*.\n\nPuedes revisar el detalle y seguir el estado de tu vehículo en tiempo real aquí:\n👉 ${linkUrl}\n\n¿Nos confirmas por aquí para proceder con el trabajo? Quedamos atentos.`;
       
       if (telefono && telefono.startsWith('+569') && telefono.length === 12) {
           window.open(`https://wa.me/${telefono.replace('+', '')}?text=${encodeURIComponent(msj)}`, '_blank');
-          cambiarSubEstado(o.id, 'Pendiente Aprobación'); 
+          if (!soloLectura) cambiarSubEstado(o.id, 'Pendiente Aprobación'); 
       } else {
           toast.error("El cliente no tiene un teléfono válido registrado.");
       }
   }
 
   const abrirModalItem = (ordenId: string, itemObj: any = null) => {
+    if (soloLectura) return;
     if (itemObj) {
         setItemForm({ 
             id: itemObj.id, 
@@ -723,6 +833,7 @@ export default function CalibreApp() {
   }
 
   const eliminarItemBD = async (idItem: string) => {
+      if (soloLectura) return;
       if (!window.confirm("¿Estás seguro de eliminar este ítem de la orden?")) return;
       try {
           await supabase.from('items_orden').delete().eq('id', idItem);
@@ -735,7 +846,7 @@ export default function CalibreApp() {
 
   const guardarItemBD = async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
-      if (!itemForm.orden_id || guardandoItem) return;
+      if (!itemForm.orden_id || guardandoItem || soloLectura) return;
       setGuardandoItem(true);
 
       const descripcionFinal = itemForm.tipo_item === 'repuesto' && itemForm.detalle.trim() !== ''
@@ -767,6 +878,7 @@ export default function CalibreApp() {
   }
 
   const toggleItemRealizado = async (idItem: string, estadoActual: boolean) => {
+      if (soloLectura) return;
       try {
           const { error } = await supabase.from('items_orden').update({ realizado: !estadoActual }).eq('id', idItem);
           if (error) throw error;
@@ -784,7 +896,7 @@ export default function CalibreApp() {
   }
 
   const subirFotoDefinitiva = async () => {
-      if (!fotoForm || !fotoForm.file) return;
+      if (!fotoForm || !fotoForm.file || soloLectura) return;
       setSubiendoFoto(true);
 
       try {
@@ -830,6 +942,7 @@ export default function CalibreApp() {
   }
 
   const entregarOrdenYFinalizar = async (o: any) => {
+      if (soloLectura) return;
       setGenerandoPDF(true); 
       try {
           let resumenGenerado = "";
@@ -911,7 +1024,7 @@ export default function CalibreApp() {
       (o.vehiculos?.clientes?.rut || '').replace(/[^0-9kK]/g, '').includes(bHistorial)
   )
 
-  const cajaTotal = historial.reduce((acc, o) => acc + (o.items_orden?.reduce((s: number, i: any) => s + i.precio, 0) || 0), 0)
+  const cajaTotal = historial.reduce((acc, o) => acc + (o.items_orden?.reduce((s: number, i: any) => s + i.precio, 0) || 0) + (o.costo_revision || 0) - (o.descuento || 0), 0)
 
   let ingresosServicio = 0;
   let ingresosRepuesto = 0;
@@ -925,7 +1038,7 @@ export default function CalibreApp() {
   });
 
   const gananciasEsteMes = ordenesEsteMes.reduce((acc, o) => 
-      acc + (o.items_orden?.reduce((s: number, i: any) => s + i.precio, 0) || 0)
+      acc + (o.items_orden?.reduce((s: number, i: any) => s + i.precio, 0) || 0) + (o.costo_revision || 0) - (o.descuento || 0)
   , 0);
 
   const autosEsteMes = ordenesEsteMes.length;
@@ -935,6 +1048,7 @@ export default function CalibreApp() {
       if (i.tipo_item === 'servicio') ingresosServicio += i.precio;
       if (i.tipo_item === 'repuesto') ingresosRepuesto += i.precio;
     });
+    ingresosServicio += (o.costo_revision || 0); 
   });
 
   const totalSplit = ingresosServicio + ingresosRepuesto;
@@ -945,7 +1059,7 @@ export default function CalibreApp() {
 
   const ingresosPorMarca = historial.reduce((acc: any, o) => {
     const m = o.vehiculos?.marca ? o.vehiculos.marca.toUpperCase() : 'OTRO';
-    const totalOrden = o.items_orden?.reduce((s: number, i: any) => s + i.precio, 0) || 0;
+    const totalOrden = (o.items_orden?.reduce((s: number, i: any) => s + i.precio, 0) || 0) + (o.costo_revision || 0) - (o.descuento || 0);
     acc[m] = (acc[m] || 0) + totalOrden;
     return acc;
   }, {});
@@ -1010,6 +1124,10 @@ export default function CalibreApp() {
   const isRutValid = rutSinFormato.length >= 8 && validarRutChileno(rutInput);
   const isRutInvalid = rutSinFormato.length >= 8 && !isRutValid;
 
+  const gradosAguja = (nivelCombustible / 100) * 180 - 90;
+  
+  const vehiculosConAlertas = vehiculos.filter(v => v.alertas_desgaste?.some((a: any) => a.estado === 'Pendiente'));
+
   if (authLoading) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
@@ -1043,9 +1161,21 @@ export default function CalibreApp() {
         onOpenMarketing={() => setModalMarketing(true)} 
       />
 
+      {soloLectura && (
+          <div className="bg-red-500/10 border border-red-500/50 p-4 rounded-2xl mb-6 mx-auto w-full max-w-7xl flex items-center justify-between z-20 relative">
+              <div className="flex items-center gap-3">
+                  <AlertTriangle className="text-red-500 animate-pulse" size={24} />
+                  <div>
+                      <h3 className="text-red-500 font-black uppercase tracking-widest text-sm">Modo de Solo Lectura Activado</h3>
+                      <p className="text-slate-400 text-xs font-bold mt-1">Tu suscripción ha finalizado. Puedes consultar el historial, pero no ingresar nuevas órdenes ni realizar modificaciones.</p>
+                  </div>
+              </div>
+          </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6 w-full relative z-10">
+        
         <div className="lg:col-span-1 space-y-4 md:space-y-6">
-          
           <section className="bg-slate-900/40 backdrop-blur-md p-5 rounded-3xl shadow-2xl border border-slate-700/50 relative overflow-hidden">
             <div className="flex items-center justify-between">
                 <button 
@@ -1061,7 +1191,7 @@ export default function CalibreApp() {
                 </button>
             </div>
             
-            <div className={`transition-all duration-300 ${recepcionAbierta ? 'block mt-5' : 'hidden'} md:block md:mt-5`}>
+            <div className={`transition-all duration-300 ${recepcionAbierta ? 'block mt-5' : 'hidden'} md:block md:mt-5 ${soloLectura ? 'opacity-50 pointer-events-none' : ''}`}>
                 <form id="form-recepcion" onSubmit={registrarTodo} className="space-y-3 relative z-10">
                   
                   <input 
@@ -1069,6 +1199,7 @@ export default function CalibreApp() {
                       value={rutInput}
                       placeholder="RUT (Opcional)" 
                       onChange={handleRutChange} 
+                      disabled={soloLectura}
                       className={`w-full p-3 rounded-2xl bg-slate-900/50 backdrop-blur-sm text-sm text-slate-200 outline-none transition-all border ${
                           isRutInvalid 
                           ? 'border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)] focus:border-red-500 focus:ring-1 focus:ring-red-500/50' 
@@ -1083,7 +1214,18 @@ export default function CalibreApp() {
                       value={nombreInput}
                       onChange={(e) => setNombreInput(e.target.value)}
                       required 
+                      disabled={soloLectura}
                       placeholder="Nombre Dueño" 
+                      className="w-full p-3 rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm text-sm text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all" 
+                  />
+
+                  <input 
+                      name="correo_cliente" 
+                      type="email" 
+                      value={correoInput}
+                      onChange={(e) => setCorreoInput(e.target.value)}
+                      disabled={soloLectura}
+                      placeholder="Correo Electrónico (Opcional)" 
                       className="w-full p-3 rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm text-sm text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all" 
                   />
                   
@@ -1092,6 +1234,7 @@ export default function CalibreApp() {
                       type="tel" 
                       maxLength={12} 
                       value={telefonoInput}
+                      disabled={soloLectura}
                       onChange={(e) => {
                           let v = e.target.value.replace(/[^\d+]/g, '');
                           if (!v.startsWith('+569')) v = '+569';
@@ -1106,6 +1249,7 @@ export default function CalibreApp() {
                       <input 
                           name="patente" 
                           value={patenteInput}
+                          disabled={soloLectura}
                           onChange={(e) => setPatenteInput(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))}
                           required 
                           placeholder="PATENTE" 
@@ -1119,6 +1263,7 @@ export default function CalibreApp() {
                           name="marca" 
                           list="lista-marcas"
                           value={marcaInput}
+                          disabled={soloLectura}
                           onChange={(e) => setMarcaInput(e.target.value.toUpperCase())}
                           placeholder="Marca" 
                           autoComplete="off"
@@ -1134,6 +1279,7 @@ export default function CalibreApp() {
                           name="modelo" 
                           list="lista-modelos"
                           value={modeloInput} 
+                          disabled={soloLectura}
                           onChange={(e) => setModeloInput(e.target.value.toUpperCase())} 
                           placeholder="Modelo" 
                           autoComplete="off"
@@ -1145,11 +1291,11 @@ export default function CalibreApp() {
                     </div>
 
                     <div className="col-span-1">
-                        <input name="anho" type="number" placeholder="Año" className="w-full p-3 rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm text-xs text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all" />
+                        <input name="anho" type="number" disabled={soloLectura} placeholder="Año" className="w-full p-3 rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm text-xs text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all" />
                     </div>
                   </div>
                   
-                  <button disabled={loading} className="w-full bg-emerald-600 text-slate-950 py-4 rounded-full font-black shadow-[0_0_20px_rgba(16,185,129,0.2)] hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] transition-all uppercase text-xs mt-3 disabled:opacity-50 hover:scale-[1.02] flex items-center justify-center gap-2">
+                  <button disabled={loading || soloLectura} className="w-full bg-emerald-600 text-slate-950 py-4 rounded-full font-black shadow-[0_0_20px_rgba(16,185,129,0.2)] hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] transition-all uppercase text-xs mt-3 disabled:opacity-50 hover:scale-[1.02] flex items-center justify-center gap-2">
                       {loading ? 'Procesando...' : <><Plus size={16}/> Registrar Orden</>}
                   </button>
                 </form>
@@ -1163,105 +1309,165 @@ export default function CalibreApp() {
             </div>
             <div className="space-y-2 mt-3 max-h-40 overflow-y-auto custom-scrollbar-dark pr-2">
                 {vehiculosFiltrados.map(v => {
-                    const tieneAlerta = v.alertas_desgaste?.some((a: any) => a.estado === 'Pendiente');
+                    const alertaPendiente = v.alertas_desgaste?.find((a: any) => a.estado === 'Pendiente');
                     return (
                     <div key={v.id} className="p-3 bg-slate-800/50 backdrop-blur-sm rounded-xl flex justify-between items-center group border border-slate-700/50 hover:border-emerald-500/50 transition-all">
-                        <div className="overflow-hidden pr-2">
-                            <div className="flex items-center gap-2">
-                                <p className="font-black text-xs text-slate-100 tracking-wider truncate">{v.patente}</p>
-                                {tieneAlerta && (
-                                    <span title="Vehículo con desgaste pendiente" className="shrink-0">
-                                        <AlertTriangle size={12} className="text-orange-500 animate-pulse" />
-                                    </span>
-                                )}
+                        <div className="overflow-hidden pr-2 w-full">
+                            <div className="flex items-center justify-between w-full">
+                                <div className="flex items-center gap-2">
+                                    <p className="font-black text-xs text-slate-100 tracking-wider truncate">{v.patente}</p>
+                                    {alertaPendiente && (
+                                        <span title="Vehículo con desgaste pendiente" className="shrink-0">
+                                            <AlertTriangle size={12} className="text-orange-500 animate-pulse" />
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
+                                    {alertaPendiente && (
+                                        <>
+                                            <button onClick={() => llamarARevisionWhatsapp(v)} className="bg-blue-600/20 text-blue-400 p-1.5 rounded-lg hover:bg-blue-600 hover:text-white transition-colors" title="Llamar a revisión (WhatsApp)"><PhoneForwarded size={12} /></button>
+                                            <button onClick={() => resolverAlertaDirecta(alertaPendiente.id)} className="bg-emerald-600/20 text-emerald-400 p-1.5 rounded-lg hover:bg-emerald-600 hover:text-white transition-colors" title="Marcar desgaste como resuelto"><CheckCircle2 size={12} /></button>
+                                        </>
+                                    )}
+                                    <button onClick={() => setVehiculoInfo(v)} className="bg-slate-700/50 text-emerald-400 p-1.5 rounded-lg hover:bg-slate-600 transition-colors" title="Ver Detalles">
+                                        <Info size={12} />
+                                    </button>
+                                    <button disabled={soloLectura} onClick={() => abrirOrden(v)} className="bg-emerald-600 text-slate-950 px-2 py-1.5 rounded-lg text-[9px] font-black hover:bg-emerald-500 disabled:opacity-50 shadow-[0_0_10px_rgba(16,185,129,0.3)] transition-all">ORDEN</button>
+                                </div>
                             </div>
-                            <p className="text-[9px] text-slate-500 uppercase truncate">{v.clientes?.nombre}</p>
-                        </div>
-                        
-                        <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
-                            <button onClick={() => setVehiculoInfo(v)} className="bg-slate-700/50 text-emerald-400 p-1.5 rounded-lg hover:bg-slate-600 transition-colors" title="Ver Detalles">
-                                <Info size={12} />
-                            </button>
-                            <button onClick={() => abrirOrden(v)} className="bg-emerald-600 text-slate-950 px-2 py-1.5 rounded-lg text-[9px] font-black hover:bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)] transition-all">ORDEN</button>
+                            <p className="text-[9px] text-slate-500 uppercase truncate mt-1">{v.clientes?.nombre}</p>
                         </div>
                     </div>
                 )})}
             </div>
           </section>
 
-          <section className="bg-slate-900/40 backdrop-blur-md p-5 rounded-3xl shadow-2xl border border-slate-700/50">
-            <h2 className="text-xs font-black mb-3 text-blue-400 uppercase tracking-widest flex items-center gap-2">
-                <Bot size={14} /> Agenda Predictiva
-            </h2>
-            <p className="text-[9px] text-slate-400 font-bold mb-3 leading-tight">
-                Clientes que requieren mantención o tienen desgastes pendientes.
-            </p>
+          {/* 🔥 FASE 6: PESTAÑAS (TABS) PARA ALERTAS Y AGENDA */}
+          <section className="bg-slate-900/40 backdrop-blur-md p-5 rounded-3xl shadow-2xl border border-slate-700/50 flex flex-col h-[320px]">
+            <div className="flex gap-2 mb-4 border-b border-slate-800 pb-2 shrink-0">
+                <button 
+                    onClick={() => setTabIzquierda('alertas')} 
+                    className={`flex-1 text-[10px] font-black uppercase tracking-widest pb-2 border-b-2 transition-all flex items-center justify-center gap-1 ${tabIzquierda === 'alertas' ? 'border-red-500 text-red-400' : 'border-transparent text-slate-500 hover:text-slate-300'}`}
+                >
+                    <AlertTriangle size={12}/> Alertas ({vehiculosConAlertas.length})
+                </button>
+                <button 
+                    onClick={() => setTabIzquierda('agenda')} 
+                    className={`flex-1 text-[10px] font-black uppercase tracking-widest pb-2 border-b-2 transition-all flex items-center justify-center gap-1 ${tabIzquierda === 'agenda' ? 'border-blue-500 text-blue-400' : 'border-transparent text-slate-500 hover:text-slate-300'}`}
+                >
+                    <Bot size={12}/> Agenda
+                </button>
+            </div>
             
-            <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar-dark pr-2">
-                {oportunidadesVenta.map(v => {
-                    const alerta = v.alertas_desgaste?.find((a: any) => a.estado === 'Pendiente');
-                    return (
-                        <div key={v.id} className="p-3 bg-slate-950/50 backdrop-blur-sm rounded-xl border border-slate-800 hover:border-blue-500/50 transition-all group">
-                            <div className="flex justify-between items-start mb-2">
-                                <div className="overflow-hidden">
-                                    <p className="font-black text-[10px] text-slate-200 uppercase truncate">{v.clientes?.nombre}</p>
-                                    <p className="text-[9px] text-slate-500 font-bold uppercase truncate">{v.marca} {v.modelo} • {v.patente}</p>
+            <div className="space-y-2 overflow-y-auto custom-scrollbar-dark pr-2 flex-1">
+                {/* Contenido de Alertas */}
+                {tabIzquierda === 'alertas' && (
+                    <>
+                        {vehiculosConAlertas.map(v => {
+                            const alerta = v.alertas_desgaste?.find((a: any) => a.estado === 'Pendiente');
+                            return (
+                                <div key={`alerta-${v.id}`} className="p-3 bg-slate-950/50 backdrop-blur-sm rounded-xl border border-slate-800 hover:border-red-500/50 transition-all group">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <div className="overflow-hidden">
+                                            <p className="font-black text-[10px] text-slate-200 uppercase truncate">{v.clientes?.nombre}</p>
+                                            <p className="text-[9px] text-slate-500 font-bold uppercase truncate">{v.marca} {v.modelo} • {v.patente}</p>
+                                        </div>
+                                    </div>
+                                    <div className="bg-slate-900 rounded-lg p-2 mb-2">
+                                        <p className="text-[8px] font-bold text-red-400 uppercase tracking-wider flex items-center gap-1">
+                                            <AlertTriangle size={10} className="shrink-0" /> 
+                                            <span className="truncate">Desgaste: {alerta?.pieza}</span>
+                                        </p>
+                                    </div>
+                                    <button onClick={() => llamarARevisionWhatsapp(v)} className="w-full bg-blue-600/10 text-blue-400 border border-blue-600/30 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-slate-950 transition-all flex items-center justify-center gap-1">
+                                        <PhoneForwarded size={10} /> Contactar
+                                    </button>
                                 </div>
+                            );
+                        })}
+                        {vehiculosConAlertas.length === 0 && (
+                            <div className="text-center p-4 border border-dashed border-slate-800 rounded-xl h-full flex flex-col items-center justify-center">
+                                <CheckCircle2 size={24} className="text-slate-700 mb-2"/>
+                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Sin alertas críticas pendientes.</p>
                             </div>
-                            
-                            <div className="bg-slate-900 rounded-lg p-2 mb-2">
-                                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                                    <AlertTriangle size={10} className={alerta ? "text-yellow-500 shrink-0" : "text-slate-500 shrink-0"} /> 
-                                    <span className="truncate">{alerta ? `Revisar ${alerta.pieza}` : 'Mantención Preventiva'}</span>
-                                </p>
+                        )}
+                    </>
+                )}
+
+                {/* Contenido de Agenda Predictiva */}
+                {tabIzquierda === 'agenda' && (
+                    <>
+                        {oportunidadesVenta.filter(v => !v.alertas_desgaste?.some((a: any) => a.estado === 'Pendiente')).map(v => (
+                            <div key={`agenda-${v.id}`} className="p-3 bg-slate-950/50 backdrop-blur-sm rounded-xl border border-slate-800 hover:border-blue-500/50 transition-all group">
+                                <div className="flex justify-between items-start mb-2">
+                                    <div className="overflow-hidden">
+                                        <p className="font-black text-[10px] text-slate-200 uppercase truncate">{v.clientes?.nombre}</p>
+                                        <p className="text-[9px] text-slate-500 font-bold uppercase truncate">{v.marca} {v.modelo} • {v.patente}</p>
+                                    </div>
+                                </div>
+                                <div className="bg-slate-900 rounded-lg p-2 mb-2">
+                                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                                        <Bot size={10} className="text-blue-500 shrink-0" /> 
+                                        <span className="truncate">Sugerir Mantención Preventiva</span>
+                                    </p>
+                                </div>
+                                <button onClick={() => enviarRecordatorioPredictivo(v)} className="w-full bg-blue-600/10 text-blue-400 border border-blue-600/30 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-slate-950 transition-all flex items-center justify-center gap-1">
+                                    <MessageSquare size={10} /> Enviar Aviso
+                                </button>
                             </div>
-
-                            <button onClick={() => enviarRecordatorioPredictivo(v)} className="w-full bg-blue-600/10 text-blue-400 border border-blue-600/30 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-slate-950 transition-all flex items-center justify-center gap-1">
-                                <MessageSquare size={10} /> Enviar Aviso
-                            </button>
-                        </div>
-                    );
-                })}
-
-                {oportunidadesVenta.length === 0 && (
-                    <div className="text-center p-4 border border-dashed border-slate-700/50 rounded-xl">
-                        <p className="text-[10px] text-slate-500 font-bold">No hay clientes pendientes.</p>
-                    </div>
+                        ))}
+                        {oportunidadesVenta.filter(v => !v.alertas_desgaste?.some((a: any) => a.estado === 'Pendiente')).length === 0 && (
+                            <div className="text-center p-4 border border-dashed border-slate-800 rounded-xl h-full flex flex-col items-center justify-center">
+                                <Bot size={24} className="text-slate-700 mb-2"/>
+                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">No hay mantenciones próximas.</p>
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
           </section>
         </div>
 
-        {/* 🔥 COLUMNA PRINCIPAL DERECHA */}
         <div className="lg:col-span-3 flex flex-col gap-6">
             
-            <section className="relative">
+            <section className="relative h-full flex flex-col">
                 <div className="absolute -top-10 -left-10 w-64 h-64 bg-orange-500/10 rounded-full blur-[80px] pointer-events-none z-0"></div>
                 
-                <div className="flex items-center gap-3 mb-5 relative z-10">
+                <div className="flex items-center gap-3 mb-5 relative z-10 shrink-0">
                     <span className="h-3 w-3 bg-orange-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(249,115,22,0.8)]"></span>
                     <h2 className="text-2xl font-black text-slate-100 tracking-tighter uppercase">Pizarra Activa</h2>
                 </div>
 
                 {ordenesAbiertas.length === 0 ? (
-                    <div className="min-h-[250px] border-2 border-dashed border-slate-800 rounded-3xl flex flex-col items-center justify-center text-center p-6 relative z-10 bg-slate-900/20 backdrop-blur-sm">
+                    <div className="flex-1 min-h-[500px] border-2 border-dashed border-slate-800 rounded-3xl flex flex-col items-center justify-center text-center p-6 relative z-10 bg-slate-900/20 backdrop-blur-sm">
                         <Settings size={48} className="text-slate-700 mb-4 animate-[spin_10s_linear_infinite]" />
                         <h3 className="text-lg font-black text-slate-400 uppercase tracking-widest mb-1">Taller Despejado</h3>
                         <p className="text-xs text-slate-500 font-bold">Registra un vehículo a la izquierda para comenzar el trabajo.</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 relative z-10 items-start">
-                        {ordenesAbiertas.map(o => (
-                            <div key={o.id} className="bg-slate-900/40 backdrop-blur-md p-6 rounded-3xl shadow-2xl border-2 border-slate-800 hover:border-orange-500/50 transition-all relative overflow-hidden group flex flex-col justify-between">
-                                <div>
-                                    <div className="flex justify-between items-start mb-5">
+                    <div className="flex flex-row overflow-x-auto gap-5 relative z-10 pb-4 custom-scrollbar-dark snap-x h-full min-h-[650px]">
+                        {ordenesAbiertas.map(o => {
+                            
+                            const subtotalItems = o.items_orden?.reduce((sum: number, item: any) => sum + item.precio, 0) || 0;
+                            const costoRev = o.costo_revision || 0;
+                            const desc = o.descuento || 0;
+                            const subtotalBruto = subtotalItems + costoRev;
+                            const totalNeto = subtotalBruto - desc;
+                            const porcentajeDesc = subtotalBruto > 0 ? Math.round((desc / subtotalBruto) * 100) : 0;
+
+                            return (
+                            <div key={o.id} className="min-w-[320px] max-w-[360px] w-full bg-slate-900/40 backdrop-blur-md p-5 rounded-3xl shadow-2xl border-2 border-slate-800 hover:border-orange-500/50 transition-all relative overflow-hidden group flex flex-col snap-center flex-shrink-0 h-full">
+                                
+                                <div className="shrink-0 mb-4">
+                                    <div className="flex justify-between items-start mb-3">
                                         <div className="overflow-hidden pr-2">
                                             
-                                            <div className="flex flex-col items-start md:flex-row md:items-center gap-2 mb-1">
+                                            <div className="flex flex-col gap-2 mb-1">
                                                 <p className="font-black text-3xl tracking-tighter text-slate-100 w-full md:w-auto truncate">{o.vehiculos?.patente}</p>
                                                 
                                                 <select 
                                                     value={o.sub_estado || 'Diagnóstico'}
+                                                    disabled={soloLectura}
                                                     onChange={(e) => cambiarSubEstado(o.id, e.target.value)}
                                                     className={`text-[8px] font-black px-1.5 py-1 rounded-md border uppercase tracking-wider outline-none cursor-pointer text-center shrink-0 w-fit ${COLOR_ESTADO[o.sub_estado || 'Diagnóstico']}`}
                                                 >
@@ -1283,176 +1489,205 @@ export default function CalibreApp() {
                                                 <span>{calcularTiempoEnTaller(o.created_at)} en taller</span>
                                             </div>
 
-                                            <div onClick={() => handleAsignarMecanico(o.id, o.mecanico)} className="flex items-center gap-1 w-fit mt-2 bg-slate-800/50 backdrop-blur-sm text-slate-300 font-bold text-[9px] px-2 py-1.5 rounded-lg border border-slate-700/50 shadow-sm uppercase cursor-pointer hover:bg-emerald-900/50 hover:text-emerald-400 hover:border-emerald-700 transition-all truncate max-w-full" title="Clic para cambiar mecánico">
+                                            <div onClick={() => handleAsignarMecanico(o.id, o.mecanico)} className={`flex items-center gap-1 w-fit mt-2 bg-slate-800/50 backdrop-blur-sm text-slate-300 font-bold text-[9px] px-2 py-1.5 rounded-lg border border-slate-700/50 shadow-sm uppercase truncate max-w-full ${soloLectura ? 'opacity-50' : 'cursor-pointer hover:bg-emerald-900/50 hover:text-emerald-400 hover:border-emerald-700 transition-all'}`} title="Clic para cambiar mecánico">
                                                 <User size={10} className="shrink-0" /> <span className="truncate">{o.mecanico && o.mecanico !== 'Sin asignar' ? o.mecanico : 'Mecánico'}</span>
                                             </div>
                                         </div>
                                         
-                                        <div className="flex gap-2 shrink-0">
-                                            {/* 🔥 BOTÓN PARA VER ACTA (Pizarra) */}
-                                            <button onClick={() => setModalActa(o)} className="bg-slate-800/50 backdrop-blur-sm p-2.5 rounded-xl hover:bg-cyan-900/50 text-cyan-400 transition-all border border-slate-700/50 shadow-sm hover:scale-110" title="Ver Acta de Recepción">
+                                        <div className="flex flex-col gap-2 shrink-0">
+                                            <button onClick={() => setModalActa(o)} className="bg-slate-800/50 backdrop-blur-sm p-2.5 rounded-xl hover:bg-cyan-900/50 text-cyan-400 transition-all border border-slate-700/50 shadow-sm" title="Ver Acta de Recepción">
                                                 <ClipboardList size={16} />
                                             </button>
 
-                                            <button onClick={() => compartirLinkCliente(o)} className="bg-slate-800/50 backdrop-blur-sm p-2.5 rounded-xl hover:bg-blue-900/50 text-blue-400 transition-all border border-slate-700/50 shadow-sm hover:scale-110" title="Compartir Link del Vehículo">                                                
+                                            <button onClick={() => compartirLinkCliente(o)} className="bg-slate-800/50 backdrop-blur-sm p-2.5 rounded-xl hover:bg-blue-900/50 text-blue-400 transition-all border border-slate-700/50 shadow-sm" title="Compartir Link del Vehículo">                                                
                                                 <Share2 size={16} />
                                             </button>
-                                            <button onClick={() => abrirModalAlerta(o)} className="bg-slate-800/50 backdrop-blur-sm p-2.5 rounded-xl hover:bg-orange-900/50 text-orange-400 transition-all border border-slate-700/50 shadow-sm hover:scale-110" title="Registrar Desgaste">
-                                                <AlertTriangle size={16} />
-                                            </button>
-                                            <button onClick={() => setFotoForm({ordenId: o.id, file: null, preview: '', descripcion: ''})} className="bg-slate-800/50 backdrop-blur-sm p-2.5 rounded-xl hover:bg-emerald-900/50 text-emerald-400 transition-all border border-slate-700/50 shadow-sm hover:scale-110" title="Subir Evidencia">
+                                            
+                                            <button onClick={() => setFotoForm({ordenId: o.id, file: null, preview: '', descripcion: ''})} disabled={soloLectura} className="bg-slate-800/50 disabled:opacity-50 backdrop-blur-sm p-2.5 rounded-xl hover:bg-emerald-900/50 text-emerald-400 transition-all border border-slate-700/50 shadow-sm" title="Subir Evidencia">
                                                 <Camera size={16} />
                                             </button>
                                         </div>
                                     </div>
                                     
-                                    <div className="flex justify-between items-start bg-slate-800/30 backdrop-blur-sm p-3 rounded-xl mb-4 border border-slate-700/50 group/desc">
-                                        <div className="italic text-xs text-slate-400 line-clamp-2" title={o.descripcion}>"{o.descripcion}"</div>
-                                        <div className="flex gap-1 shrink-0">
-                                            {/* 🔥 BOTÓN: EDITAR ORDEN */}
-                                            <button 
-                                                onClick={() => abrirModalEditarOrden(o)} 
-                                                className="ml-2 bg-blue-900/30 text-blue-500 hover:bg-blue-500 hover:text-slate-900 p-2 rounded-lg transition-all border border-blue-700/50 shadow-sm" 
-                                                title="Editar Orden (KM, Falla, Mecánico)"
-                                            >
-                                                <Edit2 size={14} />
-                                            </button>
-                                            <button 
-                                                onClick={() => setModalAnalisis(o)} 
-                                                className="bg-yellow-900/30 text-yellow-500 hover:bg-yellow-500 hover:text-slate-900 p-2 rounded-lg transition-all border border-yellow-700/50 shadow-sm hover:shadow-[0_0_15px_rgba(234,179,8,0.4)]" 
-                                                title="Analizar Falla con IA"
-                                            >
-                                                <Lightbulb size={14} />
-                                            </button>
-                                        </div>
+                                    <div className="bg-slate-800/30 backdrop-blur-sm p-3 rounded-xl border border-slate-700/50 flex justify-between items-center group">
+                                        <div className="italic text-[10px] text-slate-400 line-clamp-1 w-full" title={o.descripcion}>"{o.descripcion}"</div>
+                                        <button 
+                                            onClick={() => abrirModalEditarOrden(o)} 
+                                            disabled={soloLectura}
+                                            className="ml-2 text-blue-500 hover:text-blue-400 transition-colors disabled:opacity-50" 
+                                            title="Editar Orden"
+                                        >
+                                            <Edit2 size={12} />
+                                        </button>
                                     </div>
-                                    
-                                    <div className="space-y-2 mb-4 max-h-40 overflow-y-auto custom-scrollbar-dark pr-1">
-                                        {o.items_orden?.map((item: any) => (
-                                            <div key={item.id} className={`flex justify-between items-center text-[9px] font-bold backdrop-blur-sm p-2.5 rounded-xl border group/item transition-colors ${item.realizado ? 'bg-emerald-900/10 border-emerald-900/30 opacity-70' : 'bg-slate-950/50 border-slate-800/50 hover:border-slate-700'}`}>
-                                                <div className="flex items-center gap-2 flex-1 pr-2 overflow-hidden">
-                                                    <button onClick={() => toggleItemRealizado(item.id, item.realizado)} className="shrink-0 hover:scale-110 transition-transform">
-                                                        {item.realizado ? <CheckCircle2 className="text-emerald-500" size={14} /> : <Circle className="text-slate-600 hover:text-emerald-500/50" size={14} />}
-                                                    </button>
-                                                    <div>
-                                                        <span className={`uppercase block truncate ${item.realizado ? 'text-slate-500 line-through' : 'text-slate-300'}`}>{item.descripcion}</span>
-                                                        {!item.realizado && <span className="text-slate-600 block">({item.procedencia})</span>}
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-2 shrink-0">
-                                                    <span className={`mr-1 ${item.realizado ? 'text-slate-500' : 'text-emerald-400'}`}>${item.precio.toLocaleString()}</span>
-                                                    <button onClick={() => abrirModalItem(o.id, item)} className="text-slate-600 hover:text-emerald-400 transition-colors p-1" title="Editar">
-                                                        <Edit2 size={12} />
-                                                    </button>
-                                                    <button onClick={() => eliminarItemBD(item.id)} className="text-slate-600 hover:text-red-400 transition-colors p-1" title="Eliminar">
-                                                        <Trash2 size={12} />
-                                                    </button>
+                                </div>
+                                
+                                {/* 🔥 BOTÓN FIJO ARRIBA DE LA LISTA */}
+                                <button 
+                                    disabled={soloLectura} 
+                                    onClick={() => abrirModalItem(o.id)} 
+                                    className="w-full shrink-0 mb-3 py-2.5 border border-emerald-700/50 rounded-xl text-[10px] font-black text-emerald-400 hover:bg-emerald-600 hover:text-slate-950 uppercase transition-all bg-emerald-900/20 shadow-[0_4px_15px_rgba(2,6,23,0.8)] backdrop-blur-md flex items-center justify-center gap-1"
+                                >
+                                    <Plus size={14} /> Añadir Servicio o Repuesto
+                                </button>
+
+                                <div className="flex-1 overflow-y-auto custom-scrollbar-dark pr-1 space-y-2 mb-4">
+                                    {o.items_orden?.map((item: any) => (
+                                        <div key={item.id} className={`flex justify-between items-center text-[10px] font-bold backdrop-blur-sm p-2.5 rounded-xl border group/item transition-colors ${item.realizado ? 'bg-emerald-900/10 border-emerald-900/30 opacity-70' : 'bg-slate-950/50 border-slate-800/50'}`}>
+                                            <div className="flex items-center gap-2 flex-1 pr-2 overflow-hidden">
+                                                <button disabled={soloLectura} onClick={() => toggleItemRealizado(item.id, item.realizado)} className="shrink-0 hover:scale-110 transition-transform disabled:opacity-50">
+                                                    {item.realizado ? <CheckCircle2 className="text-emerald-500" size={14} /> : <Circle className="text-slate-600" size={14} />}
+                                                </button>
+                                                <div className="flex flex-col">
+                                                    <span className={`uppercase truncate ${item.realizado ? 'text-slate-500 line-through' : 'text-slate-200'}`}>{item.descripcion}</span>
+                                                    
+                                                    {/* 🔥 ALERTA VISUAL DE INVENTARIO */}
+                                                    {item.tipo_item === 'repuesto' && !item.realizado && (
+                                                        <span className="text-[8px] text-orange-400 uppercase tracking-widest mt-0.5 flex items-center gap-1">
+                                                            Bodega / Comprar
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
-                                        ))}
-                                        <button onClick={() => abrirModalItem(o.id)} className="w-full py-3 border-2 border-dashed border-slate-700/50 rounded-xl text-[9px] font-black text-slate-500 hover:text-emerald-400 hover:border-emerald-600/50 uppercase transition-all bg-slate-900/30 hover:bg-slate-900/60 flex items-center justify-center gap-1">
-                                            <Plus size={12} /> Agregar Item
-                                        </button>
+                                            <div className="flex items-center gap-2 shrink-0">
+                                                <span className={`mr-1 ${item.realizado ? 'text-slate-500' : 'text-emerald-400'}`}>${item.precio.toLocaleString()}</span>
+                                                <button disabled={soloLectura} onClick={() => abrirModalItem(o.id, item)} className="text-slate-600 disabled:opacity-50 hover:text-emerald-400 transition-colors p-1" title="Editar">
+                                                    <Edit2 size={12} />
+                                                </button>
+                                                <button disabled={soloLectura} onClick={() => eliminarItemBD(item.id)} className="text-slate-600 disabled:opacity-50 hover:text-red-400 transition-colors p-1" title="Eliminar">
+                                                    <Trash2 size={12} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {o.items_orden?.length === 0 && <p className="text-[10px] text-center text-slate-600 italic py-2">Sin ítems registrados.</p>}
+                                    
+                                    {/* 🔥 BITÁCORA INTERNA */}
+                                    <div className="mt-4 border-t border-slate-800/50 pt-3">
+                                        <h4 className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1">
+                                            <MessageSquare size={10} /> Notas de Turno
+                                        </h4>
+                                        <div className="bg-slate-950/40 rounded-xl border border-slate-800/50 p-2 flex flex-col gap-2">
+                                            
+                                            {/* Historial de Comentarios */}
+                                            {o.comentarios_orden?.map((com: any) => (
+                                                <div key={com.id} className="bg-slate-900 rounded-lg p-2 text-[9px]">
+                                                    <div className="flex justify-between items-center mb-1 border-b border-slate-800 pb-1">
+                                                        <span className="font-bold text-blue-400">{com.autor_nombre}</span>
+                                                        <span className="text-slate-600">{new Date(com.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}</span>
+                                                    </div>
+                                                    <p className="text-slate-300 font-sans">{com.texto}</p>
+                                                </div>
+                                            ))}
+                                            
+                                            {/* Input para nuevo comentario */}
+                                            <div className="flex gap-1 mt-1">
+                                                <input 
+                                                    type="text" 
+                                                    value={comentarioInputs[o.id] || ''}
+                                                    disabled={soloLectura}
+                                                    onChange={e => setComentarioInputs({...comentarioInputs, [o.id]: e.target.value})}
+                                                    onKeyDown={e => { if (e.key === 'Enter') enviarComentario(o.id) }}
+                                                    placeholder="Añadir recado o novedad..." 
+                                                    className="w-full bg-slate-800/50 rounded-lg p-2 text-[9px] text-slate-200 outline-none border border-slate-700/50 focus:border-blue-500 transition-colors"
+                                                />
+                                                <button 
+                                                    onClick={() => enviarComentario(o.id)}
+                                                    disabled={soloLectura}
+                                                    className="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-500 transition-colors disabled:opacity-50"
+                                                >
+                                                    <Send size={12} />
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="flex justify-between items-center pt-4 border-t border-slate-800/50 mt-auto">
-                                    <div className="flex items-center gap-2">
-                                        <p className="font-black text-emerald-400 text-2xl mb-1">${o.items_orden?.reduce((s:number,i:any)=>s+i.precio,0).toLocaleString()}</p>
-                                        
-                                        {/* 🔥 BOTÓN: ANULAR ORDEN */}
+                                
+                                {/* 🔥 MÓDULO DE COBROS Y DESCUENTOS FIJOS AL FONDO */}
+                                <div className="shrink-0 bg-slate-950/80 p-3 rounded-2xl border border-slate-800 flex flex-col gap-2">
+                                    
+                                    <div className="flex justify-between items-center text-[10px] text-slate-400 font-bold px-1">
+                                        <span>Subtotal Tareas/Repuestos:</span>
+                                        <span>${subtotalItems.toLocaleString()}</span>
+                                    </div>
+                                    
+                                    <div className="flex justify-between items-center text-[10px] font-bold px-1">
+                                        <span className="text-slate-300">Costo Revisión/Diagnóstico:</span>
+                                        <div className="flex items-center gap-1 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 focus-within:border-emerald-500 transition-colors">
+                                            <span className="text-slate-500">$</span>
+                                            <input 
+                                                type="number" 
+                                                defaultValue={o.costo_revision || ''} 
+                                                disabled={soloLectura}
+                                                onBlur={(e) => actualizarCobrosBD(o.id, 'costo_revision', e.target.value)}
+                                                className="w-16 bg-transparent outline-none text-right text-slate-200" 
+                                                placeholder="0"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="flex justify-between items-center text-[10px] font-bold px-1">
+                                        <span className="text-slate-300 flex items-center gap-1">
+                                            Descuento Aplicado 
+                                            {porcentajeDesc > 0 && <span className="bg-orange-500/20 text-orange-400 px-1 rounded font-black">-{porcentajeDesc}%</span>}
+                                        </span>
+                                        <div className="flex items-center gap-1 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 focus-within:border-orange-500 transition-colors">
+                                            <span className="text-orange-500 font-bold">-$</span>
+                                            <input 
+                                                type="number" 
+                                                defaultValue={o.descuento || ''} 
+                                                disabled={soloLectura}
+                                                onBlur={(e) => actualizarCobrosBD(o.id, 'descuento', e.target.value)}
+                                                className="w-16 bg-transparent outline-none text-right text-orange-400 font-black" 
+                                                placeholder="0"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="h-px bg-slate-800 w-full my-1"></div>
+
+                                    <div className="flex justify-between items-end px-1">
                                         <button 
                                             onClick={() => anularOrden(o.id)} 
-                                            className="text-[8px] font-black text-red-400 bg-red-500/10 border border-red-500/30 px-2 py-1 rounded hover:bg-red-500/30 transition-colors uppercase tracking-widest"
-                                            title="Anular y borrar orden del sistema"
+                                            disabled={soloLectura}
+                                            className="text-[9px] disabled:opacity-50 font-black text-red-500 uppercase tracking-widest hover:underline"
                                         >
-                                            Anular
+                                            Anular Orden
                                         </button>
-
-                                        {o.items_orden?.length > 0 && (
-                                            <button onClick={() => solicitarAprobacion(o)} className="flex items-center gap-1 text-[8px] font-black text-green-400 bg-green-500/10 border border-green-500/30 px-2 py-1 rounded hover:bg-green-500/30 transition-colors uppercase tracking-widest">
-                                                <MessageSquare size={10}/> Aprobar
-                                            </button>
-                                        )}
+                                        <div className="text-right">
+                                            <p className="text-[9px] text-slate-500 uppercase font-black tracking-widest mb-0.5">Total a Cobrar</p>
+                                            <p className="font-black text-emerald-400 text-2xl leading-none">${totalNeto.toLocaleString()}</p>
+                                        </div>
                                     </div>
-                                    <button onClick={() => entregarOrdenYFinalizar(o)} className="bg-emerald-600 text-slate-950 px-5 py-2.5 rounded-full text-xs font-black shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:shadow-[0_0_25px_rgba(16,185,129,0.5)] hover:scale-105 transition-all uppercase tracking-wider flex items-center gap-2">
-                                        Listo <CheckCircle size={14} />
-                                    </button>
+
+                                    <div className="grid grid-cols-2 gap-2 mt-3">
+                                        <button 
+                                            disabled={soloLectura || totalNeto === 0} 
+                                            onClick={() => solicitarAprobacion(o)} 
+                                            className="bg-slate-800 disabled:opacity-50 text-slate-300 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider hover:bg-slate-700 transition-colors flex items-center justify-center gap-1"
+                                        >
+                                            <MessageSquare size={12}/> Aprobar Pres.
+                                        </button>
+                                        <button 
+                                            disabled={soloLectura} 
+                                            onClick={() => entregarOrdenYFinalizar(o)} 
+                                            className="bg-emerald-600 disabled:opacity-50 text-slate-950 py-2 rounded-xl text-[10px] font-black shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:bg-emerald-500 transition-all uppercase tracking-wider flex items-center justify-center gap-1"
+                                        >
+                                            Entregar <CheckCircle size={12} />
+                                        </button>
+                                    </div>
                                 </div>
+
                             </div>
-                        ))}
+                        )})}
                     </div>
                 )}
-            </section>
-
-            <section className="bg-slate-900/40 backdrop-blur-md rounded-3xl shadow-2xl border border-slate-700/50 p-5 relative">
-                <div className="flex justify-between items-center mb-4 relative z-10">
-                    <h2 className="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                        <CheckCircle className="text-emerald-500" size={14} /> Trabajos Finalizados Recientes
-                    </h2>
-                    {historial.length > 3 && (
-                        <button onClick={() => setModalHistorial(true)} className="text-[9px] font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 uppercase tracking-widest bg-emerald-900/30 px-3 py-1.5 rounded-lg border border-emerald-900/50 transition-colors">
-                            Ver todos ({historial.length}) <ChevronRight size={10}/>
-                        </button>
-                    )}
-                </div>
-                
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 relative z-10">
-                    {historial.slice(0, 3).map(o => (
-                        <div key={o.id} className="flex justify-between items-center p-3 bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700/50 hover:border-emerald-500/50 transition-all">
-                            <div className="overflow-hidden pr-2">
-                                <span className="font-black text-slate-100 tracking-wider text-sm block truncate">{o.vehiculos?.patente}</span>
-                                <div className="flex items-center gap-2 mt-1">
-                                    <span className="text-[9px] text-slate-400 font-bold uppercase truncate max-w-[100px]">{o.vehiculos?.clientes?.nombre}</span>
-                                    <span className="text-[8px] bg-slate-950/80 px-1.5 py-0.5 rounded text-emerald-400 border border-slate-800 font-bold flex items-center gap-1 shrink-0">
-                                        <User size={8} /> {o.mecanico || 'N/A'}
-                                    </span>
-                                </div>
-                            </div>
-                            
-                            {/* 🔥 BOTONES (Acta + Compartir + PDF) */}
-                            <div className="flex items-center gap-2 shrink-0">
-                                <button 
-                                    onClick={() => setModalActa(o)} 
-                                    className="bg-slate-900 text-slate-500 border border-slate-700/50 p-2.5 rounded-xl hover:border-cyan-500 hover:text-cyan-400 hover:bg-cyan-500/10 transition-all" 
-                                    title="Ver Acta de Recepción"
-                                >
-                                    <ClipboardList size={16} />
-                                </button>
-
-                                <button 
-                                    onClick={() => compartirLinkCliente(o)} 
-                                    className="bg-slate-900 text-slate-500 border border-slate-700/50 p-2.5 rounded-xl hover:border-blue-500 hover:text-blue-400 hover:bg-blue-500/10 transition-all" 
-                                    title="Compartir Link del Vehículo"
-                                >
-                                    <Share2 size={16} />
-                                </button>
-
-                                <button 
-                                    onClick={() => generarDocumentoPDF(o, o.resumen_ia, {
-                                        nombreTaller,
-                                        direccion: session?.user?.user_metadata?.direccion_taller || '',
-                                        telefono: session?.user?.user_metadata?.telefono_taller || '',
-                                        garantia: session?.user?.user_metadata?.garantia_taller || '',
-                                        logoUrl: session?.user?.user_metadata?.logo_url || null,
-                                        incluirIva: session?.user?.user_metadata?.incluir_iva || false
-                                    })} 
-                                    className="bg-slate-900 text-slate-500 border border-slate-700/50 p-2.5 rounded-xl hover:border-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all" 
-                                    title="Generar Informe PDF"
-                                >
-                                    <FileText size={16} />
-                                </button>
-                            </div>  
-                        </div>
-                    ))}
-                    {historial.length === 0 && <p className="text-xs text-slate-500 italic col-span-full">No hay trabajos finalizados aún.</p>}
-                </div>
             </section>
         </div>
       </div>
 
       {/* MODALES */}
 
-      {/* 🔥 NUEVO MODAL: ACTA DE RECEPCIÓN */}
       {modalActa && (
         <ModalActaRecepcion 
           orden={modalActa} 
@@ -1460,7 +1695,6 @@ export default function CalibreApp() {
         />
       )}
 
-      {/* 🔥 MODAL PARA EDITAR ORDEN */}
       {modalEditarOrden && (
           <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
               <div className="bg-slate-900/90 backdrop-blur-md border border-blue-700/50 rounded-[35px] p-8 w-full max-w-lg shadow-2xl relative overflow-hidden">
@@ -1518,7 +1752,7 @@ export default function CalibreApp() {
           </div>
       )}
 
-      {/* 🔥 MODAL NUEVA ORDEN CON ACTA DE RECEPCIÓN */}
+      {/* 🔥 MODAL NUEVA ORDEN (RELOJ ANALÓGICO, 11 TESTIGOS Y MAPA 3D) */}
       {modalNuevaOrden && (
           <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
               <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700/50 rounded-[35px] p-6 md:p-8 w-full max-w-xl shadow-[0_0_40px_rgba(16,185,129,0.1)] relative my-auto max-h-[95vh] overflow-y-auto custom-scrollbar-dark">
@@ -1583,7 +1817,6 @@ export default function CalibreApp() {
                           </div>
                       </div>
 
-                      {/* 🔥 ACTA DE RECEPCIÓN INTERACTIVA */}
                       <div className="pt-2">
                           <button 
                               type="button"
@@ -1597,29 +1830,118 @@ export default function CalibreApp() {
                           {mostrarActa && (
                               <div className="mt-4 p-5 bg-slate-950/50 border border-slate-800 rounded-[25px] space-y-6 animate-in fade-in zoom-in-95 duration-300">
                                   
-                                  {/* ⛽ Selector de Combustible Visual */}
+                                  {/* ⛽ RELOJ DE COMBUSTIBLE ANALÓGICO */}
                                   <div>
                                       <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 block flex items-center gap-2">
                                          <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div> Nivel de Combustible
                                       </label>
-                                      <div className="flex bg-slate-900 p-1.5 rounded-2xl border border-slate-800">
-                                          {['E', '1/4', '1/2', '3/4', 'F'].map((nivel) => (
+                                      
+                                      <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800 relative flex flex-col items-center">
+                                          <svg viewBox="0 0 200 120" className="w-full max-w-[240px] drop-shadow-[0_0_15px_rgba(51,65,85,0.5)]">
+                                              <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#1e293b" strokeWidth="6" strokeLinecap="round" />
+                                              
+                                              {/* Marcas (Ticks) */}
+                                              <line x1="20" y1="100" x2="35" y2="100" stroke="#ef4444" strokeWidth="6" strokeLinecap="round"/> 
+                                              <line x1="43" y1="43" x2="54" y2="54" stroke="#94a3b8" strokeWidth="4" strokeLinecap="round"/> 
+                                              <line x1="100" y1="20" x2="100" y2="35" stroke="#94a3b8" strokeWidth="6" strokeLinecap="round"/> 
+                                              <line x1="157" y1="43" x2="146" y2="54" stroke="#94a3b8" strokeWidth="4" strokeLinecap="round"/> 
+                                              <line x1="180" y1="100" x2="165" y2="100" stroke="#10b981" strokeWidth="6" strokeLinecap="round"/> 
+
+                                              {/* Aguja Dinámica */}
+                                              <g style={{ transform: `rotate(${gradosAguja}deg)`, transformOrigin: '100px 100px', transition: 'transform 1s cubic-bezier(0.4, 0, 0.2, 1)' }}>
+                                                  <polygon points="97,100 103,100 100,25" fill="#ef4444" />
+                                                  <circle cx="100" cy="100" r="10" fill="#0f172a" stroke="#ef4444" strokeWidth="3" />
+                                              </g>
+
+                                              {/* Textos */}
+                                              <text x="28" y="118" fill="#ef4444" fontSize="16" fontWeight="900" textAnchor="middle">E</text>
+                                              <text x="100" y="55" fill="#64748b" fontSize="14" fontWeight="bold" textAnchor="middle">1/2</text>
+                                              <text x="172" y="118" fill="#10b981" fontSize="16" fontWeight="900" textAnchor="middle">F</text>
+                                          </svg>
+                                          <input 
+                                              type="range" min="0" max="100" step="5" 
+                                              value={nivelCombustible} 
+                                              onChange={(e) => setNivelCombustible(parseInt(e.target.value))} 
+                                              className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-500 mt-4"
+                                          />
+                                          <div className={`text-center mt-3 font-black text-xl tracking-tighter ${nivelCombustible <= 15 ? 'text-red-400' : 'text-emerald-400'}`}>
+                                              {nivelCombustible}%
+                                          </div>
+                                      </div>
+                                  </div>
+
+                                  {/* 🚨 11 TESTIGOS INTERACTIVOS */}
+                                  <div>
+                                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 block flex items-center gap-2">
+                                         <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div> Testigos Encendidos
+                                      </label>
+                                      <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
+                                          {TESTIGOS_CONFIG.map(t => (
                                               <button 
-                                                  key={nivel}
-                                                  type="button"
-                                                  onClick={() => setNivelCombustible(nivel)}
-                                                  className={`flex-1 py-3 text-xs font-black rounded-xl transition-all ${nivelCombustible === nivel ? 'bg-emerald-600 text-slate-950 shadow-[0_0_15px_rgba(16,185,129,0.4)] scale-105' : 'text-slate-500 hover:text-slate-300'}`}
+                                                  key={t.id} type="button" onClick={() => toggleTestigo(t.id)} 
+                                                  className={`p-2 rounded-xl border flex flex-col items-center gap-1 transition-all ${testigosSeleccionados.includes(t.id) ? (t.type==='rojo'?'bg-red-500/20 border-red-500 text-red-400 scale-105 shadow-[0_0_10px_rgba(239,68,68,0.2)]':'bg-yellow-500/20 border-yellow-500 text-yellow-400 scale-105 shadow-[0_0_10px_rgba(234,179,8,0.2)]') : 'bg-slate-900 border-slate-800 text-slate-600 hover:border-slate-600'}`}
                                               >
-                                                  {nivel === 'E' ? 'Vacio' : nivel === 'F' ? 'Lleno' : nivel}
+                                                  <t.icon size={16} /> <span className="text-[8px] font-black uppercase text-center leading-tight">{t.label}</span>
                                               </button>
                                           ))}
                                       </div>
                                   </div>
 
-                                  {/* 📸 Fotos de Daños/Estado (Integrado) */}
+                                 {/* 🔥 MAPA DE DAÑOS 3D INTERACTIVO */}
+                                  <div className="border-t border-slate-800 pt-4">
+                                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 flex items-center justify-between">
+                                         <div className="flex items-center gap-2"><Car size={14} className="text-orange-400"/> Mapa de Daños 3D</div>
+                                         {marcadoresDanos.length > 0 && (
+                                             <div className="flex gap-2">
+                                                 <button 
+                                                    type="button" 
+                                                    onClick={() => setMarcadoresDanos(marcadoresDanos.slice(0, -1))} 
+                                                    className="text-yellow-400 hover:text-yellow-300 text-[9px] font-bold uppercase bg-yellow-500/10 px-2 py-1 rounded transition-colors"
+                                                 >
+                                                     Deshacer Último
+                                                 </button>
+                                                 <button 
+                                                    type="button" 
+                                                    onClick={() => setMarcadoresDanos([])} 
+                                                    className="text-red-400 hover:text-red-300 text-[9px] font-bold uppercase bg-red-500/10 px-2 py-1 rounded transition-colors"
+                                                 >
+                                                     Borrar Todo
+                                                 </button>
+                                             </div>
+                                         )}
+                                      </label>
+                                      
+                                      <div className="mb-4">
+                                          <Car3DViewer 
+                                              marcadores={marcadoresDanos} 
+                                              setMarcadores={setMarcadoresDanos} 
+                                              soloLectura={false} 
+                                          />
+                                      </div>
+                                      
+                                      <input 
+                                          type="text" 
+                                          value={danosPrevios} 
+                                          onChange={(e) => setDanosPrevios(e.target.value)} 
+                                          placeholder="Notas adicionales (Ej: Parachoques trasero trizado)..." 
+                                          className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200 outline-none focus:border-emerald-500/50" 
+                                      />
+                                  </div>
+
+                                  <div>
+                                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Objetos de Valor</label>
+                                      <input 
+                                          type="text" 
+                                          value={objetosValor} 
+                                          onChange={(e) => setObjetosValor(e.target.value)} 
+                                          placeholder="Ej: Radio Sony, Rueda repuesto..." 
+                                          className="w-full p-3 rounded-xl border border-slate-800 bg-slate-900 text-xs text-slate-200 outline-none focus:border-emerald-500/50" 
+                                      />
+                                  </div>
+
                                   <div>
                                       <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 block flex items-center gap-2">
-                                         <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div> Evidencia de Recepción (Opcional)
+                                         <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div> Evidencia Fotográfica
                                       </label>
                                       
                                       <div className="grid grid-cols-3 gap-2">
@@ -1632,7 +1954,7 @@ export default function CalibreApp() {
                                                           setFotosRecepcion(fotosRecepcion.filter((_, idx) => idx !== i));
                                                           setPreviewsRecepcion(previewsRecepcion.filter((_, idx) => idx !== i));
                                                       }}
-                                                      className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full"
+                                                      className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full shadow-lg hover:scale-110 transition-transform"
                                                   >
                                                       <X size={10} />
                                                   </button>
@@ -1640,9 +1962,9 @@ export default function CalibreApp() {
                                           ))}
                                           
                                           {fotosRecepcion.length < 3 && (
-                                              <label className="aspect-square rounded-xl border-2 border-dashed border-slate-800 flex flex-col items-center justify-center text-slate-600 hover:border-blue-500/50 hover:text-blue-400 cursor-pointer transition-all bg-slate-900/30">
-                                                  <Camera size={20} />
-                                                  <span className="text-[8px] font-black uppercase mt-1">Añadir</span>
+                                              <label className="aspect-square rounded-xl border-2 border-dashed border-slate-700 flex flex-col items-center justify-center text-slate-500 hover:border-blue-500/50 hover:text-blue-400 cursor-pointer transition-all bg-slate-900/50 hover:bg-slate-900">
+                                                  <Camera size={24} />
+                                                  <span className="text-[9px] font-black uppercase mt-2 tracking-widest">Añadir Foto</span>
                                                   <input 
                                                       type="file" 
                                                       accept="image/*" 
@@ -1659,29 +1981,9 @@ export default function CalibreApp() {
                                           )}
                                       </div>
                                   </div>
-
-                                  {/* Notas Rápidas */}
-                                  <div className="grid grid-cols-1 gap-4">
-                                      <input 
-                                          type="text" 
-                                          value={danosPrevios} 
-                                          onChange={(e) => setDanosPrevios(e.target.value)} 
-                                          placeholder="Notas de daños (ej: Rayón parachoques)" 
-                                          className="w-full p-3 rounded-xl border border-slate-800 bg-slate-900 text-xs text-slate-200 outline-none focus:border-emerald-500/50" 
-                                      />
-                                      <input 
-                                          type="text" 
-                                          value={objetosValor} 
-                                          onChange={(e) => setObjetosValor(e.target.value)} 
-                                          placeholder="Objetos de valor (ej: Radio, Gata)" 
-                                          className="w-full p-3 rounded-xl border border-slate-800 bg-slate-900 text-xs text-slate-200 outline-none focus:border-emerald-500/50" 
-                                      />
-                                  </div>
                               </div>
                           )}
                       </div>
-
-                      {/* Botones de Acción */}
                       <div className="flex gap-3 pt-4 border-t border-slate-800/50">
                           <button 
                               type="button"
@@ -1705,132 +2007,16 @@ export default function CalibreApp() {
           </div>
       )}
 
-      {modalAlerta && (
-        <ModalAlerta 
-          alertaForm={alertaForm}
-          setAlertaForm={setAlertaForm}
-          guardarAlertaBD={guardarAlertaBD}
-          guardandoAlerta={guardandoAlerta}
-          onClose={() => setModalAlerta(null)}
-          ordenActiva={modalAlerta}
-          resolverAlertaBD={resolverAlertaBD}
-        />
-      )}
-
-      {modalTelemetria && (
-        <ModalTelemetria 
-            onClose={() => setModalTelemetria(false)}
-            gananciasEsteMes={gananciasEsteMes}
-            autosEsteMes={autosEsteMes}
-            ticketPromedio={ticketPromedio}
-            pctServicio={pctServicio}
-            pctRepuesto={pctRepuesto}
-            ingresosServicio={ingresosServicio}
-            ingresosRepuesto={ingresosRepuesto}
-            topMarcas={topMarcas}
-            topMecanicos={topMecanicos}
-            historial={historial}
-        />
-      )}
-
-      {modalHistorial && (
-        <ModalHistorial 
-            onClose={() => setModalHistorial(false)}
-            busquedaHistorial={busquedaHistorial}
-            setBusquedaHistorial={setBusquedaHistorial}
-            historialFiltrado={historialFiltrado}
-            configPDF={{
-                nombreTaller,
-                direccion: session?.user?.user_metadata?.direccion_taller || '',
-                telefono: session?.user?.user_metadata?.telefono_taller || '',
-                garantia: session?.user?.user_metadata?.garantia_taller || '',
-                logoUrl: session?.user?.user_metadata?.logo_url || null,
-                incluirIva: session?.user?.user_metadata?.incluir_iva || false
-            }}
-        />
-      )}
-
-      {modalConfiguracion && (
-        <ModalConfiguracion 
-          onClose={() => setModalConfiguracion(false)}
-          inputTaller={inputTaller}
-          setInputTaller={setInputTaller}
-          guardarConfiguracion={guardarConfiguracion}
-          guardandoConfiguracion={guardandoConfiguracion}
-          handleLogout={handleLogout}
-          inputDireccion={inputDireccion}
-          setInputDireccion={setInputDireccion}
-          inputTelefono={inputTelefonoConfig}
-          setInputTelefono={setInputTelefonoConfig}
-          logoPreview={logoPreview}
-          handleLogoChange={handleLogoChange}
-          subiendoLogo={subiendoLogo}
-          inputGarantia={inputGarantia}
-          setInputGarantia={setInputGarantia}
-          incluirIva={incluirIva}
-          setIncluirIva={setIncluirIva}
-          esOnboarding={esOnboarding} 
-          vehiculos={vehiculos}
-        />
-      )}
-
-      {vehiculoInfo && (
-        <ModalVehiculoInfo 
-          vehiculoInfo={vehiculoInfo}
-          onClose={() => setVehiculoInfo(null)}
-          reCargarGlobal={cargarTodo}
-        />
-      )}
-
-      {fotoForm && (
-        <ModalEvidencia 
-          fotoForm={fotoForm}
-          setFotoForm={setFotoForm}
-          handleSeleccionarFoto={handleSeleccionarFoto}
-          subirFotoDefinitiva={subirFotoDefinitiva}
-          subiendoFoto={subiendoFoto}
-        />
-      )}
-
-      {modalItemVisible && (
-        <ModalItem 
-          itemForm={itemForm}
-          setItemForm={setItemForm}
-          guardarItemBD={guardarItemBD}
-          guardandoItem={guardandoItem}
-          onClose={() => setModalItemVisible(false)}
-        />
-      )}
-
-      {modalScanner && (
-        <ModalScanner 
-          onClose={() => setModalScanner(false)}
-          codigoScanner={codigoScanner}
-          setCodigoScanner={setCodigoScanner}
-          vehiculoScanner={vehiculoScanner}
-          setVehiculoScanner={setVehiculoScanner}
-          consultarScanner={consultarScanner}
-          cargandoScanner={cargandoScanner}
-          resultadoScanner={resultadoScanner}
-          setResultadoScanner={setResultadoScanner}
-        />
-      )}
-
-      {modalMarketing && (
-        <ModalMarketing 
-          onClose={() => setModalMarketing(false)}
-          vehiculos={vehiculos}
-          historial={historial}
-          nombreTaller={nombreTaller}
-        />
-      )}
-
-      {modalAnalisis && (
-        <ModalAnalisisIA 
-          orden={modalAnalisis} 
-          onClose={() => setModalAnalisis(null)} 
-        />
-      )}
+      {modalAlerta && <ModalAlerta alertaForm={alertaForm} setAlertaForm={setAlertaForm} guardarAlertaBD={guardarAlertaBD} guardandoAlerta={guardandoAlerta} onClose={() => setModalAlerta(null)} ordenActiva={modalAlerta} resolverAlertaBD={resolverAlertaDirecta} />}
+      {modalTelemetria && <ModalTelemetria onClose={() => setModalTelemetria(false)} gananciasEsteMes={gananciasEsteMes} autosEsteMes={autosEsteMes} ticketPromedio={ticketPromedio} pctServicio={pctServicio} pctRepuesto={pctRepuesto} ingresosServicio={ingresosServicio} ingresosRepuesto={ingresosRepuesto} topMarcas={topMarcas} topMecanicos={topMecanicos} historial={historial} />}
+      {modalHistorial && <ModalHistorial onClose={() => setModalHistorial(false)} busquedaHistorial={busquedaHistorial} setBusquedaHistorial={setBusquedaHistorial} historialFiltrado={historialFiltrado} configPDF={{ nombreTaller, direccion: session?.user?.user_metadata?.direccion_taller || '', telefono: session?.user?.user_metadata?.telefono_taller || '', garantia: session?.user?.user_metadata?.garantia_taller || '', logoUrl: session?.user?.user_metadata?.logo_url || null, incluirIva: session?.user?.user_metadata?.incluir_iva || false }} />}
+      {modalConfiguracion && <ModalConfiguracion onClose={() => setModalConfiguracion(false)} inputTaller={inputTaller} setInputTaller={setInputTaller} guardarConfiguracion={guardarConfiguracion} guardandoConfiguracion={guardandoConfiguracion} handleLogout={handleLogout} inputDireccion={inputDireccion} setInputDireccion={setInputDireccion} inputTelefono={inputTelefonoConfig} setInputTelefono={setInputTelefonoConfig} logoPreview={logoPreview} handleLogoChange={handleLogoChange} subiendoLogo={subiendoLogo} inputGarantia={inputGarantia} setInputGarantia={setInputGarantia} incluirIva={incluirIva} setIncluirIva={setIncluirIva} esOnboarding={esOnboarding} vehiculos={vehiculos} />}
+      {vehiculoInfo && <ModalVehiculoInfo vehiculoInfo={vehiculoInfo} onClose={() => setVehiculoInfo(null)} reCargarGlobal={cargarTodo} />}
+      {fotoForm && <ModalEvidencia fotoForm={fotoForm} setFotoForm={setFotoForm} handleSeleccionarFoto={handleSeleccionarFoto} subirFotoDefinitiva={subirFotoDefinitiva} subiendoFoto={subiendoFoto} />}
+      {modalItemVisible && <ModalItem itemForm={itemForm} setItemForm={setItemForm} guardarItemBD={guardarItemBD} guardandoItem={guardandoItem} onClose={() => setModalItemVisible(false)} />}
+      {modalScanner && <ModalScanner onClose={() => setModalScanner(false)} codigoScanner={codigoScanner} setCodigoScanner={setCodigoScanner} vehiculoScanner={vehiculoScanner} setVehiculoScanner={setVehiculoScanner} consultarScanner={consultarScanner} cargandoScanner={cargandoScanner} resultadoScanner={resultadoScanner} setResultadoScanner={setResultadoScanner} />}
+      {modalMarketing && <ModalMarketing onClose={() => setModalMarketing(false)} vehiculos={vehiculos} historial={historial} nombreTaller={nombreTaller} />}
+      {modalAnalisis && <ModalAnalisisIA orden={modalAnalisis} onClose={() => setModalAnalisis(null)} />}
     </main>
   )
 }
