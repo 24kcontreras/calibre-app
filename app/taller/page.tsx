@@ -2,256 +2,301 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import imageCompression from 'browser-image-compression'
+import { ShieldAlert, ShieldCheck, Lock, Unlock, Search, Wrench, CalendarDays, Key, LogOut } from 'lucide-react'
 import toast, { Toaster } from 'react-hot-toast'
-import { Wrench, AlertTriangle, Bot } from 'lucide-react'
 
-// 🔥 1. IMPORTAMOS TUS NUEVOS MÓDULOS LIMPIOS
-import { useTaller } from '@/hooks/useTaller'
-import Login from '@/components/Login'
-import Header from '@/components/Header'
-import Recepcion from '@/components/taller/Recepcion'
-import Pizarra from '@/components/taller/Pizarra'
-
-// 🔥 2. IMPORTAMOS TODOS TUS MODALES
-import ModalTelemetria from '@/components/modals/ModalTelemetria'
-import ModalHistorial from '@/components/modals/ModalHistorial'
-import ModalConfiguracion from '@/components/modals/ModalConfiguracion'
-import ModalVehiculoInfo from '@/components/modals/ModalVehiculoInfo'
-import ModalEvidencia from '@/components/modals/ModalEvidencia'
-import ModalItem from '@/components/modals/ModalItem'
-import ModalScanner from '@/components/modals/ModalScanner'
-import ModalAlerta from '@/components/modals/ModalAlerta'
-import ModalMarketing from '@/components/modals/ModalMarketing'
-import ModalAnalisisIA from '@/components/modals/ModalAnalisisIA'
-import ModalActaRecepcion from '@/components/modals/ModalActaRecepcion'
-import ModalNuevaOrden from '@/components/modals/ModalNuevaOrden'
-import ModalEditarOrden from '@/components/modals/ModalEditarOrden'
-
-export default function CalibreApp() {
+export default function AdminCalibre() {
   const router = useRouter()
-  
-  // 🧠 EL CEREBRO: Trae todos los datos procesados desde tu nuevo Hook
-  const { 
-    session, authLoading, soloLectura, vehiculos, ordenesAbiertas, historial, 
-    nombreTaller, configTaller, esOnboarding, cajaTotal, gananciasEsteMes, 
-    autosEsteMes, ticketPromedio, pctServicio, pctRepuesto, ingresosServicio, 
-    ingresosRepuesto, topMarcas, topMecanicos, oportunidadesVenta, cargarTodo 
-  } = useTaller()
+  // Estados de la vista: 'loading' | 'login' | 'denied' | 'dashboard'
+  const [vista, setVista] = useState<'loading' | 'login' | 'denied' | 'dashboard'>('loading')
+  const [talleres, setTalleres] = useState<any[]>([])
+  const [busqueda, setBusqueda] = useState('')
 
-  // 🎛️ ESTADOS PARA MOSTRAR/OCULTAR MODALES
-  const [modalNuevaOrden, setModalNuevaOrden] = useState<any | null>(null)
-  const [modalEditarOrden, setModalEditarOrden] = useState<any | null>(null)
-  const [modalActa, setModalActa] = useState<any | null>(null)
-  const [modalVehiculoInfo, setVehiculoInfo] = useState<any | null>(null)
-  const [modalAnalisis, setModalAnalisis] = useState<any | null>(null)
-  const [modalAlerta, setModalAlerta] = useState<any | null>(null)
-  
-  const [modalTelemetria, setModalTelemetria] = useState(false)
-  const [modalHistorial, setModalHistorial] = useState(false)
-  const [modalMarketing, setModalMarketing] = useState(false)
-  const [modalScanner, setModalScanner] = useState(false)
-  const [modalConfiguracion, setModalConfiguracion] = useState(false)
-  
-  const [generandoPDF, setGenerandoPDF] = useState(false)
-  const [modalItemVisible, setModalItemVisible] = useState(false)
+  // Estados del Formulario de Login Admin
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loadingLogin, setLoadingLogin] = useState(false)
 
-  // 📝 ESTADOS DE FORMULARIOS PARA MODALES MENORES
-  const [itemForm, setItemForm] = useState({ id: null, orden_id: '', nombre: '', detalle: '', precio: '', tipo_item: 'servicio', procedencia: 'Taller' })  
-  const [guardandoItem, setGuardandoItem] = useState(false)
+  // 🔥 AQUÍ VA TU CORREO DE DIOS
+  const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'leonardocontreras14@gmail.com' 
 
-  const [fotoForm, setFotoForm] = useState<{ordenId: string, file: File | null, preview: string, descripcion: string} | null>(null)
-  const [subiendoFoto, setSubiendoFoto] = useState(false)
-
-  const [alertaForm, setAlertaForm] = useState({ pieza: '', nivel_riesgo: 'Amarillo', observacion: '' })
-  const [guardandoAlerta, setGuardandoAlerta] = useState(false)
-
-  const [codigoScanner, setCodigoScanner] = useState('')
-  const [vehiculoScanner, setVehiculoScanner] = useState('')
-  const [resultadoScanner, setResultadoScanner] = useState<any>(null)
-  const [cargandoScanner, setCargandoScanner] = useState(false)
-  const [busquedaHistorial, setBusquedaHistorial] = useState('')
-
-  // ⚙️ ESTADOS DE CONFIGURACIÓN
-  const [inputTaller, setInputTaller] = useState('')
-  const [inputDireccion, setInputDireccion] = useState('')
-  const [inputTelefonoConfig, setInputTelefonoConfig] = useState('')
-  const [inputGarantia, setInputGarantia] = useState('')
-  const [incluirIva, setIncluirIva] = useState(false)
-  const [logoFile, setLogoFile] = useState<File | null>(null)
-  const [logoPreview, setLogoPreview] = useState<string | null>(null)
-  const [subiendoLogo, setSubiendoLogo] = useState(false)
-  const [guardandoConfiguracion, setGuardandoConfiguracion] = useState(false)
-
-  // Sincronizar datos de configuración cuando carguen
   useEffect(() => {
-    if (configTaller) {
-        setInputTaller(configTaller.nombre_taller || 'MI TALLER')
-        setInputDireccion(configTaller.direccion_taller || '')
-        setInputTelefonoConfig(configTaller.telefono_taller || '')
-        setInputGarantia(configTaller.garantia_taller || '')
-        setIncluirIva(configTaller.incluir_iva || false)
-        setLogoPreview(configTaller.logo_url || null)
-        if (esOnboarding) setModalConfiguracion(true)
-    }
-  }, [configTaller, esOnboarding])
+    checkAdmin()
+  }, [])
 
-  // --- FUNCIONES RÁPIDAS PARA MODALES MENORES ---
-  const guardarItemBD = async (e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
-      if (!itemForm.orden_id || guardandoItem || soloLectura) return;
-      setGuardandoItem(true);
-      const payload = {
-        orden_id: itemForm.orden_id,
-        descripcion: itemForm.tipo_item === 'repuesto' && itemForm.detalle.trim() !== '' ? `${itemForm.nombre.trim()} (${itemForm.detalle.trim()})` : itemForm.nombre.trim(),
-        precio: parseInt(itemForm.precio) || 0,
-        tipo_item: itemForm.tipo_item, procedencia: itemForm.tipo_item === 'repuesto' ? itemForm.procedencia : 'Taller'
-      };
-      try {
-          if (itemForm.id) await supabase.from('items_orden').update(payload).eq('id', itemForm.id);
-          else await supabase.from('items_orden').insert([payload]);
-          setModalItemVisible(false); toast.success("Ítem guardado"); await cargarTodo();
-      } catch (err) { toast.error("Error guardando el ítem"); } finally { setGuardandoItem(false); }
-  }
-
-  const subirFotoDefinitiva = async () => {
-      if (!fotoForm || !fotoForm.file || soloLectura) return;
-      setSubiendoFoto(true);
-      try {
-          const compressedFile = await imageCompression(fotoForm.file, { maxSizeMB: 0.3, maxWidthOrHeight: 1280, useWebWorker: true })
-          const fileName = `${fotoForm.ordenId}/${Date.now()}_evidencia.jpg`
-          const { error: sErr } = await supabase.storage.from('evidencia').upload(fileName, compressedFile)
-          if (sErr) throw sErr;
-          
-          const { data: { publicUrl } } = supabase.storage.from('evidencia').getPublicUrl(fileName)
-          await supabase.from('fotos_orden').insert([{ orden_id: fotoForm.ordenId, url: publicUrl, descripcion: fotoForm.descripcion || "Evidencia adjunta" }])
-          
-          setFotoForm(null); toast.success("Foto guardada"); await cargarTodo();
-      } catch (err: any) { toast.error("Error subiendo foto: " + err.message); } finally { setSubiendoFoto(false); }
-  }
-
-  const guardarAlertaBD = async (e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
-      if (!modalAlerta || guardandoAlerta || soloLectura) return;
-      setGuardandoAlerta(true);
-      try {
-          const payload = { vehiculo_id: modalAlerta.vehiculo_id || modalAlerta.id, pieza: alertaForm.pieza, nivel_riesgo: alertaForm.nivel_riesgo, observacion: alertaForm.observacion, taller_id: session?.user?.id };
-          const { error } = await supabase.from('alertas_desgaste').insert([payload]);
-          if (error) throw error;
-          toast.success("¡Alerta registrada!"); setModalAlerta(null); await cargarTodo(); 
-      } catch (err: any) { toast.error("Error guardando alerta"); } finally { setGuardandoAlerta(false); }
-  }
-
-  const consultarScanner = async (e: React.FormEvent, tipo: 'scanner' | 'manual') => {
-    e.preventDefault(); if (!codigoScanner) return;
-    setCargandoScanner(true); setResultadoScanner(null);
+  const checkAdmin = async () => {
     try {
-      const res = await fetch('/api/scanner', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ codigo: codigoScanner, vehiculo: vehiculoScanner, tipo }) });
-      const data = await res.json();
-      if(data.error) throw new Error(data.error);
-      setResultadoScanner(data);
-    } catch (err: any) { toast.error("Error IA: " + err.message); } finally { setCargandoScanner(false); }
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session) {
+        setVista('login')
+        return
+      }
+
+      if (session.user.email !== ADMIN_EMAIL) {
+        setVista('denied')
+        return
+      }
+
+      setVista('dashboard')
+      await cargarTalleres()
+    } catch (error) {
+      console.error("Error validando admin", error)
+      setVista('login')
+    }
   }
 
-  const guardarConfiguracion = async () => {
-      if (inputTaller.trim() === '') return toast.error("El nombre del taller no puede estar vacío");
-      setGuardandoConfiguracion(true); const toastId = toast.loading("Guardando ajustes...");
-      try {
-          let logoUrl = configTaller?.logo_url || null;
-          if (logoFile) {
-              setSubiendoLogo(true);
-              const fileName = `${session.user.id}/logo_${Date.now()}.png`;
-              await supabase.storage.from('logos').upload(fileName, await imageCompression(logoFile, { maxSizeMB: 0.5, maxWidthOrHeight: 1024, useWebWorker: true }), { upsert: true });
-              logoUrl = supabase.storage.from('logos').getPublicUrl(fileName).data.publicUrl;
-              setSubiendoLogo(false);
-          }
-          await supabase.auth.updateUser({ data: { nombre_taller: inputTaller.toUpperCase().trim(), direccion_taller: inputDireccion, telefono_taller: inputTelefonoConfig, garantia_taller: inputGarantia, incluir_iva: incluirIva, logo_url: logoUrl }});
-          setLogoFile(null); toast.success("¡Ajustes guardados!", { id: toastId }); setModalConfiguracion(false);
-      } catch (err: any) { toast.error("Error: " + err.message, { id: toastId }); setSubiendoLogo(false); } finally { setGuardandoConfiguracion(false); }
+  const handleAdminLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoadingLogin(true)
+    const toastId = toast.loading('Validando credenciales maestras...')
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) throw error
+
+      if (data.session?.user.email !== ADMIN_EMAIL) {
+        toast.error('Esta cuenta no tiene privilegios de Superadministrador', { id: toastId })
+        await supabase.auth.signOut()
+        setVista('denied')
+        return
+      }
+
+      toast.success('¡Bienvenido, Creador!', { id: toastId })
+      setVista('dashboard')
+      await cargarTalleres()
+    } catch (error: any) {
+      toast.error("Credenciales incorrectas", { id: toastId })
+    } finally {
+      setLoadingLogin(false)
+    }
   }
 
-  const historialFiltrado = historial.filter(o => o.vehiculos?.patente.toLowerCase().includes(busquedaHistorial.toLowerCase()) || (o.vehiculos?.clientes?.nombre || '').toLowerCase().includes(busquedaHistorial.toLowerCase()))
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    setVista('login')
+    setEmail('')
+    setPassword('')
+  }
 
-  // --- PANTALLAS DE CARGA Y LOGIN ---
-  if (authLoading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center"><Wrench className="animate-spin text-emerald-500" size={64} /></div>
-  
-  // 🔥 Si no hay sesión, mostramos el Login. Más adelante, aquí pondremos la Landing Page Comercial.
-  if (!session) return <Login />
+  const cargarTalleres = async () => {
+    const { data, error } = await supabase
+      .from('talleres')
+      .select('*')
+      .order('created_at', { ascending: false })
+    
+    if (error) {
+      toast.error("Error al cargar los talleres")
+    } else {
+      setTalleres(data || [])
+    }
+  }
 
+  const toggleBloqueo = async (id: string, estadoActual: boolean) => {
+    const nuevoEstado = !estadoActual;
+    const accion = nuevoEstado ? 'ACTIVAR' : 'BLOQUEAR';
+    
+    if (!window.confirm(`¿Estás seguro de ${accion} este taller?`)) return;
+
+    const toastId = toast.loading(`${accion === 'ACTIVAR' ? 'Activando' : 'Bloqueando'} taller...`);
+
+    try {
+      let payload: any = { pago_confirmado: nuevoEstado };
+      
+      if (nuevoEstado) {
+          const fechaVencimiento = new Date();
+          fechaVencimiento.setDate(fechaVencimiento.getDate() + 30); // +30 días
+          payload.fecha_vencimiento = fechaVencimiento.toISOString();
+      }
+
+      const { error } = await supabase.from('talleres').update(payload).eq('id', id)
+      if (error) throw error
+
+      toast.success(`Taller ${nuevoEstado ? 'Activado' : 'Bloqueado'} exitosamente`, { id: toastId })
+      await cargarTalleres() 
+    } catch (error: any) {
+      toast.error(`Error: ${error.message}`, { id: toastId })
+    }
+  }
+
+  const talleresFiltrados = talleres.filter(t => 
+    (t.email || '').toLowerCase().includes(busqueda.toLowerCase()) || 
+    (t.nombre_taller || '').toLowerCase().includes(busqueda.toLowerCase())
+  )
+
+  // --- RENDERIZADO CONDICIONAL ---
+
+  if (vista === 'loading') {
+    return <div className="min-h-screen bg-slate-950 flex items-center justify-center"><Wrench className="animate-spin text-emerald-500" size={64} /></div>
+  }
+
+  if (vista === 'login') {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+        <Toaster position="bottom-right" toastOptions={{ style: { background: '#1e293b', color: '#f8fafc', border: '1px solid #334155' } }} />
+        
+        <form onSubmit={handleAdminLogin} className="bg-slate-900/80 backdrop-blur-xl p-8 rounded-3xl border border-slate-800 w-full max-w-md shadow-2xl relative z-10">
+          <div className="flex justify-center mb-6">
+            <div className="bg-emerald-500/20 p-4 rounded-full">
+              <Key className="text-emerald-500" size={32} />
+            </div>
+          </div>
+          <h2 className="text-2xl font-black text-center text-slate-100 uppercase tracking-tighter mb-2">Acceso Restringido</h2>
+          <p className="text-center text-slate-400 text-xs font-bold uppercase tracking-widest mb-8">God Mode • Calibre OS</p>
+          
+          <div className="space-y-4">
+            <input 
+              type="email" 
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Correo de Administrador" 
+              className="w-full bg-slate-950 border border-slate-800 text-slate-200 p-4 rounded-xl outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all text-sm"
+            />
+            <input 
+              type="password" 
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Contraseña Maestra" 
+              className="w-full bg-slate-950 border border-slate-800 text-slate-200 p-4 rounded-xl outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all text-sm"
+            />
+            <button 
+              disabled={loadingLogin}
+              className="w-full bg-emerald-600 text-slate-950 font-black uppercase tracking-widest py-4 rounded-xl hover:bg-emerald-500 transition-all disabled:opacity-50 mt-4 shadow-[0_0_20px_rgba(16,185,129,0.2)]"
+            >
+              {loadingLogin ? 'Desbloqueando...' : 'Entrar al Panel'}
+            </button>
+            <button type="button" onClick={() => router.push('/')} className="w-full text-slate-500 hover:text-slate-300 text-xs font-bold uppercase tracking-widest mt-4">
+               Volver a la app pública
+            </button>
+          </div>
+        </form>
+      </div>
+    )
+  }
+
+  if (vista === 'denied') {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4">
+        <ShieldAlert className="text-red-500 mb-4" size={64} />
+        <h2 className="text-2xl font-black text-slate-100 uppercase tracking-tighter mb-2">Acceso Denegado</h2>
+        <p className="text-slate-400 text-sm mb-8 text-center max-w-md">La cuenta actual no tiene privilegios de superadministrador para ingresar al God Mode.</p>
+        <button onClick={handleLogout} className="bg-red-500/10 text-red-500 border border-red-500/30 px-6 py-3 rounded-xl font-bold uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all flex items-center gap-2">
+          <LogOut size={16} /> Cerrar Sesión Actual
+        </button>
+      </div>
+    )
+  }
+
+  // --- VISTA DASHBOARD (El código que ya teníamos) ---
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-6 font-sans w-full mx-auto relative overflow-hidden">
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-emerald-900/10 rounded-full blur-[120px] pointer-events-none z-0"></div>
+    <div className="min-h-screen bg-slate-950 text-slate-100 p-6 font-sans selection:bg-emerald-500 selection:text-slate-950">
       <Toaster position="bottom-right" toastOptions={{ style: { background: '#1e293b', color: '#f8fafc', border: '1px solid #334155' } }} />
-
-      {generandoPDF && (
-          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[999] flex flex-col items-center justify-center">
-              <Bot className="animate-bounce text-emerald-400 mb-4" size={64} />
-              <p className="text-emerald-400 font-black uppercase tracking-widest animate-pulse text-sm">Procesando Informe con IA...</p>
+      
+      <div className="max-w-7xl mx-auto space-y-6">
+        <header className="bg-slate-900/50 border border-slate-800 p-6 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="bg-emerald-500/20 p-3 rounded-2xl">
+              <ShieldCheck className="text-emerald-500" size={32} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-black uppercase tracking-tighter text-white">God Mode</h1>
+              <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Panel de Superadministrador • CALIBRE</p>
+            </div>
           </div>
-      )}
 
-      <Header nombreTaller={nombreTaller} cajaTotal={cajaTotal} onOpenTelemetria={() => setModalTelemetria(true)} onOpenScanner={() => setModalScanner(true)} onOpenConfiguracion={() => setModalConfiguracion(true)} onOpenMarketing={() => setModalMarketing(true)} />
-
-      {soloLectura && (
-          <div className="bg-red-500/10 border border-red-500/50 p-4 rounded-2xl mb-6 mx-auto w-full max-w-7xl flex items-center gap-3 z-20 relative">
-              <AlertTriangle className="text-red-500 animate-pulse" size={24} />
-              <div>
-                  <h3 className="text-red-500 font-black uppercase tracking-widest text-sm">Modo Solo Lectura Activado</h3>
-                  <p className="text-slate-400 text-xs font-bold">Tu suscripción ha finalizado. Consulta historial pero no modifiques órdenes.</p>
-              </div>
+          <div className="flex items-center gap-4 w-full md:w-auto">
+            <div className="relative w-full md:w-80">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+              <input 
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                placeholder="Buscar taller..." 
+                className="w-full bg-slate-950 border border-slate-700 text-sm text-slate-200 p-3 pl-10 rounded-xl outline-none focus:border-emerald-500 transition-all"
+              />
+            </div>
+            <button onClick={handleLogout} className="bg-slate-800 p-3 rounded-xl hover:bg-red-500/20 hover:text-red-400 transition-colors text-slate-400" title="Cerrar Sesión Segura">
+              <LogOut size={16} />
+            </button>
           </div>
-      )}
+        </header>
 
-      {/* 🚀 LA NUEVA ARQUITECTURA LIMPIA: RECEPCIÓN + PIZARRA */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6 w-full relative z-10">
-        
-        {/* COLUMNA IZQUIERDA (RECEPCIÓN Y BUSCADOR) */}
-        <div className="lg:col-span-1">
-           <Recepcion 
-             soloLectura={soloLectura} 
-             vehiculos={vehiculos} 
-             oportunidadesVenta={oportunidadesVenta} 
-             session={session} 
-             cargarTodo={cargarTodo} 
-             abrirOrdenModal={(v: any) => setModalNuevaOrden(v)} 
-             nombreTaller={nombreTaller} 
-           />
-        </div>
-        
-        {/* COLUMNA DERECHA (PIZARRA KANBAN) */}
-        <div className="lg:col-span-3 flex flex-col gap-6">
-           <Pizarra 
-             ordenesAbiertas={ordenesAbiertas} 
-             soloLectura={soloLectura} 
-             nombreTaller={nombreTaller} 
-             session={session} 
-             cargarTodo={cargarTodo} 
-             setGenerandoPDF={setGenerandoPDF} 
-             abrirModalActa={setModalActa} 
-             abrirModalEvidencia={(id: any) => setFotoForm({ordenId: id, file: null, preview: '', descripcion: ''})} 
-             abrirModalEditar={(orden: any) => setModalEditarOrden(orden)} 
-             abrirModalItem={(id: any, item: any) => { 
-                setItemForm(item ? { id: item.id, orden_id: id, nombre: item.descripcion, detalle: '', precio: item.precio.toString(), tipo_item: item.tipo_item, procedencia: item.procedencia } : { id: null, orden_id: id, nombre: '', detalle: '', precio: '', tipo_item: 'servicio', procedencia: 'Taller' }); 
-                setModalItemVisible(true); 
-             }} 
-           />
+        {/* TABLA DE TALLERES */}
+        <div className="bg-slate-900/50 border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-950/50 border-b border-slate-800 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                  <th className="p-4 pl-6">Taller / Email</th>
+                  <th className="p-4">Registro</th>
+                  <th className="p-4 text-center">Vencimiento</th>
+                  <th className="p-4 text-center">Estado</th>
+                  <th className="p-4 text-right pr-6">Acción</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/50">
+                {talleresFiltrados.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="p-8 text-center text-slate-500 font-bold text-sm">
+                      No se encontraron talleres registrados.
+                    </td>
+                  </tr>
+                ) : (
+                  talleresFiltrados.map((taller) => {
+                    const vencido = taller.fecha_vencimiento ? new Date(taller.fecha_vencimiento) < new Date() : false;
+                    const activo = taller.pago_confirmado && !vencido;
+
+                    return (
+                      <tr key={taller.id} className="hover:bg-slate-800/20 transition-colors">
+                        <td className="p-4 pl-6">
+                          <div className="font-bold text-slate-200">{taller.nombre_taller || 'Sin Configurar'}</div>
+                          <div className="text-xs text-slate-500">{taller.email || taller.id}</div>
+                        </td>
+                        <td className="p-4 text-xs text-slate-400 font-medium">
+                          {new Date(taller.created_at).toLocaleDateString('es-CL')}
+                        </td>
+                        <td className="p-4 text-center">
+                          <div className="flex flex-col items-center justify-center">
+                            <span className={`text-xs font-bold px-2 py-1 rounded-md flex items-center gap-1 ${vencido ? 'bg-red-500/10 text-red-400' : 'bg-slate-800 text-slate-300'}`}>
+                              <CalendarDays size={12} />
+                              {taller.fecha_vencimiento ? new Date(taller.fecha_vencimiento).toLocaleDateString('es-CL') : 'Sin fecha'}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="p-4 text-center">
+                          {activo ? (
+                            <span className="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-black px-2 py-1 rounded uppercase tracking-wider">
+                              <ShieldCheck size={12} /> Activo
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 bg-red-500/10 text-red-400 border border-red-500/20 text-[10px] font-black px-2 py-1 rounded uppercase tracking-wider">
+                              <ShieldAlert size={12} /> Bloqueado
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-4 text-right pr-6">
+                          <button 
+                            onClick={() => toggleBloqueo(taller.id, taller.pago_confirmado)}
+                            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+                              taller.pago_confirmado 
+                              ? 'bg-slate-800 text-slate-400 hover:bg-red-500/20 hover:text-red-400 border border-transparent hover:border-red-500/50' 
+                              : 'bg-emerald-600 text-slate-950 hover:bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
+                            }`}
+                          >
+                            {taller.pago_confirmado ? <><Lock size={14} /> Bloquear</> : <><Unlock size={14} /> Activar</>}
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
-
-      {/* --- RENDERIZADO DE MODALES (CAPA FLOTANTE) --- */}
-      {modalNuevaOrden && <ModalNuevaOrden vehiculo={modalNuevaOrden} soloLectura={soloLectura} session={session} cargarTodo={cargarTodo} onClose={() => setModalNuevaOrden(null)} />}
-      {modalEditarOrden && <ModalEditarOrden orden={modalEditarOrden} soloLectura={soloLectura} cargarTodo={cargarTodo} onClose={() => setModalEditarOrden(null)} />}
-      {modalActa && <ModalActaRecepcion orden={modalActa} onClose={() => setModalActa(null)} />}
-      {modalAlerta && <ModalAlerta alertaForm={alertaForm} setAlertaForm={setAlertaForm} guardarAlertaBD={guardarAlertaBD} guardandoAlerta={guardandoAlerta} onClose={() => setModalAlerta(null)} ordenActiva={modalAlerta} resolverAlertaBD={async (id: string) => { await supabase.from('alertas_desgaste').update({ estado: 'Resuelta' }).eq('id', id); toast.success("Alerta resuelta!"); await cargarTodo(); setModalAlerta(null); }} />}
-      {modalTelemetria && <ModalTelemetria onClose={() => setModalTelemetria(false)} gananciasEsteMes={gananciasEsteMes} autosEsteMes={autosEsteMes} ticketPromedio={ticketPromedio} pctServicio={pctServicio} pctRepuesto={pctRepuesto} ingresosServicio={ingresosServicio} ingresosRepuesto={ingresosRepuesto} topMarcas={topMarcas} topMecanicos={topMecanicos} historial={historial} />}
-      {modalHistorial && <ModalHistorial onClose={() => setModalHistorial(false)} busquedaHistorial={busquedaHistorial} setBusquedaHistorial={setBusquedaHistorial} historialFiltrado={historialFiltrado} configPDF={{ nombreTaller, direccion: configTaller?.direccion_taller || '', telefono: configTaller?.telefono_taller || '', garantia: configTaller?.garantia_taller || '', logoUrl: configTaller?.logo_url || null, incluirIva: configTaller?.incluir_iva || false }} />}
-      {modalConfiguracion && <ModalConfiguracion onClose={() => setModalConfiguracion(false)} inputTaller={inputTaller} setInputTaller={setInputTaller} guardarConfiguracion={guardarConfiguracion} guardandoConfiguracion={guardandoConfiguracion} handleLogout={async () => { await supabase.auth.signOut(); router.push('/'); }} inputDireccion={inputDireccion} setInputDireccion={setInputDireccion} inputTelefono={inputTelefonoConfig} setInputTelefono={setInputTelefonoConfig} logoPreview={logoPreview} handleLogoChange={(e: any) => { const f = e.target.files?.[0]; if(f) { setLogoPreview(URL.createObjectURL(f)); setLogoFile(f); } }} subiendoLogo={subiendoLogo} inputGarantia={inputGarantia} setInputGarantia={setInputGarantia} incluirIva={incluirIva} setIncluirIva={setIncluirIva} esOnboarding={esOnboarding} vehiculos={vehiculos} />}
-      {modalVehiculoInfo && <ModalVehiculoInfo vehiculoInfo={modalVehiculoInfo} onClose={() => setVehiculoInfo(null)} reCargarGlobal={cargarTodo} />}
-      {fotoForm && <ModalEvidencia fotoForm={fotoForm} setFotoForm={setFotoForm} handleSeleccionarFoto={(e: any) => { const f = e.target.files[0]; if(f) setFotoForm(prev => prev ? { ...prev, file: f, preview: URL.createObjectURL(f) } : null); }} subirFotoDefinitiva={subirFotoDefinitiva} subiendoFoto={subiendoFoto} />}
-      {modalItemVisible && <ModalItem itemForm={itemForm} setItemForm={setItemForm} guardarItemBD={guardarItemBD} guardandoItem={guardandoItem} onClose={() => setModalItemVisible(false)} />}
-      {modalScanner && <ModalScanner onClose={() => setModalScanner(false)} codigoScanner={codigoScanner} setCodigoScanner={setCodigoScanner} vehiculoScanner={vehiculoScanner} setVehiculoScanner={setVehiculoScanner} consultarScanner={consultarScanner} cargandoScanner={cargandoScanner} resultadoScanner={resultadoScanner} setResultadoScanner={setResultadoScanner} />}
-      {modalMarketing && <ModalMarketing onClose={() => setModalMarketing(false)} vehiculos={vehiculos} historial={historial} nombreTaller={nombreTaller} />}
-      {modalAnalisis && <ModalAnalisisIA orden={modalAnalisis} onClose={() => setModalAnalisis(null)} />}
-    </main>
+    </div>
   )
 }
