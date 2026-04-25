@@ -1,119 +1,81 @@
 🔧 CALIBRE (Neural Garage OS)
-CALIBRE es una plataforma SaaS (Software as a Service) de nueva generación diseñada específicamente para digitalizar, automatizar y optimizar la gestión de talleres mecánicos automotrices.
+La Revolución de la Gestión Automotriz Potenciada por IA y Visualización 3D
+CALIBRE es una plataforma SaaS (Software as a Service) B2B de nueva generación diseñada para digitalizar, automatizar y optimizar la gestión integral de talleres mecánicos. Su propuesta de valor se centra en romper la "caja negra" del servicio técnico tradicional, sustituyéndola por una experiencia de usuario transparente, tecnológica y altamente profesional.
 
-Construida con un enfoque en la transparencia hacia el cliente y la asistencia técnica mediante Inteligencia Artificial, CALIBRE elimina el papeleo, reduce las llamadas de clientes ansiosos y convierte un taller tradicional en una experiencia premium.
-
-🚀 Killer Features (Características Principales)
-📱 1. Live Tracker (Experiencia del Cliente)
-Inspirado en la logística de apps como Uber o Cornershop. Cada orden de trabajo genera un enlace único y encriptado que se envía al cliente vía WhatsApp. El cliente puede ver en tiempo real el avance de su vehículo (Diagnóstico > Esperando Repuestos > En Reparación > Listo para Entrega) sin necesidad de descargar aplicaciones ni crear contraseñas.
-
-💡 2. Segunda Opinión IA ("La Ampolleta")
-Integración nativa con Google Gemini 2.5 Flash. Al ingresar una falla reportada por el cliente, el mecánico puede consultar a la IA para recibir un análisis técnico que incluye:
-
-Las 3 causas más probables para ese modelo y año específico.
-
-Qué sensores medir y qué pruebas realizar antes de desarmar.
-
-Fallas crónicas conocidas del vehículo.
-
-📋 3. Pizarra Activa & Checklist Interactivo
-Interfaz tipo Kanban para la gestión del taller. Los mecánicos visualizan las órdenes abiertas y pueden interactuar con un To-Do List (Checklist) de repuestos y servicios, marcando visualmente lo que ya está completado para evitar errores de ensamblaje u olvidos en el cobro.
-
-📊 4. Telemetría y Dashboard Financiero
-Un centro de mando en tiempo real que calcula:
-
-Ganancias del mes y Ticket Promedio.
-
-División porcentual de ingresos (Mano de Obra vs. Venta de Repuestos).
-
-Top Marcas más rentables y rendimiento por mecánico.
-
-Flujo de caja histórico detallado.
-
-🤖 5. Agenda Predictiva y Ficha Clínica
-El sistema registra el kilometraje y guarda "Alertas de Desgaste" (Preventivas o Urgentes). Un algoritmo evalúa el tiempo transcurrido y alerta al taller para enviar campañas de marketing o recordatorios automáticos por WhatsApp (ej. "Toca cambio de aceite" o "Quedó pendiente el cambio de pastillas").
-
-📄 6. Generación de Informes Técnicos PDF
-Generación de documentos formales listos para imprimir o enviar, que incluyen:
-
-Resumen generado por IA del trabajo realizado.
-
-Evidencia fotográfica del desgaste o reparación.
-
-Detalle de costos, cálculos de IVA y términos de garantía.
-
-Logo personalizado del taller.
+🚀 Punto de Innovación Principal
+El punto innovador de Calibre radica en su capacidad para transformar la gestión automotriz tradicional en una experiencia digital de vanguardia, integrando una experiencia visual inmersiva mediante el mapeo de daños en 3D que garantiza una transparencia total y elimina cualquier rastro de desconfianza en el cliente. La plataforma utiliza la inteligencia artificial como un traductor técnico capaz de convertir diagnósticos complejos de scanner en informes simples y persuasivos, logrando digitalizar por completo el flujo de vida del vehículo y agilizar la toma de decisiones en tiempo real. Este ecosistema se potencia con un sistema de mantenimiento predictivo y proactivo que, más allá de solo organizar la operación interna, actúa como un motor generador de demanda; al anticiparse a las necesidades del vehículo y emitir alertas inteligentes, llama activamente a los clientes de vuelta al taller, asegurando un aumento constante en el flujo de trabajo, una mayor rentabilidad y una fidelización inquebrantable.
 
 🛠️ Stack Tecnológico
-Frontend: Next.js (App Router), React, Tailwind CSS, Lucide Icons.
+Framework: Next.js (App Router) con TypeScript.
 
-Backend & Base de Datos: Supabase (PostgreSQL), Supabase Auth, Row Level Security (RLS).
+Estilos: Tailwind CSS para una interfaz oscura (Dark Mode) premium.
 
-Storage: Supabase Storage (Buckets para Logos y Evidencia fotográfica).
+Base de Datos y Auth: Supabase (PostgreSQL) con Realtime enabled.
 
-Inteligencia Artificial: Google Generative AI SDK (gemini-2.5-flash).
+Almacenamiento: Supabase Storage (Bucket de evidencias fotográficas).
 
-Utilidades: jspdf y jspdf-autotable (Informes), browser-image-compression (Optimización de imágenes), Web Share API (Compartir nativo).
+Motor 3D: Three.js / React Three Fiber (Visualización de archivos .glb).
 
-Hosting: Vercel.
+Inteligencia Artificial: Google Gemini API (Análisis de fallas y resúmenes).
 
-⚙️ Instalación y Configuración Local
-Clonar el repositorio:
+Documentación: jsPDF para generación dinámica de informes técnicos.
 
-Bash
-git clone https://github.com/tu-usuario/calibre-app.git
-cd calibre-app
-Instalar dependencias:
+💎 Killer Features (Características Principales)
+1. Inspección de Carrocería 3D Interactiva
+Mapeo de Daños: Los mecánicos pueden rotar un modelo 3D del vehículo y colocar marcadores de daños (puntos rojos) en tiempo real.
 
-Bash
-npm install
-Configurar Variables de Entorno:
-Crea un archivo .env.local en la raíz del proyecto y agrega las siguientes credenciales:
+Transparencia Legal: Protege al taller documentando el estado estético inicial del vehículo, evitando reclamos por daños preexistentes.
 
-Fragmento de código
-NEXT_PUBLIC_SUPABASE_URL=tu_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=tu_supabase_anon_key
-GEMINI_API_KEY=tu_google_gemini_api_key
-Configuración de Supabase:
+UX del Cliente: El cliente puede interactuar con su propio auto en 3D desde su celular mediante el Live Tracker.
 
-Habilita la autenticación por Email/Password o Google OAuth.
+2. IA Technical Assistant (Cerebro Gemini)
+Scanner Translator: Traduce códigos DTC complejos a lenguaje humano comprensible para el cliente.
 
-Crea los buckets de Storage: logos y evidencia (Ambos públicos).
+Resumen de Cierre: Genera automáticamente el informe de trabajo realizado, facilitando la entrega técnica.
 
-Ejecuta las políticas RLS correspondientes para permitir la lectura pública de órdenes para el Live Tracker.
+Dictado por Voz: Integración de Speech-to-Text para que el mecánico registre fallas sin dejar de trabajar con las manos.
 
-Ejecutar el servidor de desarrollo:
+3. Live Tracker & WhatsApp Connect
+Enlace Único: Cada orden genera un link encriptado (/estado/[id]) que se envía al cliente.
 
-Bash
-npm run dev
-Abre http://localhost:3000 en tu navegador.
+Seguimiento en Vivo: El cliente visualiza el progreso (Diagnóstico > Esperando Repuestos > En Reparación > Listo).
 
-🗄️ Estructura de la Base de Datos (Supabase)
-El ecosistema se sostiene sobre las siguientes tablas relacionales clave:
+Fricción Cero: Sin descargas de apps; todo funciona desde el navegador móvil del cliente.
 
-clientes: Guarda información de contacto (RUT, Nombre, Teléfono, Correo).
+4. Gestión de Taller y "God Mode"
+Pizarra Kanban: Control visual de todas las unidades en el taller con cálculo automático de tiempo de estancia.
 
-vehiculos: Vinculado a clientes. Guarda Patente, Marca, Modelo, Año.
+Ficha Clínica: Historial centralizado por patente, incluyendo fotos de evidencia de cada visita.
 
-ordenes_trabajo: El núcleo. Registra estados, subtotales, kilometraje, mecánicos asignados y resúmenes IA.
+Panel de Administración (/admin-calibre): Control total de suscripciones, validación de pagos y gestión de inquilinos (Talleres).
 
-items_orden: Tareas individuales (Servicios o Repuestos) con estado booleano de realizado.
+5. Fidelización Predictiva
+Alertas de Desgaste: Registro de componentes que requerirán atención futura (Frenos, Neumáticos, etc.).
 
-fotos_orden: Referencias a las URLs de Supabase Storage para evidencia.
+Agenda Proactiva: El sistema detecta periodos de inactividad y sugiere al mecánico contactar al cliente para mantenimientos preventivos.
 
-alertas_desgaste: Registro de componentes a vigilar con niveles de riesgo (Amarillo/Rojo).
+📊 Arquitectura de Datos (Modelado Relacional)
+talleres: Núcleo B2B (Tenant). Maneja suscripción, logo y configuración del local.
 
-🌍 Casos de Uso (Flujo de Trabajo Típico)
-Recepción: El vehículo ingresa. El asesor ingresa la patente y el kilometraje. Si es nuevo, el validador de RUT y los selectores predictivos de marcas agilizan el proceso.
+clientes: Datos de contacto vinculados al taller.
 
-Pizarra: El vehículo aparece en la Pizarra Activa. Se levanta el diagnóstico (asistido por IA si hay dudas).
+vehiculos: Historial técnico único por patente.
 
-Cotización: Se agregan los ítems al Checklist. Con un clic, se envía el Presupuesto + Link de Seguimiento por WhatsApp al cliente.
+ordenes_trabajo: El motor operativo. Almacena estados, daños 3D, nivel de combustible y testigos.
 
-Reparación: El mecánico marca los ítems como realizados en la tablet/celular y sube fotos de las piezas dañadas.
+items_orden: Servicios y repuestos. Implementa la lógica de "Ocultamiento Estratégico" (protege el margen de repuestos ocultando el precio unitario en la vista pública).
 
-Entrega: Se presiona "Listo". El sistema genera el PDF, avisa al cliente por WhatsApp, mueve el dinero a la Caja Histórica y archiva el vehículo para futuras campañas predictivas.
+alertas_desgaste: Base de datos para el marketing predictivo.
 
-👨‍💻 Autor
-Desarrollado y diseñado por Basty.
-Pensado para revolucionar la industria automotriz en Chile y por qué no? LATAM!
+🌍 Estrategia de Negocio (SaaS B2B)
+CALIBRE no es solo un gestor de órdenes; es una herramienta de ventas.
+
+Atracción: El taller proyecta una imagen tecnológica superior con el acta 3D.
+
+Conversión: La IA ayuda a explicar la necesidad de reparaciones, aumentando la aprobación de presupuestos.
+
+Protección: Evidencia fotográfica y notas de turno protegen la rentabilidad y la legalidad del taller.
+
+Retención: Las alertas predictivas aseguran que el cliente regrese de forma recurrente.
+
+Estado del Proyecto: Operativo con integración de IA, Motor 3D y sistema de informes PDF profesional. Preparado para escalamiento comercial.
