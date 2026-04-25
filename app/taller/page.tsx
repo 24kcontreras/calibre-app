@@ -156,6 +156,9 @@ export default function CalibreApp() {
   const guardarConfiguracion = async () => {
       if (inputTaller.trim() === '') return toast.error("El nombre del taller no puede estar vacío");
       setGuardandoConfiguracion(true); const toastId = toast.loading("Guardando ajustes...");
+      
+      const nombreLimpio = inputTaller.toUpperCase().trim();
+
       try {
           let logoUrl = configTaller?.logo_url || null;
           if (logoFile) {
@@ -165,9 +168,30 @@ export default function CalibreApp() {
               logoUrl = supabase.storage.from('logos').getPublicUrl(fileName).data.publicUrl;
               setSubiendoLogo(false);
           }
-          await supabase.auth.updateUser({ data: { nombre_taller: inputTaller.toUpperCase().trim(), direccion_taller: inputDireccion, telefono_taller: inputTelefonoConfig, garantia_taller: inputGarantia, incluir_iva: incluirIva, logo_url: logoUrl }});
-          setLogoFile(null); toast.success("¡Ajustes guardados!", { id: toastId }); setModalConfiguracion(false);
-      } catch (err: any) { toast.error("Error: " + err.message, { id: toastId }); setSubiendoLogo(false); } finally { setGuardandoConfiguracion(false); }
+          
+          // 1. Guardar en la Sesión (Auth)
+          await supabase.auth.updateUser({ 
+            data: { nombre_taller: nombreLimpio, direccion_taller: inputDireccion, telefono_taller: inputTelefonoConfig, garantia_taller: inputGarantia, incluir_iva: incluirIva, logo_url: logoUrl }
+          });
+
+          // 2. 🔥 Sincronizar con la tabla pública 'talleres' para el God Mode
+          await supabase
+            .from('talleres')
+            .update({ nombre_taller: nombreLimpio })
+            .eq('id', session.user.id);
+
+          setLogoFile(null); 
+          toast.success("¡Ajustes guardados!", { id: toastId }); 
+          setModalConfiguracion(false);
+          
+          await cargarTodo(); // Forzamos recarga visual
+
+      } catch (err: any) { 
+        toast.error("Error: " + err.message, { id: toastId }); 
+        setSubiendoLogo(false); 
+      } finally { 
+        setGuardandoConfiguracion(false); 
+      }
   }
 
   const historialFiltrado = historial.filter(o => o.vehiculos?.patente.toLowerCase().includes(busquedaHistorial.toLowerCase()) || (o.vehiculos?.clientes?.nombre || '').toLowerCase().includes(busquedaHistorial.toLowerCase()))
