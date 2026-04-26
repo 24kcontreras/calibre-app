@@ -9,6 +9,7 @@ export async function POST(request: Request) {
         const apiKey = process.env.FLOW_API_KEY;
         const secretKey = process.env.FLOW_SECRET_KEY;
         const flowUrl = process.env.NEXT_PUBLIC_FLOW_URL;
+        
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 
         if (!apiKey || !secretKey || !flowUrl) {
@@ -18,7 +19,7 @@ export async function POST(request: Request) {
 
         const commerceOrder = `ORD-${taller_id}-${Date.now()}`;
         const params: Record<string, string> = {
-            apiKey: apiKey.trim(), // Le puse .trim() por si se te coló un espacio al copiar
+            apiKey: apiKey.trim(),
             commerceOrder: commerceOrder,
             subject: 'Suscripción Mensual CALIBRE OS',
             currency: 'CLP',
@@ -26,7 +27,7 @@ export async function POST(request: Request) {
             email: email,
             paymentMethod: '9',
             urlConfirmation: `${baseUrl}/api/flow/webhook`,
-            urlReturn: `${baseUrl}/taller?pago=exitoso`, 
+            urlReturn: `${baseUrl}/taller?pago=exitoso`,
             optional: JSON.stringify({ taller_id })
         };
 
@@ -40,9 +41,14 @@ export async function POST(request: Request) {
         params.s = signature;
 
         const formData = new URLSearchParams(params);
+        
+        // 🔥 AQUÍ ESTÁ LA CORRECCIÓN CLAVE: Obligamos a Vercel a hablar el idioma exacto de Flow
         const response = await fetch(`${flowUrl}/payment/create`, {
             method: 'POST',
-            body: formData,
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: formData.toString(),
         });
 
         const data = await response.json();
@@ -51,7 +57,6 @@ export async function POST(request: Request) {
             return NextResponse.json({ url: `${data.url}?token=${data.token}` });
         } else {
             console.error("Error de Flow:", data);
-            // 🔥 AQUÍ LE DEVOLVEMOS AL FRONTEND EL MENSAJE EXACTO DE FLOW
             return NextResponse.json({ error: `Flow dice: ${data.message || 'Error desconocido'}` }, { status: 400 });
         }
 
