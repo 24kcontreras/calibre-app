@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { ShieldAlert, ShieldCheck, Lock, Unlock, Search, Wrench, AlertTriangle, CalendarDays } from 'lucide-react'
+import { ShieldAlert, ShieldCheck, Lock, Unlock, Search, Wrench, CalendarDays, Car, ClipboardList, Eye } from 'lucide-react'
 import toast, { Toaster } from 'react-hot-toast'
 
 export default function AdminCalibre() {
@@ -12,8 +12,7 @@ export default function AdminCalibre() {
   const [talleres, setTalleres] = useState<any[]>([])
   const [busqueda, setBusqueda] = useState('')
 
-  // 🔥 AQUÍ PONES TU CORREO DE SUPERADMINISTRADOR
-  const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'leonardocontreras@calibreapp.com' 
+  const ADMIN_EMAIL = 'leonardocontreras@calibreapp.com' 
 
   useEffect(() => {
     checkAdmin()
@@ -22,15 +21,7 @@ export default function AdminCalibre() {
   const checkAdmin = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      
-      // 🔥 MODO DETECTIVE ACTIVADO
-      console.log("=== DEBUG GOD MODE ===")
-      console.log("1. ¿Hay sesión activa?:", !!session)
-      console.log("2. Correo que ve Supabase:", session?.user?.email)
-      console.log("3. Correo que pide el código:", ADMIN_EMAIL)
-      console.log("======================")
 
-      // Si no hay sesión o el correo no coincide, lo pateamos al login
       if (!session || session.user.email !== ADMIN_EMAIL) {
         toast.error("Acceso Denegado. Solo nivel Dios.")
         router.push('/')
@@ -47,10 +38,10 @@ export default function AdminCalibre() {
   }
 
   const cargarTalleres = async () => {
-    // Asumimos que tienes una tabla 'talleres' donde guardas el id del usuario, email, nombre y estado de pago
+    // 🔥 NIVEL 2: Traemos los talleres Y contamos sus autos y órdenes
     const { data, error } = await supabase
       .from('talleres')
-      .select('*')
+      .select('*, vehiculos(count), ordenes_trabajo(count)')
       .order('created_at', { ascending: false })
     
     if (error) {
@@ -69,26 +60,38 @@ export default function AdminCalibre() {
     const toastId = toast.loading(`${accion === 'ACTIVAR' ? 'Activando' : 'Bloqueando'} taller...`);
 
     try {
-      // Si lo activamos, le damos 30 días desde hoy. Si lo bloqueamos, la fecha queda igual pero sin pago confirmado.
       let payload: any = { pago_confirmado: nuevoEstado };
       
       if (nuevoEstado) {
           const fechaVencimiento = new Date();
-          fechaVencimiento.setDate(fechaVencimiento.getDate() + 30); // +30 días
+          fechaVencimiento.setDate(fechaVencimiento.getDate() + 30); // Activar da 30 días base
           payload.fecha_vencimiento = fechaVencimiento.toISOString();
       }
 
-      const { error } = await supabase
-        .from('talleres')
-        .update(payload)
-        .eq('id', id)
-
+      const { error } = await supabase.from('talleres').update(payload).eq('id', id)
       if (error) throw error
 
       toast.success(`Taller ${nuevoEstado ? 'Activado' : 'Bloqueado'} exitosamente`, { id: toastId })
-      await cargarTalleres() // Recargar la tabla
+      await cargarTalleres() 
     } catch (error: any) {
       toast.error(`Error: ${error.message}`, { id: toastId })
+    }
+  }
+
+  // 🔥 NIVEL 1: Edición Manual de Fecha
+  const actualizarFechaManual = async (id: string, nuevaFecha: string) => {
+    const toastId = toast.loading('Actualizando fecha...');
+    try {
+      const { error } = await supabase
+        .from('talleres')
+        .update({ fecha_vencimiento: nuevaFecha ? new Date(nuevaFecha).toISOString() : null })
+        .eq('id', id);
+      
+      if (error) throw error;
+      toast.success('Fecha actualizada', { id: toastId });
+      await cargarTalleres();
+    } catch (error: any) {
+      toast.error(`Error: ${error.message}`, { id: toastId });
     }
   }
 
@@ -101,7 +104,7 @@ export default function AdminCalibre() {
     return <div className="min-h-screen bg-slate-950 flex items-center justify-center"><Wrench className="animate-spin text-emerald-500" size={64} /></div>
   }
 
-  if (!isAdmin) return null; // No renderiza nada si lo está redirigiendo
+  if (!isAdmin) return null; 
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 p-6 font-sans selection:bg-emerald-500 selection:text-slate-950">
@@ -109,7 +112,6 @@ export default function AdminCalibre() {
       
       <div className="max-w-7xl mx-auto space-y-6">
         
-        {/* HEADER GOD MODE */}
         <header className="bg-slate-900/50 border border-slate-800 p-6 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="bg-emerald-500/20 p-3 rounded-2xl">
@@ -117,7 +119,7 @@ export default function AdminCalibre() {
             </div>
             <div>
               <h1 className="text-2xl font-black uppercase tracking-tighter text-white">God Mode</h1>
-              <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Panel de Superadministrador • CALIBRE</p>
+              <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Centro de Mando Estratégico • CALIBRE</p>
             </div>
           </div>
 
@@ -132,17 +134,16 @@ export default function AdminCalibre() {
           </div>
         </header>
 
-        {/* TABLA DE TALLERES */}
-        <div className="bg-slate-900/50 border border-slate-800 rounded-3xl overflow-hidden">
+        <div className="bg-slate-900/50 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-950/50 border-b border-slate-800 text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                  <th className="p-4">Taller / Email</th>
-                  <th className="p-4">Registro</th>
-                  <th className="p-4 text-center">Vencimiento</th>
+                  <th className="p-4 pl-6">Taller / Contacto</th>
+                  <th className="p-4 text-center">Termómetro de Uso</th>
+                  <th className="p-4 text-center">Vencimiento (Manual)</th>
                   <th className="p-4 text-center">Estado</th>
-                  <th className="p-4 text-right">Acción</th>
+                  <th className="p-4 text-right pr-6">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/50">
@@ -156,24 +157,53 @@ export default function AdminCalibre() {
                   talleresFiltrados.map((taller) => {
                     const vencido = taller.fecha_vencimiento ? new Date(taller.fecha_vencimiento) < new Date() : false;
                     const activo = taller.pago_confirmado && !vencido;
+                    
+                    // Extraer los conteos de Supabase
+                    const autosCount = taller.vehiculos?.[0]?.count || 0;
+                    const ordenesCount = taller.ordenes_trabajo?.[0]?.count || 0;
 
                     return (
                       <tr key={taller.id} className="hover:bg-slate-800/20 transition-colors">
-                        <td className="p-4">
+                        <td className="p-4 pl-6">
                           <div className="font-bold text-slate-200">{taller.nombre_taller || 'Sin Configurar'}</div>
-                          <div className="text-xs text-slate-500">{taller.email || taller.id}</div>
+                          {taller.email ? (
+                            <a href={`mailto:${taller.email}`} className="text-xs text-emerald-500 hover:text-emerald-400 hover:underline transition-colors">
+                              {taller.email}
+                            </a>
+                          ) : (
+                            <div className="text-xs text-slate-500">{taller.id}</div>
+                          )}
+                          <div className="text-[10px] text-slate-600 mt-1">Reg: {new Date(taller.created_at).toLocaleDateString('es-CL')}</div>
                         </td>
-                        <td className="p-4 text-xs text-slate-400 font-medium">
-                          {new Date(taller.created_at).toLocaleDateString('es-CL')}
-                        </td>
+                        
+                        {/* 🔥 NIVEL 2: MÉTRICAS DE USO */}
                         <td className="p-4 text-center">
-                          <div className="flex flex-col items-center justify-center">
-                            <span className={`text-xs font-bold px-2 py-1 rounded-md flex items-center gap-1 ${vencido ? 'bg-red-500/10 text-red-400' : 'bg-slate-800 text-slate-300'}`}>
-                              <CalendarDays size={12} />
-                              {taller.fecha_vencimiento ? new Date(taller.fecha_vencimiento).toLocaleDateString('es-CL') : 'Sin fecha'}
-                            </span>
+                          <div className="flex items-center justify-center gap-3">
+                            <div className="flex flex-col items-center" title="Vehículos Registrados">
+                                <Car size={14} className={autosCount === 0 ? 'text-slate-600' : 'text-blue-400'} />
+                                <span className="text-xs font-bold text-slate-300">{autosCount}</span>
+                            </div>
+                            <div className="w-px h-6 bg-slate-800"></div>
+                            <div className="flex flex-col items-center" title="Órdenes Totales">
+                                <ClipboardList size={14} className={ordenesCount === 0 ? 'text-slate-600' : 'text-purple-400'} />
+                                <span className="text-xs font-bold text-slate-300">{ordenesCount}</span>
+                            </div>
                           </div>
                         </td>
+
+                        {/* 🔥 NIVEL 1: CALENDARIO MANUAL */}
+                        <td className="p-4 text-center">
+                          <div className="flex flex-col items-center justify-center">
+                            <input 
+                              type="date"
+                              value={taller.fecha_vencimiento ? taller.fecha_vencimiento.split('T')[0] : ''}
+                              onChange={(e) => actualizarFechaManual(taller.id, e.target.value)}
+                              className={`text-xs font-bold px-2 py-1.5 rounded-md border outline-none transition-colors cursor-pointer text-center
+                                ${vencido ? 'bg-red-500/10 text-red-400 border-red-500/30 hover:border-red-500' : 'bg-slate-900 text-slate-300 border-slate-700 hover:border-emerald-500'}`}
+                            />
+                          </div>
+                        </td>
+
                         <td className="p-4 text-center">
                           {activo ? (
                             <span className="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-black px-2 py-1 rounded uppercase tracking-wider">
@@ -185,17 +215,29 @@ export default function AdminCalibre() {
                             </span>
                           )}
                         </td>
-                        <td className="p-4 text-right">
-                          <button 
-                            onClick={() => toggleBloqueo(taller.id, taller.pago_confirmado)}
-                            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
-                              taller.pago_confirmado 
-                              ? 'bg-slate-800 text-slate-400 hover:bg-red-500/20 hover:text-red-400 border border-transparent hover:border-red-500/50' 
-                              : 'bg-emerald-600 text-slate-950 hover:bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
-                            }`}
-                          >
-                            {taller.pago_confirmado ? <><Lock size={14} /> Bloquear</> : <><Unlock size={14} /> Activar</>}
-                          </button>
+
+                        {/* ACCIONES Y MODO ESPÍA */}
+                        <td className="p-4 text-right pr-6">
+                          <div className="flex items-center justify-end gap-2">
+                            <button 
+                              onClick={() => toast('El Modo Espía requerirá un ajuste en tu useTaller. ¡Próximamente!', { icon: '🕵️‍♂️' })}
+                              className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:bg-blue-500/20 hover:text-blue-400 transition-colors"
+                              title="Modo Espía (Entrar a su cuenta)"
+                            >
+                              <Eye size={16} />
+                            </button>
+
+                            <button 
+                              onClick={() => toggleBloqueo(taller.id, taller.pago_confirmado)}
+                              className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+                                taller.pago_confirmado 
+                                ? 'bg-slate-800 text-slate-400 hover:bg-red-500/20 hover:text-red-400 border border-transparent hover:border-red-500/50' 
+                                : 'bg-emerald-600 text-slate-950 hover:bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
+                              }`}
+                            >
+                              {taller.pago_confirmado ? <><Lock size={14} /> Bloquear</> : <><Unlock size={14} /> Activar</>}
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     )
