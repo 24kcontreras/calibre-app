@@ -3,10 +3,9 @@ import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import imageCompression from 'browser-image-compression'
 import toast from 'react-hot-toast'
-import { Mic, CheckCircle, Camera, Car, X, Undo2 } from 'lucide-react'
+import { Mic, CheckCircle, Camera, Car, Fuel, AlertTriangle, ShieldAlert, X, AlertCircle, Droplets, BatteryWarning, Thermometer, CircleDot, LifeBuoy, Settings, Zap, Wind, Activity, Undo2 } from 'lucide-react'
 import Car3DViewer from '@/components/Car3DViewer'
 
-// 🔥 CONFIGURACIÓN ACTUALIZADA PARA USAR TUS IMÁGENES REALES
 const TESTIGOS_CONFIG = [
     { id: 'check_engine', imgSrc: '/testigos/check_engine.png', label: 'Check Engine', type: 'rojo' },
     { id: 'aceite', imgSrc: '/testigos/aceite.png', label: 'Aceite', type: 'rojo' },
@@ -34,6 +33,7 @@ export default function ModalNuevaOrden({ vehiculo, onClose, soloLectura, sessio
     const [danosPrevios, setDanosPrevios] = useState('')
     const [marcadoresDanos, setMarcadoresDanos] = useState<any[]>([])
     const [fotosRecepcion, setFotosRecepcion] = useState<File[]>([])
+    const [previewsRecepcion, setPreviewsRecepcion] = useState<string[]>([])
     const [escuchando, setEscuchando] = useState(false)
 
     const toggleTestigo = (id: string) => setTestigosSeleccionados(prev => prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id])
@@ -91,8 +91,15 @@ export default function ModalNuevaOrden({ vehiculo, onClose, soloLectura, sessio
     const gradosAguja = (nivelCombustible / 100) * 180 - 90;
 
     return (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
-            <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700/50 rounded-[35px] p-6 w-full max-w-xl shadow-2xl relative my-auto max-h-[95vh] overflow-y-auto custom-scrollbar-dark">
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto no-scrollbar">
+            {/* 🔥 ELIMINAMOS custom-scrollbar-dark Y AGREGAMOS no-scrollbar AL CONTENEDOR PRINCIPAL */}
+            <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700/50 rounded-[35px] p-6 w-full max-w-xl shadow-2xl relative my-auto max-h-[95vh] overflow-y-auto no-scrollbar">
+                
+                {/* Botón Cerrar (Arriba derecha) */}
+                <button onClick={onClose} className="absolute top-6 right-6 text-slate-500 hover:text-emerald-400 transition-colors z-20 bg-slate-900/50 rounded-full p-1 border border-slate-700 shadow-sm">
+                    <X size={20} />
+                </button>
+
                 <h3 className="text-2xl font-black text-slate-100 uppercase">Nueva Orden</h3>
                 <p className="text-sm text-slate-400 mb-5 font-bold">{vehiculo.marca} {vehiculo.modelo} <span className="text-emerald-400 ml-1">{vehiculo.patente}</span></p>
 
@@ -107,7 +114,7 @@ export default function ModalNuevaOrden({ vehiculo, onClose, soloLectura, sessio
                         <input value={mecanicoAsignado} onChange={(e) => setMecanicoAsignado(e.target.value)} className="w-full p-3 rounded-2xl bg-slate-900 border border-slate-700 text-sm text-slate-200 outline-none" placeholder="Mecánico" />
                     </div>
 
-                    <button type="button" onClick={() => setMostrarActa(!mostrarActa)} className={`flex items-center gap-2 text-[10px] font-black uppercase w-full justify-center py-3 rounded-2xl border ${mostrarActa ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400' : 'bg-slate-800/50 border-slate-700/50 text-slate-400'}`}>
+                    <button type="button" onClick={() => setMostrarActa(!mostrarActa)} className={`flex items-center gap-2 text-[10px] font-black uppercase w-full justify-center py-3 rounded-2xl border transition-all ${mostrarActa ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400' : 'bg-slate-800/50 border-slate-700/50 text-slate-400 hover:bg-slate-800'}`}>
                         {mostrarActa ? <CheckCircle size={14} /> : <Camera size={14} />} Acta de Recepción
                     </button>
 
@@ -127,38 +134,42 @@ export default function ModalNuevaOrden({ vehiculo, onClose, soloLectura, sessio
                                 </div>
                             </div>
 
-                            {/* 🔥 AHORA LOS TESTIGOS RENDERIZAN TUS IMÁGENES */}
+                            {/* 🔥 TESTIGOS CON BRILLO AUMENTADO POR CSS */}
                             <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
                                 {TESTIGOS_CONFIG.map(t => (
-                                    <button key={t.id} type="button" onClick={() => toggleTestigo(t.id)} className={`p-2 rounded-xl border flex flex-col items-center gap-1.5 ${testigosSeleccionados.includes(t.id) ? (t.type==='rojo'?'bg-red-500/20 border-red-500 text-red-400':'bg-yellow-500/20 border-yellow-500 text-yellow-400') : 'bg-slate-900 border-slate-800 text-slate-500 hover:text-slate-400'}`}>
-                                        {/* Fallback si no encuentra la imagen: muestra alt, pero si la pones en public/testigos/ funcionará perfecto */}
-                                        <img src={t.imgSrc} alt={t.label} className={`w-6 h-6 object-contain ${!testigosSeleccionados.includes(t.id) && 'opacity-50 grayscale'}`} />
-                                        <span className="text-[8px] font-black uppercase text-center">{t.label}</span>
+                                    <button key={t.id} type="button" onClick={() => toggleTestigo(t.id)} className={`p-2 rounded-xl border flex flex-col items-center gap-2 transition-all duration-300 ${testigosSeleccionados.includes(t.id) ? (t.type==='rojo'?'bg-red-500/10 border-red-500/50 text-red-400 shadow-[0_0_10px_rgba(239,68,68,0.2)]':'bg-yellow-500/10 border-yellow-500/50 text-yellow-400 shadow-[0_0_10px_rgba(234,179,8,0.2)]') : 'bg-slate-900 border-slate-800 text-slate-500 hover:bg-slate-800'}`}>
+                                        <img 
+                                            src={t.imgSrc} 
+                                            alt={t.label} 
+                                            className={`w-7 h-7 object-contain transition-all duration-300 ${testigosSeleccionados.includes(t.id) ? 'brightness-150 contrast-125 saturate-150 drop-shadow-md' : 'opacity-40 grayscale brightness-75'}`} 
+                                        />
+                                        <span className="text-[8px] font-black uppercase text-center leading-tight">{t.label}</span>
                                     </button>
                                 ))}
                             </div>
 
                             <div className="border-t border-slate-800 pt-4">
-                                {/* 🔥 CABECERA DEL MAPA 3D: TÍTULOS Y CONTADOR + DESHACER AGRUPADOS */}
+                                
+                                {/* 🔥 CONTADOR DE DAÑOS Y BOTÓN DESHACER UNIDOS EN UNA SOLA PÍLDORA */}
                                 <div className="flex items-center justify-between mb-3">
                                     <div className="flex flex-col">
                                         <label className="text-[10px] font-black text-slate-400 uppercase flex items-center gap-2">
                                             <Car size={14} className="text-orange-400"/> Mapa 3D
                                         </label>
-                                        <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-0.5">
+                                        <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">
                                             Mapeo de referencia de daños
                                         </span>
                                     </div>
                                     
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-[10px] font-black text-slate-500 bg-slate-900 px-2.5 py-1.5 rounded-lg border border-slate-800">
-                                            Daños: <span className="text-orange-400">{marcadoresDanos.length}</span>
+                                    <div className="flex items-center bg-slate-900 border border-slate-700 rounded-lg overflow-hidden shadow-sm">
+                                        <span className="text-[9px] font-black text-slate-400 px-3 py-1.5 flex items-center gap-1.5">
+                                            Daños: <span className="text-orange-400 text-xs">{marcadoresDanos.length}</span>
                                         </span>
                                         {marcadoresDanos.length > 0 && (
                                             <button 
                                                 type="button" 
                                                 onClick={deshacerUltimoPunto} 
-                                                className="flex items-center gap-1.5 bg-slate-800/50 border border-slate-700 hover:border-red-500 hover:bg-red-500/10 hover:text-red-400 text-slate-300 px-3 py-1.5 rounded-lg transition-all"
+                                                className="flex items-center gap-1.5 bg-slate-800 hover:bg-red-500/20 hover:text-red-400 text-slate-300 px-3 py-1.5 transition-all border-l border-slate-700 text-[10px] font-bold uppercase tracking-wider"
                                                 title="Deshacer último punto"
                                             >
                                                 <Undo2 size={12} /> Deshacer
@@ -167,8 +178,8 @@ export default function ModalNuevaOrden({ vehiculo, onClose, soloLectura, sessio
                                     </div>
                                 </div>
                                 
-                                {/* 🔥 CONTENEDOR ESTRICTO PARA MATAR EL SCROLL DEL 3D */}
-                                <div className="relative w-full rounded-xl overflow-hidden border border-slate-800/50 bg-slate-950/50">
+                                {/* 🔥 CONTENEDOR NO-SCROLL PARA EL VISOR 3D */}
+                                <div className="relative w-full rounded-xl overflow-hidden border border-slate-800/50 bg-slate-950/50 no-scrollbar flex justify-center items-center">
                                     <Car3DViewer marcadores={marcadoresDanos} setMarcadores={setMarcadoresDanos} soloLectura={false} />
                                 </div>
                                 
