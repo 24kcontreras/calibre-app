@@ -33,7 +33,6 @@ export default function ModalNuevaOrden({ vehiculo, onClose, soloLectura, sessio
     const [danosPrevios, setDanosPrevios] = useState('')
     const [marcadoresDanos, setMarcadoresDanos] = useState<any[]>([])
     const [fotosRecepcion, setFotosRecepcion] = useState<File[]>([])
-    const [previewsRecepcion, setPreviewsRecepcion] = useState<string[]>([])
     const [escuchando, setEscuchando] = useState(false)
 
     const toggleTestigo = (id: string) => setTestigosSeleccionados(prev => prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id])
@@ -90,7 +89,6 @@ export default function ModalNuevaOrden({ vehiculo, onClose, soloLectura, sessio
 
     const gradosAguja = (nivelCombustible / 100) * 180 - 90;
 
-    // 🔥 Comentario arreglado (fuera del return de JSX) para no romper Vercel
     return (
         <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700/50 rounded-[35px] p-6 w-full max-w-xl shadow-2xl relative my-auto max-h-[95vh] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
@@ -119,14 +117,25 @@ export default function ModalNuevaOrden({ vehiculo, onClose, soloLectura, sessio
 
                     {mostrarActa && (
                         <div className="mt-4 p-5 bg-slate-950/50 border border-slate-800 rounded-[25px] space-y-6">
+                            
+                            {/* 🔥 MEDIDOR DE COMBUSTIBLE ACTUALIZADO */}
                             <div>
-                                <label className="text-[10px] font-black text-slate-500 uppercase mb-3 flex items-center gap-2"><div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div> Combustible</label>
+                                <label className="text-[10px] font-black text-slate-500 uppercase mb-3 flex items-center gap-2"><div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div> Nivel de Combustible</label>
                                 <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex flex-col items-center">
-                                    <svg viewBox="0 0 200 120" className="w-full max-w-[200px]">
+                                    <svg viewBox="0 0 200 120" className="w-full max-w-[200px] drop-shadow-[0_0_15px_rgba(51,65,85,0.5)]">
                                         <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#1e293b" strokeWidth="6" strokeLinecap="round" />
-                                        <g style={{ transform: `rotate(${gradosAguja}deg)`, transformOrigin: '100px 100px', transition: 'transform 1s' }}>
-                                            <polygon points="97,100 103,100 100,25" fill="#ef4444" /><circle cx="100" cy="100" r="10" fill="#0f172a" stroke="#ef4444" strokeWidth="3" />
+                                        <line x1="20" y1="100" x2="35" y2="100" stroke="#ef4444" strokeWidth="6" strokeLinecap="round"/> 
+                                        <line x1="43" y1="43" x2="54" y2="54" stroke="#94a3b8" strokeWidth="4" strokeLinecap="round"/> 
+                                        <line x1="100" y1="20" x2="100" y2="35" stroke="#94a3b8" strokeWidth="6" strokeLinecap="round"/> 
+                                        <line x1="157" y1="43" x2="146" y2="54" stroke="#94a3b8" strokeWidth="4" strokeLinecap="round"/> 
+                                        <line x1="180" y1="100" x2="165" y2="100" stroke="#10b981" strokeWidth="6" strokeLinecap="round"/> 
+                                        <g style={{ transform: `rotate(${gradosAguja}deg)`, transformOrigin: '100px 100px', transition: 'transform 1s cubic-bezier(0.4, 0, 0.2, 1)' }}>
+                                            <polygon points="97,100 103,100 100,25" fill="#ef4444" />
+                                            <circle cx="100" cy="100" r="10" fill="#0f172a" stroke="#ef4444" strokeWidth="3" />
                                         </g>
+                                        <text x="28" y="118" fill="#ef4444" fontSize="16" fontWeight="900" textAnchor="middle">E</text>
+                                        <text x="100" y="55" fill="#64748b" fontSize="14" fontWeight="bold" textAnchor="middle">1/2</text>
+                                        <text x="172" y="118" fill="#10b981" fontSize="16" fontWeight="900" textAnchor="middle">F</text>
                                     </svg>
                                     <input type="range" min="0" max="100" step="5" value={nivelCombustible} onChange={(e) => setNivelCombustible(parseInt(e.target.value))} className="w-full h-2 bg-slate-700 rounded-lg appearance-none mt-4" />
                                     <div className={`text-xl font-black mt-2 ${nivelCombustible <= 15 ? 'text-red-400' : 'text-emerald-400'}`}>{nivelCombustible}%</div>
