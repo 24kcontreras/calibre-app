@@ -10,17 +10,16 @@ export const useTaller = () => {
   const [ordenesAbiertas, setOrdenesAbiertas] = useState<any[]>([])
   const [historial, setHistorial] = useState<any[]>([])
   const [nombreTaller, setNombreTaller] = useState('MI TALLER')
-  const [configTaller, setConfigTaller] = useState<any>(null) // 🔥 AHORA SÍ EXISTE
+  const [configTaller, setConfigTaller] = useState<any>(null)
   const [esOnboarding, setEsOnboarding] = useState(false)
 
-  const extraerDatosConfiguracion = (metadata: any) => {
-      setConfigTaller(metadata); // 🔥 Y AQUÍ LA GUARDAMOS
+  // Esta función ahora solo maneja cosas menores del Auth (como si es nuevo usuario)
+  const extraerDatosConfiguracionAuth = (metadata: any) => {
       if (!metadata || !metadata.nombre_taller) {
           setNombreTaller('MI TALLER');
           setEsOnboarding(true);
           return;
       }
-      setNombreTaller(metadata.nombre_taller);
       setEsOnboarding(false); 
   };
 
@@ -28,9 +27,17 @@ export const useTaller = () => {
     const currentTallerId = tId || session?.user?.id;
     if (!currentTallerId) return;
 
-    // 1. Verificamos Lock-In Comercial
-    const { data: tData } = await supabase.from('talleres').select('pago_confirmado, fecha_vencimiento').eq('id', currentTallerId).single();
+    // 🔥 1. CORRECCIÓN VITAL: Traemos TODOS los datos del taller desde la DB
+    const { data: tData } = await supabase.from('talleres').select('*').eq('id', currentTallerId).single();
+    
     if (tData) {
+        // Combinamos la info de la DB con el estado configTaller
+        setConfigTaller((prev: any) => ({ ...prev, ...tData }));
+        
+        // Sobrescribimos el nombre del taller con el oficial de la base de datos
+        if (tData.nombre_taller) setNombreTaller(tData.nombre_taller);
+
+        // Validamos Lock-In
         const vencido = tData.fecha_vencimiento ? new Date(tData.fecha_vencimiento) < new Date() : false;
         setSoloLectura(!tData.pago_confirmado || vencido);
     }
@@ -71,8 +78,10 @@ export const useTaller = () => {
         if (isMounted) {
             setSession(currentSession);
             if (currentSession?.user?.id) {
+                // Primero leemos si es Onboarding desde Auth
+                extraerDatosConfiguracionAuth(currentSession.user.user_metadata);
+                // Y luego traemos los datos financieros pesados desde Supabase
                 await cargarTodo(currentSession.user.id);
-                extraerDatosConfiguracion(currentSession.user.user_metadata);
             }
         }
       } catch (err) {
@@ -88,8 +97,8 @@ export const useTaller = () => {
       if (isMounted) {
           setSession(currentSession);
           if (currentSession?.user?.id) {
+              extraerDatosConfiguracionAuth(currentSession.user.user_metadata);
               cargarTodo(currentSession.user.id);
-              extraerDatosConfiguracion(currentSession.user.user_metadata);
           }
       }
     });
@@ -175,7 +184,7 @@ export const useTaller = () => {
     ordenesAbiertas, 
     historial, 
     nombreTaller, 
-    configTaller, // 🔥 AHORA SE ENVÍA CORRECTAMENTE
+    configTaller, 
     esOnboarding,
     cajaTotal,
     gananciasEsteMes,
