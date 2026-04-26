@@ -27,6 +27,7 @@ import ModalAnalisisIA from '@/components/modals/ModalAnalisisIA'
 import ModalActaRecepcion from '@/components/modals/ModalActaRecepcion'
 import ModalNuevaOrden from '@/components/modals/ModalNuevaOrden'
 import ModalEditarOrden from '@/components/modals/ModalEditarOrden'
+import Paywall from '@/components/Paywall'
 
 export default function CalibreApp() {
   const router = useRouter()
@@ -169,12 +170,10 @@ export default function CalibreApp() {
               setSubiendoLogo(false);
           }
           
-          // 1. Guardar en la Sesión (Auth)
           await supabase.auth.updateUser({ 
             data: { nombre_taller: nombreLimpio, direccion_taller: inputDireccion, telefono_taller: inputTelefonoConfig, garantia_taller: inputGarantia, incluir_iva: incluirIva, logo_url: logoUrl }
           });
 
-          // 2. 🔥 Sincronizar con la tabla pública 'talleres' para el God Mode
           await supabase
             .from('talleres')
             .update({ nombre_taller: nombreLimpio })
@@ -184,7 +183,7 @@ export default function CalibreApp() {
           toast.success("¡Ajustes guardados!", { id: toastId }); 
           setModalConfiguracion(false);
           
-          await cargarTodo(); // Forzamos recarga visual
+          await cargarTodo(); 
 
       } catch (err: any) { 
         toast.error("Error: " + err.message, { id: toastId }); 
@@ -199,9 +198,25 @@ export default function CalibreApp() {
   // --- PANTALLAS DE CARGA Y LOGIN ---
   if (authLoading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center"><Wrench className="animate-spin text-emerald-500" size={64} /></div>
   
-  // 🔥 Si no hay sesión, mostramos el Login. Más adelante, aquí pondremos la Landing Page Comercial.
   if (!session) return <Login />
 
+  // 🔥 VALIDACIÓN DE SUSCRIPCIÓN (HARD LOCK DE LA FASE 4)
+  // Comparamos la fecha de vencimiento del taller con la fecha actual
+  const fechaVencimiento = configTaller?.fecha_vencimiento_suscripcion;
+  const hoy = new Date();
+  const estaVencido = fechaVencimiento && new Date(fechaVencimiento) < hoy;
+
+  if (estaVencido) {
+      return (
+          <Paywall 
+              tallerId={session.user.id} 
+              email={session.user.email} 
+              fechaVencimiento={fechaVencimiento} 
+          />
+      );
+  }
+
+  // --- SI LA SUSCRIPCIÓN ESTÁ AL DÍA, RENDERIZAMOS LA APP NORMAL ---
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-6 font-sans w-full mx-auto relative overflow-hidden">
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-emerald-900/10 rounded-full blur-[120px] pointer-events-none z-0"></div>
@@ -239,7 +254,7 @@ export default function CalibreApp() {
              cargarTodo={cargarTodo} 
              abrirOrdenModal={(v: any) => setModalNuevaOrden(v)} 
              nombreTaller={nombreTaller} 
-             abrirInfoModal={(v: any) => setVehiculoInfo(v)} // 🔥 AQUÍ CONECTAMOS EL BOTÓN INFO
+             abrirInfoModal={(v: any) => setVehiculoInfo(v)} 
            />
         </div>
         
@@ -272,7 +287,6 @@ export default function CalibreApp() {
       {modalHistorial && <ModalHistorial onClose={() => setModalHistorial(false)} busquedaHistorial={busquedaHistorial} setBusquedaHistorial={setBusquedaHistorial} historialFiltrado={historialFiltrado} configPDF={{ nombreTaller, direccion: configTaller?.direccion_taller || '', telefono: configTaller?.telefono_taller || '', garantia: configTaller?.garantia_taller || '', logoUrl: configTaller?.logo_url || null, incluirIva: configTaller?.incluir_iva || false }} />}
       {modalConfiguracion && <ModalConfiguracion onClose={() => setModalConfiguracion(false)} inputTaller={inputTaller} setInputTaller={setInputTaller} guardarConfiguracion={guardarConfiguracion} guardandoConfiguracion={guardandoConfiguracion} handleLogout={async () => { await supabase.auth.signOut(); router.push('/'); }} inputDireccion={inputDireccion} setInputDireccion={setInputDireccion} inputTelefono={inputTelefonoConfig} setInputTelefono={setInputTelefonoConfig} logoPreview={logoPreview} handleLogoChange={(e: any) => { const f = e.target.files?.[0]; if(f) { setLogoPreview(URL.createObjectURL(f)); setLogoFile(f); } }} subiendoLogo={subiendoLogo} inputGarantia={inputGarantia} setInputGarantia={setInputGarantia} incluirIva={incluirIva} setIncluirIva={setIncluirIva} esOnboarding={esOnboarding} vehiculos={vehiculos} />}
       
-      {/* 🔥 MODAL DE INFO DEL VEHÍCULO */}
       {modalVehiculoInfo && <ModalVehiculoInfo vehiculoInfo={modalVehiculoInfo} onClose={() => setVehiculoInfo(null)} reCargarGlobal={cargarTodo} />}
       
       {fotoForm && <ModalEvidencia fotoForm={fotoForm} setFotoForm={setFotoForm} handleSeleccionarFoto={(e: any) => { const f = e.target.files[0]; if(f) setFotoForm(prev => prev ? { ...prev, file: f, preview: URL.createObjectURL(f) } : null); }} subirFotoDefinitiva={subirFotoDefinitiva} subiendoFoto={subiendoFoto} />}
