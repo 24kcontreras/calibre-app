@@ -202,7 +202,7 @@ export default function CalibreApp() {
 
   // 🔥 VALIDACIÓN DE SUSCRIPCIÓN (HARD LOCK DE LA FASE 4)
   // Comparamos la fecha de vencimiento del taller con la fecha actual
-  const fechaVencimiento = configTaller?.fecha_vencimiento_suscripcion;
+  const fechaVencimiento = configTaller?.fecha_vencimiento; // <-- ¡CORREGIDO AQUÍ!
   const hoy = new Date();
   const estaVencido = fechaVencimiento && new Date(fechaVencimiento) < hoy;
 
@@ -285,7 +285,33 @@ export default function CalibreApp() {
       {modalAlerta && <ModalAlerta alertaForm={alertaForm} setAlertaForm={setAlertaForm} guardarAlertaBD={guardarAlertaBD} guardandoAlerta={guardandoAlerta} onClose={() => setModalAlerta(null)} ordenActiva={modalAlerta} resolverAlertaBD={async (id: string) => { await supabase.from('alertas_desgaste').update({ estado: 'Resuelta' }).eq('id', id); toast.success("Alerta resuelta!"); await cargarTodo(); setModalAlerta(null); }} />}
       {modalTelemetria && <ModalTelemetria onClose={() => setModalTelemetria(false)} gananciasEsteMes={gananciasEsteMes} autosEsteMes={autosEsteMes} ticketPromedio={ticketPromedio} pctServicio={pctServicio} pctRepuesto={pctRepuesto} ingresosServicio={ingresosServicio} ingresosRepuesto={ingresosRepuesto} topMarcas={topMarcas} topMecanicos={topMecanicos} historial={historial} />}
       {modalHistorial && <ModalHistorial onClose={() => setModalHistorial(false)} busquedaHistorial={busquedaHistorial} setBusquedaHistorial={setBusquedaHistorial} historialFiltrado={historialFiltrado} configPDF={{ nombreTaller, direccion: configTaller?.direccion_taller || '', telefono: configTaller?.telefono_taller || '', garantia: configTaller?.garantia_taller || '', logoUrl: configTaller?.logo_url || null, incluirIva: configTaller?.incluir_iva || false }} />}
-      {modalConfiguracion && <ModalConfiguracion onClose={() => setModalConfiguracion(false)} inputTaller={inputTaller} setInputTaller={setInputTaller} guardarConfiguracion={guardarConfiguracion} guardandoConfiguracion={guardandoConfiguracion} handleLogout={async () => { await supabase.auth.signOut(); router.push('/'); }} inputDireccion={inputDireccion} setInputDireccion={setInputDireccion} inputTelefono={inputTelefonoConfig} setInputTelefono={setInputTelefonoConfig} logoPreview={logoPreview} handleLogoChange={(e: any) => { const f = e.target.files?.[0]; if(f) { setLogoPreview(URL.createObjectURL(f)); setLogoFile(f); } }} subiendoLogo={subiendoLogo} inputGarantia={inputGarantia} setInputGarantia={setInputGarantia} incluirIva={incluirIva} setIncluirIva={setIncluirIva} esOnboarding={esOnboarding} vehiculos={vehiculos} />}
+      
+      {/* 🔥 MODAL CONFIGURACIÓN ACTUALIZADO CON LOS PROPS DE PAGO */}
+      {modalConfiguracion && <ModalConfiguracion 
+        onClose={() => setModalConfiguracion(false)} 
+        inputTaller={inputTaller} 
+        setInputTaller={setInputTaller} 
+        guardarConfiguracion={guardarConfiguracion} 
+        guardandoConfiguracion={guardandoConfiguracion} 
+        handleLogout={async () => { await supabase.auth.signOut(); router.push('/'); }} 
+        inputDireccion={inputDireccion} 
+        setInputDireccion={setInputDireccion} 
+        inputTelefono={inputTelefonoConfig} 
+        setInputTelefono={setInputTelefonoConfig} 
+        logoPreview={logoPreview} 
+        handleLogoChange={(e: any) => { const f = e.target.files?.[0]; if(f) { setLogoPreview(URL.createObjectURL(f)); setLogoFile(f); } }} 
+        subiendoLogo={subiendoLogo} 
+        inputGarantia={inputGarantia} 
+        setInputGarantia={setInputGarantia} 
+        incluirIva={incluirIva} 
+        setIncluirIva={setIncluirIva} 
+        esOnboarding={esOnboarding} 
+        vehiculos={vehiculos} 
+        
+        fechaVencimiento={configTaller?.fecha_vencimiento}
+        tallerId={session.user.id}
+        email={session.user.email}
+      />}
       
       {modalVehiculoInfo && <ModalVehiculoInfo vehiculoInfo={modalVehiculoInfo} onClose={() => setVehiculoInfo(null)} reCargarGlobal={cargarTodo} />}
       

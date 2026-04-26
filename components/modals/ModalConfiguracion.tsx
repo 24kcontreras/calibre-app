@@ -1,4 +1,6 @@
-import { Settings, Save, LogOut, Upload, FileText, Percent, Image as ImageIcon, MapPin, Phone, Sparkles, Download } from 'lucide-react'
+import { useState } from 'react'
+import { Settings, Save, LogOut, Upload, FileText, Percent, Image as ImageIcon, MapPin, Phone, Sparkles, Download, ShieldCheck, CreditCard } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 interface ModalConfiguracionProps {
   onClose: () => void;
@@ -19,7 +21,11 @@ interface ModalConfiguracionProps {
   incluirIva?: boolean;
   setIncluirIva?: (val: boolean) => void;
   esOnboarding?: boolean; 
-  vehiculos?: any[]; // 🔥 Agregado para recibir los vehículos y exportarlos
+  vehiculos?: any[];
+  // 🔥 NUEVAS PROPS PARA LA SUSCRIPCIÓN
+  fechaVencimiento?: string;
+  tallerId?: string;
+  email?: string;
 }
 
 export default function ModalConfiguracion({
@@ -41,8 +47,46 @@ export default function ModalConfiguracion({
   incluirIva,
   setIncluirIva,
   esOnboarding = false,
-  vehiculos = [] // 🔥 Destructurado aquí
+  vehiculos = [],
+  fechaVencimiento,
+  tallerId,
+  email
 }: ModalConfiguracionProps) {
+
+  const [cargandoPago, setCargandoPago] = useState(false);
+
+  // 🔥 LÓGICA DE PAGO DESDE AJUSTES
+  const iniciarPago = async () => {
+      if (!tallerId || !email) return toast.error("Error identificando tu cuenta");
+      setCargandoPago(true);
+      try {
+          const res = await fetch('/api/flow/create', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ taller_id: tallerId, email: email, monto: 24990 })
+          });
+          const data = await res.json();
+          if (data.url) {
+              window.location.href = data.url;
+          } else {
+              toast.error("Error conectando con Flow: " + data.error);
+              setCargandoPago(false);
+          }
+      } catch (error) {
+          toast.error("Error de conexión. Revisa tu internet.");
+          setCargandoPago(false);
+      }
+  };
+
+  // 🔥 CALCULAR DÍAS RESTANTES
+  const calcularDias = () => {
+      if (!fechaVencimiento) return 0;
+      const hoy = new Date();
+      const vencimiento = new Date(fechaVencimiento);
+      const diffTime = Math.max(0, vencimiento.getTime() - hoy.getTime());
+      return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
+  const diasRestantes = calcularDias();
 
   // 🔥 FUNCIÓN DE EXPORTACIÓN (CSV/EXCEL)
   const exportarDatosCSV = () => {
@@ -50,24 +94,12 @@ export default function ModalConfiguracion({
       alert("No hay clientes o vehículos registrados para exportar.");
       return;
     }
-
     const headers = ["Patente", "Marca", "Modelo", "Anho", "Nombre Cliente", "RUT", "Telefono"];
-    
     const filas = vehiculos.map((v: any) => [
-      v.patente || '',
-      v.marca || '',
-      v.modelo || '',
-      v.anho || 'N/A',
-      v.clientes?.nombre || 'Sin Nombre',
-      v.clientes?.rut || 'Sin RUT',
-      v.clientes?.telefono || 'Sin Telefono'
+      v.patente || '', v.marca || '', v.modelo || '', v.anho || 'N/A',
+      v.clientes?.nombre || 'Sin Nombre', v.clientes?.rut || 'Sin RUT', v.clientes?.telefono || 'Sin Telefono'
     ]);
-
-    const contenidoCSV = [
-      headers.join(";"), 
-      ...filas.map(f => f.join(";"))
-    ].join("\n");
-
+    const contenidoCSV = [headers.join(";"), ...filas.map(f => f.join(";"))].join("\n");
     const blob = new Blob(["\uFEFF" + contenidoCSV], { type: 'text/csv;charset=utf-8;' }); 
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -82,7 +114,7 @@ export default function ModalConfiguracion({
     <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 z-[200]">
       <div className="bg-slate-900 rounded-[40px] shadow-2xl max-w-md w-full border border-slate-800 flex flex-col max-h-[90vh] overflow-hidden relative">
         
-        {/* HEADER DEL MODAL (Fijo arriba) */}
+        {/* HEADER DEL MODAL */}
         <div className="p-6 md:p-8 border-b border-slate-800 flex justify-between items-center bg-slate-900 shrink-0 relative z-10">
           <div>
             {esOnboarding ? (
@@ -97,7 +129,6 @@ export default function ModalConfiguracion({
                 </>
             )}
           </div>
-          
           {!esOnboarding && (
               <button onClick={onClose} className="text-slate-500 hover:text-red-400 font-black text-xl p-2 bg-slate-800 rounded-full transition-colors border border-slate-700 w-10 h-10 flex items-center justify-center">✕</button>
           )}
@@ -106,6 +137,32 @@ export default function ModalConfiguracion({
         {/* CONTENIDO ESCROLEABLE */}
         <div className="p-6 md:p-8 space-y-8 overflow-y-auto custom-scrollbar-dark">
             
+            {/* 🔥 PANEL DE SUSCRIPCIÓN (SOFT LOCK) */}
+            {!esOnboarding && fechaVencimiento && (
+                <div className="bg-gradient-to-br from-slate-900 to-slate-950 p-5 rounded-2xl border border-slate-800 shadow-xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-[40px] pointer-events-none"></div>
+                    <div className="flex justify-between items-center mb-4 relative z-10">
+                        <div>
+                            <h4 className="text-[10px] font-black text-slate-300 uppercase tracking-widest flex items-center gap-1.5">
+                                <ShieldCheck size={14} className="text-emerald-500" /> Plan Activo
+                            </h4>
+                            <p className="text-[8px] text-slate-500 font-bold mt-1 uppercase">Suscripción Calibre OS</p>
+                        </div>
+                        <div className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest border ${diasRestantes <= 5 ? 'bg-red-500/10 text-red-400 border-red-500/30 animate-pulse' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'}`}>
+                            {diasRestantes > 0 ? `${diasRestantes} Días Restantes` : 'Vencida'}
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={iniciarPago}
+                        disabled={cargandoPago}
+                        className="w-full bg-slate-950 hover:bg-emerald-600 text-emerald-400 hover:text-slate-950 transition-all py-3 rounded-xl border border-emerald-500/30 hover:border-emerald-600 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 disabled:hover:bg-slate-950 disabled:hover:text-emerald-400"
+                    >
+                        {cargandoPago ? 'Conectando...' : <><CreditCard size={14} /> Renovar Mes ($24.990)</>}
+                    </button>
+                </div>
+            )}
+
             {/* 1. INFORMACIÓN DEL TALLER */}
             <div className="space-y-4">
                 <div className="space-y-2">
@@ -187,9 +244,8 @@ export default function ModalConfiguracion({
             </div>
         </div>
 
-        {/* FOOTER DEL MODAL (Fijo abajo con botones de acción) */}
+        {/* FOOTER DEL MODAL */}
         <div className="p-6 border-t border-slate-800 bg-slate-900 shrink-0 space-y-3 relative z-10">
-            
             <button 
                 onClick={guardarConfiguracion} 
                 disabled={guardandoConfiguracion || !inputTaller.trim()}
