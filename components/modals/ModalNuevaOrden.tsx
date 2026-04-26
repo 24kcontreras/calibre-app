@@ -91,11 +91,10 @@ export default function ModalNuevaOrden({ vehiculo, onClose, soloLectura, sessio
     const gradosAguja = (nivelCombustible / 100) * 180 - 90;
 
     return (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto no-scrollbar">
-            {/* 🔥 ELIMINAMOS custom-scrollbar-dark Y AGREGAMOS no-scrollbar AL CONTENEDOR PRINCIPAL */}
-            <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700/50 rounded-[35px] p-6 w-full max-w-xl shadow-2xl relative my-auto max-h-[95vh] overflow-y-auto no-scrollbar">
+        {/* 🔥 FORZAMOS OCULTAR SCROLLBARS CON CLASES ARBITRARIAS DE TAILWIND */}
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700/50 rounded-[35px] p-6 w-full max-w-xl shadow-2xl relative my-auto max-h-[95vh] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 
-                {/* Botón Cerrar (Arriba derecha) */}
                 <button onClick={onClose} className="absolute top-6 right-6 text-slate-500 hover:text-emerald-400 transition-colors z-20 bg-slate-900/50 rounded-full p-1 border border-slate-700 shadow-sm">
                     <X size={20} />
                 </button>
@@ -134,14 +133,14 @@ export default function ModalNuevaOrden({ vehiculo, onClose, soloLectura, sessio
                                 </div>
                             </div>
 
-                            {/* 🔥 TESTIGOS CON BRILLO AUMENTADO POR CSS */}
                             <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
                                 {TESTIGOS_CONFIG.map(t => (
-                                    <button key={t.id} type="button" onClick={() => toggleTestigo(t.id)} className={`p-2 rounded-xl border flex flex-col items-center gap-2 transition-all duration-300 ${testigosSeleccionados.includes(t.id) ? (t.type==='rojo'?'bg-red-500/10 border-red-500/50 text-red-400 shadow-[0_0_10px_rgba(239,68,68,0.2)]':'bg-yellow-500/10 border-yellow-500/50 text-yellow-400 shadow-[0_0_10px_rgba(234,179,8,0.2)]') : 'bg-slate-900 border-slate-800 text-slate-500 hover:bg-slate-800'}`}>
+                                    <button key={t.id} type="button" onClick={() => toggleTestigo(t.id)} className={`p-2 rounded-xl border flex flex-col items-center gap-2 transition-all duration-300 ${testigosSeleccionados.includes(t.id) ? (t.type==='rojo'?'bg-red-500/10 border-red-500/50 text-red-400 shadow-[0_0_10px_rgba(239,68,68,0.2)]':'bg-yellow-500/10 border-yellow-500/50 text-yellow-400 shadow-[0_0_10px_rgba(234,179,8,0.2)]') : 'bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800'}`}>
+                                        {/* 🔥 IMÁGENES SIEMPRE BRILLANTES */}
                                         <img 
                                             src={t.imgSrc} 
                                             alt={t.label} 
-                                            className={`w-7 h-7 object-contain transition-all duration-300 ${testigosSeleccionados.includes(t.id) ? 'brightness-150 contrast-125 saturate-150 drop-shadow-md' : 'opacity-40 grayscale brightness-75'}`} 
+                                            className="w-7 h-7 object-contain brightness-150 contrast-125 saturate-150 drop-shadow-md" 
                                         />
                                         <span className="text-[8px] font-black uppercase text-center leading-tight">{t.label}</span>
                                     </button>
@@ -149,8 +148,6 @@ export default function ModalNuevaOrden({ vehiculo, onClose, soloLectura, sessio
                             </div>
 
                             <div className="border-t border-slate-800 pt-4">
-                                
-                                {/* 🔥 CONTADOR DE DAÑOS Y BOTÓN DESHACER UNIDOS EN UNA SOLA PÍLDORA */}
                                 <div className="flex items-center justify-between mb-3">
                                     <div className="flex flex-col">
                                         <label className="text-[10px] font-black text-slate-400 uppercase flex items-center gap-2">
@@ -179,7 +176,7 @@ export default function ModalNuevaOrden({ vehiculo, onClose, soloLectura, sessio
                                 </div>
                                 
                                 {/* 🔥 CONTENEDOR NO-SCROLL PARA EL VISOR 3D */}
-                                <div className="relative w-full rounded-xl overflow-hidden border border-slate-800/50 bg-slate-950/50 no-scrollbar flex justify-center items-center">
+                                <div className="relative w-full rounded-xl overflow-hidden border border-slate-800/50 bg-slate-950/50 flex justify-center items-center [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                                     <Car3DViewer marcadores={marcadoresDanos} setMarcadores={setMarcadoresDanos} soloLectura={false} />
                                 </div>
                                 
