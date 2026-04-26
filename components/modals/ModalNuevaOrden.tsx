@@ -3,21 +3,22 @@ import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import imageCompression from 'browser-image-compression'
 import toast from 'react-hot-toast'
-import { Mic, CheckCircle, Camera, Car, Fuel, AlertTriangle, ShieldAlert, X, AlertCircle, Droplets, BatteryWarning, Thermometer, CircleDot, LifeBuoy, Settings, Zap, Wind, Activity, Undo2 } from 'lucide-react'
+import { Mic, CheckCircle, Camera, Car, X, Undo2 } from 'lucide-react'
 import Car3DViewer from '@/components/Car3DViewer'
 
+// 🔥 CONFIGURACIÓN ACTUALIZADA PARA USAR TUS IMÁGENES REALES
 const TESTIGOS_CONFIG = [
-    { id: 'check_engine', icon: AlertCircle, label: 'Check Engine', type: 'rojo' },
-    { id: 'aceite', icon: Droplets, label: 'Aceite', type: 'rojo' },
-    { id: 'bateria', icon: BatteryWarning, label: 'Batería', type: 'rojo' },
-    { id: 'temperatura', icon: Thermometer, label: 'Temp.', type: 'rojo' },
-    { id: 'frenos', icon: CircleDot, label: 'Frenos', type: 'rojo' },
-    { id: 'airbag', icon: LifeBuoy, label: 'Airbag', type: 'rojo' },
-    { id: 'abs', icon: AlertCircle, label: 'ABS', type: 'amarillo' },
-    { id: 'tpms', icon: Settings, label: 'Neum. TPMS', type: 'amarillo' },
-    { id: 'precalentamiento', icon: Zap, label: 'Bujías Pre.', type: 'amarillo' },
-    { id: 'dpf', icon: Wind, label: 'Filtro DPF', type: 'amarillo' },
-    { id: 'eps', icon: Activity, label: 'Dir. EPS', type: 'amarillo' }
+    { id: 'check_engine', imgSrc: '/testigos/check_engine.png', label: 'Check Engine', type: 'rojo' },
+    { id: 'aceite', imgSrc: '/testigos/aceite.png', label: 'Aceite', type: 'rojo' },
+    { id: 'bateria', imgSrc: '/testigos/bateria.png', label: 'Batería', type: 'rojo' },
+    { id: 'temperatura', imgSrc: '/testigos/temperatura.png', label: 'Temp.', type: 'rojo' },
+    { id: 'frenos', imgSrc: '/testigos/frenos.png', label: 'Frenos', type: 'rojo' },
+    { id: 'airbag', imgSrc: '/testigos/airbag.png', label: 'Airbag', type: 'rojo' },
+    { id: 'abs', imgSrc: '/testigos/abs.png', label: 'ABS', type: 'amarillo' },
+    { id: 'tpms', imgSrc: '/testigos/tpms.png', label: 'Neum. TPMS', type: 'amarillo' },
+    { id: 'precalentamiento', imgSrc: '/testigos/precalentamiento.png', label: 'Bujías Pre.', type: 'amarillo' },
+    { id: 'dpf', imgSrc: '/testigos/dpf.png', label: 'Filtro DPF', type: 'amarillo' },
+    { id: 'eps', imgSrc: '/testigos/eps.png', label: 'Dir. EPS', type: 'amarillo' }
 ];
 
 export default function ModalNuevaOrden({ vehiculo, onClose, soloLectura, session, cargarTodo }: any) {
@@ -33,7 +34,6 @@ export default function ModalNuevaOrden({ vehiculo, onClose, soloLectura, sessio
     const [danosPrevios, setDanosPrevios] = useState('')
     const [marcadoresDanos, setMarcadoresDanos] = useState<any[]>([])
     const [fotosRecepcion, setFotosRecepcion] = useState<File[]>([])
-    const [previewsRecepcion, setPreviewsRecepcion] = useState<string[]>([])
     const [escuchando, setEscuchando] = useState(false)
 
     const toggleTestigo = (id: string) => setTestigosSeleccionados(prev => prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id])
@@ -49,7 +49,6 @@ export default function ModalNuevaOrden({ vehiculo, onClose, soloLectura, sessio
         try { recognition.start(); } catch(e) { setEscuchando(false); }
     };
 
-    // 🔥 FUNCIÓN PARA DESHACER EL ÚLTIMO PUNTO 3D
     const deshacerUltimoPunto = () => {
         if (marcadoresDanos.length > 0) {
             setMarcadoresDanos(prev => prev.slice(0, -1));
@@ -128,41 +127,61 @@ export default function ModalNuevaOrden({ vehiculo, onClose, soloLectura, sessio
                                 </div>
                             </div>
 
+                            {/* 🔥 AHORA LOS TESTIGOS RENDERIZAN TUS IMÁGENES */}
                             <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
                                 {TESTIGOS_CONFIG.map(t => (
-                                    <button key={t.id} type="button" onClick={() => toggleTestigo(t.id)} className={`p-2 rounded-xl border flex flex-col items-center gap-1 ${testigosSeleccionados.includes(t.id) ? (t.type==='rojo'?'bg-red-500/20 border-red-500 text-red-400':'bg-yellow-500/20 border-yellow-500 text-yellow-400') : 'bg-slate-900 border-slate-800 text-slate-600'}`}>
-                                        <t.icon size={16} /> <span className="text-[8px] font-black uppercase text-center">{t.label}</span>
+                                    <button key={t.id} type="button" onClick={() => toggleTestigo(t.id)} className={`p-2 rounded-xl border flex flex-col items-center gap-1.5 ${testigosSeleccionados.includes(t.id) ? (t.type==='rojo'?'bg-red-500/20 border-red-500 text-red-400':'bg-yellow-500/20 border-yellow-500 text-yellow-400') : 'bg-slate-900 border-slate-800 text-slate-500 hover:text-slate-400'}`}>
+                                        {/* Fallback si no encuentra la imagen: muestra alt, pero si la pones en public/testigos/ funcionará perfecto */}
+                                        <img src={t.imgSrc} alt={t.label} className={`w-6 h-6 object-contain ${!testigosSeleccionados.includes(t.id) && 'opacity-50 grayscale'}`} />
+                                        <span className="text-[8px] font-black uppercase text-center">{t.label}</span>
                                     </button>
                                 ))}
                             </div>
 
                             <div className="border-t border-slate-800 pt-4">
-                                {/* 🔥 AQUI AGREGAMOS EL BOTÓN DE DESHACER */}
-                                <label className="text-[10px] font-black text-slate-500 uppercase mb-3 flex items-center justify-between">
-                                    <div className="flex items-center gap-2"><Car size={14} className="text-orange-400"/> Mapa 3D</div>
+                                {/* 🔥 CABECERA DEL MAPA 3D: TÍTULOS Y CONTADOR + DESHACER AGRUPADOS */}
+                                <div className="flex items-center justify-between mb-3">
+                                    <div className="flex flex-col">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase flex items-center gap-2">
+                                            <Car size={14} className="text-orange-400"/> Mapa 3D
+                                        </label>
+                                        <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-0.5">
+                                            Mapeo de referencia de daños
+                                        </span>
+                                    </div>
                                     
-                                    {marcadoresDanos.length > 0 && (
-                                        <button 
-                                            type="button" 
-                                            onClick={deshacerUltimoPunto} 
-                                            className="flex items-center gap-1.5 bg-slate-900 border border-slate-700 hover:border-red-500 hover:text-red-400 text-slate-400 px-3 py-1.5 rounded-lg transition-all"
-                                        >
-                                            <Undo2 size={12} /> Deshacer
-                                        </button>
-                                    )}
-                                </label>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px] font-black text-slate-500 bg-slate-900 px-2.5 py-1.5 rounded-lg border border-slate-800">
+                                            Daños: <span className="text-orange-400">{marcadoresDanos.length}</span>
+                                        </span>
+                                        {marcadoresDanos.length > 0 && (
+                                            <button 
+                                                type="button" 
+                                                onClick={deshacerUltimoPunto} 
+                                                className="flex items-center gap-1.5 bg-slate-800/50 border border-slate-700 hover:border-red-500 hover:bg-red-500/10 hover:text-red-400 text-slate-300 px-3 py-1.5 rounded-lg transition-all"
+                                                title="Deshacer último punto"
+                                            >
+                                                <Undo2 size={12} /> Deshacer
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
                                 
-                                <Car3DViewer marcadores={marcadoresDanos} setMarcadores={setMarcadoresDanos} soloLectura={false} />
-                                <input type="text" value={danosPrevios} onChange={(e) => setDanosPrevios(e.target.value)} placeholder="Notas (Ej: Parachoques trizado)..." className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 mt-2 text-xs text-slate-200 outline-none" />
+                                {/* 🔥 CONTENEDOR ESTRICTO PARA MATAR EL SCROLL DEL 3D */}
+                                <div className="relative w-full rounded-xl overflow-hidden border border-slate-800/50 bg-slate-950/50">
+                                    <Car3DViewer marcadores={marcadoresDanos} setMarcadores={setMarcadoresDanos} soloLectura={false} />
+                                </div>
+                                
+                                <input type="text" value={danosPrevios} onChange={(e) => setDanosPrevios(e.target.value)} placeholder="Notas (Ej: Parachoques trizado)..." className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 mt-3 text-xs text-slate-200 outline-none focus:border-emerald-500/50 transition-colors" />
                             </div>
 
-                            <input type="text" value={objetosValor} onChange={(e) => setObjetosValor(e.target.value)} placeholder="Objetos de Valor..." className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200 outline-none" />
+                            <input type="text" value={objetosValor} onChange={(e) => setObjetosValor(e.target.value)} placeholder="Objetos de Valor..." className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200 outline-none focus:border-emerald-500/50 transition-colors" />
                         </div>
                     )}
                     
                     <div className="flex gap-3 pt-4 border-t border-slate-800/50">
-                        <button type="button" onClick={onClose} disabled={creandoOrden} className="flex-1 text-slate-400 py-3 text-xs font-black uppercase">Cancelar</button>
-                        <button type="button" onClick={confirmarNuevaOrden} disabled={creandoOrden || !descripcionOrden.trim()} className="flex-1 bg-emerald-600 text-slate-950 py-3 rounded-full text-xs font-black uppercase">{creandoOrden ? 'Creando...' : 'Abrir Orden'}</button>
+                        <button type="button" onClick={onClose} disabled={creandoOrden} className="flex-1 text-slate-400 hover:text-slate-300 transition-colors py-3 text-xs font-black uppercase">Cancelar</button>
+                        <button type="button" onClick={confirmarNuevaOrden} disabled={creandoOrden || !descripcionOrden.trim()} className="flex-1 bg-emerald-600 text-slate-950 py-3 rounded-full text-xs font-black uppercase hover:bg-emerald-500 transition-all shadow-[0_0_15px_rgba(16,185,129,0.2)] disabled:opacity-50 disabled:shadow-none">{creandoOrden ? 'Creando...' : 'Abrir Orden'}</button>
                     </div>
                 </div>
             </div>
