@@ -16,9 +16,9 @@ export default function RecuperarPassword() {
     setLoading(true)
     setErrorMsg('')
     
-    // 🔥 Llama a Supabase para enviar el link de reseteo
+    // 🔥 Llama a Supabase para enviar el link de reseteo, dirigido a la nueva pantalla
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/`, // Cuando cambie la clave, volverá a la app
+      redirectTo: `${window.location.origin}/actualizar-password`, 
     })
     
     if (error) {
