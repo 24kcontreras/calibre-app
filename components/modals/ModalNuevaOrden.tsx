@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import imageCompression from 'browser-image-compression'
 import toast from 'react-hot-toast'
-import { Mic, CheckCircle, Camera, Car, Fuel, AlertTriangle, ShieldAlert, X, AlertCircle, Droplets, BatteryWarning, Thermometer, CircleDot, LifeBuoy, Settings, Zap, Wind, Activity } from 'lucide-react'
+import { Mic, CheckCircle, Camera, Car, Fuel, AlertTriangle, ShieldAlert, X, AlertCircle, Droplets, BatteryWarning, Thermometer, CircleDot, LifeBuoy, Settings, Zap, Wind, Activity, Undo2 } from 'lucide-react'
 import Car3DViewer from '@/components/Car3DViewer'
 
 const TESTIGOS_CONFIG = [
@@ -47,6 +47,13 @@ export default function ModalNuevaOrden({ vehiculo, onClose, soloLectura, sessio
         recognition.onresult = (e: any) => { setDescripcionOrden(descripcionOrden ? `${descripcionOrden} ${e.results[0][0].transcript}` : e.results[0][0].transcript); toast.success("Voz capturada"); };
         recognition.onend = () => setEscuchando(false);
         try { recognition.start(); } catch(e) { setEscuchando(false); }
+    };
+
+    // 🔥 FUNCIÓN PARA DESHACER EL ÚLTIMO PUNTO 3D
+    const deshacerUltimoPunto = () => {
+        if (marcadoresDanos.length > 0) {
+            setMarcadoresDanos(prev => prev.slice(0, -1));
+        }
     };
 
     const confirmarNuevaOrden = async () => {
@@ -130,7 +137,21 @@ export default function ModalNuevaOrden({ vehiculo, onClose, soloLectura, sessio
                             </div>
 
                             <div className="border-t border-slate-800 pt-4">
-                                <label className="text-[10px] font-black text-slate-500 uppercase mb-3 flex items-center justify-between"><div className="flex items-center gap-2"><Car size={14} className="text-orange-400"/> Mapa 3D</div></label>
+                                {/* 🔥 AQUI AGREGAMOS EL BOTÓN DE DESHACER */}
+                                <label className="text-[10px] font-black text-slate-500 uppercase mb-3 flex items-center justify-between">
+                                    <div className="flex items-center gap-2"><Car size={14} className="text-orange-400"/> Mapa 3D</div>
+                                    
+                                    {marcadoresDanos.length > 0 && (
+                                        <button 
+                                            type="button" 
+                                            onClick={deshacerUltimoPunto} 
+                                            className="flex items-center gap-1.5 bg-slate-900 border border-slate-700 hover:border-red-500 hover:text-red-400 text-slate-400 px-3 py-1.5 rounded-lg transition-all"
+                                        >
+                                            <Undo2 size={12} /> Deshacer
+                                        </button>
+                                    )}
+                                </label>
+                                
                                 <Car3DViewer marcadores={marcadoresDanos} setMarcadores={setMarcadoresDanos} soloLectura={false} />
                                 <input type="text" value={danosPrevios} onChange={(e) => setDanosPrevios(e.target.value)} placeholder="Notas (Ej: Parachoques trizado)..." className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 mt-2 text-xs text-slate-200 outline-none" />
                             </div>

@@ -3,11 +3,10 @@ import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Plus, Search, AlertTriangle, PhoneForwarded, CheckCircle2, Info, Bot, MessageSquare, FileText, ChevronDown } from 'lucide-react'
 import toast from 'react-hot-toast'
-import CAR_DATA from '@/app/taller/autos.json' // ⚠️ Verifica que esta ruta apunte a tu JSON
+import CAR_DATA from '@/app/taller/autos.json'
 
 const MARCAS = Object.keys(CAR_DATA).sort();
 
-// 🔥 VALIDADOR DE RUT
 const validarRutChileno = (rutCompleto: string) => {
   if (!rutCompleto) return false;
   const rutLimpio = rutCompleto.replace(/[^0-9kK]/g, '').toUpperCase();
@@ -43,15 +42,16 @@ interface RecepcionProps {
   cargarTodo: () => Promise<void>;
   abrirOrdenModal: (vehiculo: any) => void;
   nombreTaller: string;
+  // 🔥 Agregamos el prop para abrir el modal de información que me pasaste
+  abrirInfoModal?: (vehiculo: any) => void; 
 }
 
-export default function Recepcion({ soloLectura, vehiculos, oportunidadesVenta, session, cargarTodo, abrirOrdenModal, nombreTaller }: RecepcionProps) {
+export default function Recepcion({ soloLectura, vehiculos, oportunidadesVenta, session, cargarTodo, abrirOrdenModal, nombreTaller, abrirInfoModal }: RecepcionProps) {
   const [loading, setLoading] = useState(false)
   const [recepcionAbierta, setRecepcionAbierta] = useState(false)
   const [busqueda, setBusqueda] = useState('')
   const [tabIzquierda, setTabIzquierda] = useState<'alertas' | 'agenda'>('alertas')
 
-  // Estados del Formulario
   const [nombreInput, setNombreInput] = useState('')
   const [rutInput, setRutInput] = useState('')
   const [telefonoInput, setTelefonoInput] = useState('+569')
@@ -312,7 +312,7 @@ export default function Recepcion({ soloLectura, vehiculos, oportunidadesVenta, 
             </div>
         </section>
 
-        {/* SECCIÓN 2: BUSCADOR */}
+        {/* SECCIÓN 2: BUSCADOR (LISTA MINIMALISTA) */}
         <section className="bg-slate-900/40 backdrop-blur-md p-5 rounded-3xl shadow-2xl border border-slate-700/50 shrink-0">
             <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
@@ -334,12 +334,15 @@ export default function Recepcion({ soloLectura, vehiculos, oportunidadesVenta, 
                                     )}
                                 </div>
                                 <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
-                                    {alertaPendiente && (
-                                        <>
-                                            <button onClick={() => llamarARevisionWhatsapp(v)} className="bg-blue-600/20 text-blue-400 p-1.5 rounded-lg hover:bg-blue-600 hover:text-white transition-colors" title="Llamar a revisión (WhatsApp)"><PhoneForwarded size={12} /></button>
-                                            <button onClick={() => resolverAlertaDirecta(alertaPendiente.id)} className="bg-emerald-600/20 text-emerald-400 p-1.5 rounded-lg hover:bg-emerald-600 hover:text-white transition-colors" title="Marcar desgaste como resuelto"><CheckCircle2 size={12} /></button>
-                                        </>
-                                    )}
+                                    {/* 🔥 BOTÓN DE INFORMACIÓN RECONECTADO */}
+                                    <button 
+                                        onClick={() => abrirInfoModal && abrirInfoModal(v)} 
+                                        className="bg-blue-600/20 text-blue-400 p-1.5 rounded-lg hover:bg-blue-600 hover:text-white transition-colors" 
+                                        title="Información y Contacto"
+                                    >
+                                        <Info size={12} />
+                                    </button>
+                                    
                                     <button disabled={soloLectura} onClick={() => abrirOrdenModal(v)} className="bg-emerald-600 text-slate-950 px-2 py-1.5 rounded-lg text-[9px] font-black hover:bg-emerald-500 disabled:opacity-50 shadow-[0_0_10px_rgba(16,185,129,0.3)] transition-all">ORDEN</button>
                                 </div>
                             </div>

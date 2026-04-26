@@ -239,6 +239,7 @@ export default function CalibreApp() {
              cargarTodo={cargarTodo} 
              abrirOrdenModal={(v: any) => setModalNuevaOrden(v)} 
              nombreTaller={nombreTaller} 
+             abrirInfoModal={(v: any) => setVehiculoInfo(v)} // 🔥 AQUÍ CONECTAMOS EL BOTÓN INFO
            />
         </div>
         
@@ -270,7 +271,10 @@ export default function CalibreApp() {
       {modalTelemetria && <ModalTelemetria onClose={() => setModalTelemetria(false)} gananciasEsteMes={gananciasEsteMes} autosEsteMes={autosEsteMes} ticketPromedio={ticketPromedio} pctServicio={pctServicio} pctRepuesto={pctRepuesto} ingresosServicio={ingresosServicio} ingresosRepuesto={ingresosRepuesto} topMarcas={topMarcas} topMecanicos={topMecanicos} historial={historial} />}
       {modalHistorial && <ModalHistorial onClose={() => setModalHistorial(false)} busquedaHistorial={busquedaHistorial} setBusquedaHistorial={setBusquedaHistorial} historialFiltrado={historialFiltrado} configPDF={{ nombreTaller, direccion: configTaller?.direccion_taller || '', telefono: configTaller?.telefono_taller || '', garantia: configTaller?.garantia_taller || '', logoUrl: configTaller?.logo_url || null, incluirIva: configTaller?.incluir_iva || false }} />}
       {modalConfiguracion && <ModalConfiguracion onClose={() => setModalConfiguracion(false)} inputTaller={inputTaller} setInputTaller={setInputTaller} guardarConfiguracion={guardarConfiguracion} guardandoConfiguracion={guardandoConfiguracion} handleLogout={async () => { await supabase.auth.signOut(); router.push('/'); }} inputDireccion={inputDireccion} setInputDireccion={setInputDireccion} inputTelefono={inputTelefonoConfig} setInputTelefono={setInputTelefonoConfig} logoPreview={logoPreview} handleLogoChange={(e: any) => { const f = e.target.files?.[0]; if(f) { setLogoPreview(URL.createObjectURL(f)); setLogoFile(f); } }} subiendoLogo={subiendoLogo} inputGarantia={inputGarantia} setInputGarantia={setInputGarantia} incluirIva={incluirIva} setIncluirIva={setIncluirIva} esOnboarding={esOnboarding} vehiculos={vehiculos} />}
+      
+      {/* 🔥 MODAL DE INFO DEL VEHÍCULO */}
       {modalVehiculoInfo && <ModalVehiculoInfo vehiculoInfo={modalVehiculoInfo} onClose={() => setVehiculoInfo(null)} reCargarGlobal={cargarTodo} />}
+      
       {fotoForm && <ModalEvidencia fotoForm={fotoForm} setFotoForm={setFotoForm} handleSeleccionarFoto={(e: any) => { const f = e.target.files[0]; if(f) setFotoForm(prev => prev ? { ...prev, file: f, preview: URL.createObjectURL(f) } : null); }} subirFotoDefinitiva={subirFotoDefinitiva} subiendoFoto={subiendoFoto} />}
       {modalItemVisible && <ModalItem itemForm={itemForm} setItemForm={setItemForm} guardarItemBD={guardarItemBD} guardandoItem={guardandoItem} onClose={() => setModalItemVisible(false)} />}
       {modalScanner && <ModalScanner onClose={() => setModalScanner(false)} codigoScanner={codigoScanner} setCodigoScanner={setCodigoScanner} vehiculoScanner={vehiculoScanner} setVehiculoScanner={setVehiculoScanner} consultarScanner={consultarScanner} cargandoScanner={cargandoScanner} resultadoScanner={resultadoScanner} setResultadoScanner={setResultadoScanner} />}
