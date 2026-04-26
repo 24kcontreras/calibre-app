@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 
 export default function Header({
     nombreTaller,
-    cajaTotal, // La dejamos aquí para no romper el page.tsx, pero ya no la usamos visualmente
+    cajaTotal, 
     onOpenTelemetria,
     onOpenScanner,
     onOpenConfiguracion,
@@ -15,17 +15,14 @@ export default function Header({
     const [diasPrueba, setDiasPrueba] = useState<number | null>(null);
     const [mostrarBanner, setMostrarBanner] = useState(true);
 
-    // 🔥 El Header busca el logo y los días de prueba de forma independiente
     useEffect(() => {
         const fetchDatosHeader = async () => {
             const { data: authData } = await supabase.auth.getSession();
             const user = authData?.session?.user;
             
             if (user) {
-                // 1. Buscamos el Logo
                 setLogoUrl(user.user_metadata?.logo_url || null);
 
-                // 2. Buscamos la fecha de vencimiento silenciosamente
                 const { data: tallerData } = await supabase
                     .from('talleres')
                     .select('fecha_vencimiento')
@@ -42,7 +39,6 @@ export default function Header({
         
         fetchDatosHeader();
 
-        // Escucha si el logo cambia en la configuración
         const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
             setLogoUrl(session?.user?.user_metadata?.logo_url || null);
         });
@@ -55,7 +51,7 @@ export default function Header({
     return (
         <div className="flex flex-col w-full mb-6 z-10 relative">
             
-            {/* 🔥 BANNER DE PRUEBA: No invasivo y se puede cerrar */}
+            {/* 🔥 BANNER DE PRUEBA */}
             {diasPrueba !== null && diasPrueba <= 25 && diasPrueba > 0 && mostrarBanner && (
                 <div className="bg-emerald-900/30 border border-emerald-500/20 backdrop-blur-md text-emerald-400 px-4 py-2.5 rounded-2xl flex items-center justify-between shadow-lg mb-3">
                     <div className="flex items-center gap-3">
@@ -77,7 +73,7 @@ export default function Header({
             )}
 
             {/* HEADER PRINCIPAL */}
-            <header className="bg-slate-900/50 backdrop-blur-md border border-slate-800 p-4 lg:p-6 flex flex-col md:flex-row justify-between items-center gap-6 md:gap-0 rounded-3xl shadow-2xl w-full">
+            <header className="bg-slate-900/50 backdrop-blur-md border border-slate-800 p-4 flex flex-col md:flex-row justify-between items-center gap-4 md:gap-0 rounded-3xl shadow-2xl w-full">
                 
                 {/* LOGO E IDENTIDAD */}
                 <div className="flex items-center gap-4 w-full md:w-auto justify-center md:justify-start">
@@ -85,11 +81,11 @@ export default function Header({
                         <img 
                             src={logoUrl} 
                             alt="Logo Taller" 
-                            className="w-14 h-14 rounded-2xl object-cover border border-slate-700/50 shadow-[0_0_15px_rgba(0,0,0,0.5)] bg-white shrink-0" 
+                            className="w-12 h-12 rounded-2xl object-cover border border-slate-700/50 shadow-[0_0_15px_rgba(0,0,0,0.5)] bg-white shrink-0" 
                         />
                     ) : (
-                        <div className="bg-emerald-500/20 p-3.5 rounded-2xl border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.2)] shrink-0">
-                            <Wrench className="text-emerald-500" size={28} />
+                        <div className="bg-emerald-500/20 p-3 rounded-2xl border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.2)] shrink-0">
+                            <Wrench className="text-emerald-500" size={24} />
                         </div>
                     )}
                     <div className="flex flex-col text-center md:text-left">
@@ -98,42 +94,29 @@ export default function Header({
                     </div>
                 </div>
 
-                {/* 🔥 HERRAMIENTAS (Rediseñadas con etiquetas de texto) */}
-                <div className="flex items-center justify-center flex-wrap gap-4 md:gap-6 w-full md:w-auto">
+                {/* 🔥 HERRAMIENTAS (Botones Píldora Horizontales) */}
+                <div className="flex items-center justify-center flex-wrap gap-2 md:gap-3 w-full md:w-auto">
                     
-                    {/* Botón Scanner */}
-                    <button onClick={onOpenScanner} className="group flex flex-col items-center gap-2" title="Escáner Inteligente">
-                        <div className="bg-blue-600/10 border border-blue-600/30 group-hover:bg-blue-600 group-hover:border-blue-500 p-3.5 md:p-4 rounded-2xl text-blue-500 group-hover:text-white transition-all shadow-lg hover:scale-105">
-                            <ScanLine size={24} />
-                        </div>
-                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 group-hover:text-blue-400 transition-colors">Scanner IA</span>
+                    <button onClick={onOpenScanner} className="group flex items-center gap-2.5 bg-blue-600/10 border border-blue-600/30 hover:bg-blue-600 hover:border-blue-500 px-4 py-2.5 rounded-xl text-blue-500 hover:text-white transition-all shadow-lg hover:scale-105 shrink-0" title="Escáner Inteligente">
+                        <ScanLine size={16} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Scanner IA</span>
                     </button>
                     
-                    {/* Botón Telemetría */}
-                    <button onClick={onOpenTelemetria} className="group flex flex-col items-center gap-2" title="Dashboard de Métricas">
-                        <div className="bg-purple-600/10 border border-purple-600/30 group-hover:bg-purple-600 group-hover:border-purple-500 p-3.5 md:p-4 rounded-2xl text-purple-500 group-hover:text-white transition-all shadow-lg hover:scale-105">
-                            <BarChart3 size={24} />
-                        </div>
-                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 group-hover:text-purple-400 transition-colors">Métricas</span>
+                    <button onClick={onOpenTelemetria} className="group flex items-center gap-2.5 bg-purple-600/10 border border-purple-600/30 hover:bg-purple-600 hover:border-purple-500 px-4 py-2.5 rounded-xl text-purple-500 hover:text-white transition-all shadow-lg hover:scale-105 shrink-0" title="Dashboard de Métricas">
+                        <BarChart3 size={16} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Métricas</span>
                     </button>
                     
-                    {/* Botón Marketing */}
-                    <button onClick={onOpenMarketing} className="group flex flex-col items-center gap-2" title="Campañas de Retención">
-                        <div className="bg-cyan-700/10 border border-cyan-700/30 group-hover:bg-cyan-700 group-hover:border-cyan-500 p-3.5 md:p-4 rounded-2xl text-cyan-500 group-hover:text-white transition-all shadow-lg hover:scale-105">
-                            <Megaphone size={24} />
-                        </div>
-                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 group-hover:text-cyan-400 transition-colors">Campañas</span>
+                    <button onClick={onOpenMarketing} className="group flex items-center gap-2.5 bg-cyan-700/10 border border-cyan-700/30 hover:bg-cyan-700 hover:border-cyan-500 px-4 py-2.5 rounded-xl text-cyan-500 hover:text-white transition-all shadow-lg hover:scale-105 shrink-0" title="Campañas de Retención">
+                        <Megaphone size={16} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Campañas</span>
                     </button>
 
-                    {/* Separador Visual */}
-                    <div className="w-px h-12 bg-slate-800 mx-2 hidden md:block"></div>
+                    <div className="w-px h-8 bg-slate-800 mx-1 hidden md:block"></div>
 
-                    {/* Botón Configuración */}
-                    <button onClick={onOpenConfiguracion} className="group flex flex-col items-center gap-2" title="Ajustes del Taller">
-                        <div className="bg-slate-800/50 border border-slate-700 group-hover:bg-slate-700 group-hover:border-slate-500 p-3.5 md:p-4 rounded-2xl text-slate-400 group-hover:text-white transition-all shadow-lg hover:scale-105">
-                            <Settings size={24} />
-                        </div>
-                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 group-hover:text-slate-300 transition-colors">Ajustes</span>
+                    <button onClick={onOpenConfiguracion} className="group flex items-center gap-2.5 bg-slate-800/50 border border-slate-700 hover:bg-slate-700 hover:border-slate-500 px-4 py-2.5 rounded-xl text-slate-400 hover:text-white transition-all shadow-lg hover:scale-105 shrink-0" title="Ajustes del Taller">
+                        <Settings size={16} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Ajustes</span>
                     </button>
 
                 </div>
