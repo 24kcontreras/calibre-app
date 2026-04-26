@@ -1,52 +1,63 @@
 'use client'
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Wrench, ArrowRight, Mail, Lock, AlertCircle, Building2, CheckCircle } from 'lucide-react'
+import { Wrench, ArrowRight, Mail, Lock, AlertCircle, Building2, CheckCircle, Phone } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 
 export default function Registro() {
   const [taller, setTaller] = useState('')
+  const [telefono, setTelefono] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [aceptaTerminos, setAceptaTerminos] = useState(false)
   
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
   const [successMsg, setSuccessMsg] = useState(false)
 
-  // 🔥 LA LLAVE MAESTRA: Validador Regex B2B
-  const validarContrasena = (pass: string) => {
-      // 8+ caracteres, 1 mayúscula, 1 número, 1 símbolo especial
-      const regex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+{}:;<>,.?~\\/-]).{8,}$/;
-      return regex.test(pass);
-  };
+  // 🔥 VALIDADORES EN TIEMPO REAL
+  const reqLength = password.length >= 8;
+  const reqUpper = /[A-Z]/.test(password);
+  const reqNum = /\d/.test(password);
+  const reqSpec = /[!@#$%^&*()_+{}:;<>,.?~\\/-]/.test(password);
+  const passwordValida = reqLength && reqUpper && reqNum && reqSpec;
 
   const handleRegistro = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setErrorMsg('')
     
-    // 1. Validación de coincidencia
+    // 1. Términos y condiciones
+    if (!aceptaTerminos) {
+        setErrorMsg('Debes aceptar los Términos y Condiciones para continuar.')
+        setLoading(false)
+        return
+    }
+
+    // 2. Validación de coincidencia
     if (password !== confirmPassword) {
         setErrorMsg('Las contraseñas no coinciden.')
         setLoading(false)
         return
     }
 
-    // 2. 🔥 Validación de Seguridad B2B
-    if (!validarContrasena(password)) {
-        setErrorMsg('La contraseña no cumple el formato corporativo. Revisa los requisitos.')
+    // 3. Validación de Seguridad B2B
+    if (!passwordValida) {
+        setErrorMsg('La contraseña no cumple el formato corporativo. Revisa los requisitos en verde.')
         setLoading(false)
         return
     }
 
-    // 3. Creación en Supabase
+    // 4. Creación en Supabase
     const { error } = await supabase.auth.signUp({ 
         email, 
         password,
         options: {
             data: {
-                nombre_taller: taller // Guardamos el nombre del taller en la base de datos
+                nombre_taller: taller,
+                telefono: telefono // 🔥 Guardamos el teléfono automáticamente
             }
         }
     })
@@ -65,11 +76,19 @@ export default function Registro() {
         
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-600/10 rounded-full blur-[150px] pointer-events-none -z-10"></div>
 
-      <div className="w-full max-w-md bg-slate-900/80 backdrop-blur-xl p-8 sm:p-12 rounded-[40px] border border-slate-800 shadow-2xl relative z-10">
+      <div className="w-full max-w-md bg-slate-900/80 backdrop-blur-xl p-8 sm:p-12 rounded-[40px] border border-slate-800 shadow-2xl relative z-10 my-8">
         
+        {/* 🔥 LOGO UNIFICADO */}
         <div className="flex flex-col items-center justify-center mb-8">
-            <div className="bg-slate-950 p-4 rounded-3xl border border-slate-800 mb-4 shadow-inner">
-                <Wrench className="text-emerald-500" size={32} />
+            <div className="mb-4">
+                <Image 
+                    src="/logo-calibre.png" 
+                    alt="Logo Calibre" 
+                    width={70} 
+                    height={70} 
+                    priority
+                    className="object-contain drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+                />
             </div>
             <h1 className="text-2xl font-black uppercase tracking-tighter">Calibre<span className="text-emerald-500">.</span></h1>
             <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-2">Alta de Nuevo Taller</h2>
@@ -86,6 +105,7 @@ export default function Registro() {
             </div>
         ) : (
             <form onSubmit={handleRegistro} className="space-y-4">
+                
                 <div className="relative">
                     <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
                     <input 
@@ -109,21 +129,47 @@ export default function Registro() {
                         className="w-full p-4 pl-12 rounded-2xl border border-slate-800 bg-slate-950 text-sm text-slate-200 outline-none focus:border-emerald-500 transition-colors font-bold"
                     />
                 </div>
-                
+
+                {/* 🔥 CAMPO DE TELÉFONO OBLIGATORIO */}
                 <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
                     <input 
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        type="tel"
+                        value={telefono}
+                        onChange={(e) => setTelefono(e.target.value)}
                         required
-                        placeholder="Contraseña" 
+                        placeholder="Teléfono Móvil (Ej: +569...)" 
                         className="w-full p-4 pl-12 rounded-2xl border border-slate-800 bg-slate-950 text-sm text-slate-200 outline-none focus:border-emerald-500 transition-colors font-bold"
                     />
-                    {/* 🔥 UX: Guía visual de requisitos */}
-                    <p className="text-[9px] text-slate-500 mt-2 ml-2 font-bold uppercase tracking-wider">
-                        Mínimo 8 caracteres, 1 mayúscula, 1 número y 1 símbolo (!@#$)
-                    </p>
+                </div>
+                
+                <div>
+                    <div className="relative">
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+                        <input 
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                            placeholder="Contraseña Segura" 
+                            className="w-full p-4 pl-12 rounded-2xl border border-slate-800 bg-slate-950 text-sm text-slate-200 outline-none focus:border-emerald-500 transition-colors font-bold"
+                        />
+                    </div>
+                    {/* 🔥 UX: Validador Visual en Tiempo Real */}
+                    <div className="mt-3 ml-2 flex flex-col gap-1.5 text-[9px] font-black uppercase tracking-widest">
+                        <span className={`transition-colors duration-300 ${reqLength ? "text-emerald-500" : "text-slate-600"}`}>
+                            {reqLength ? "✓" : "○"} Mínimo 8 caracteres
+                        </span>
+                        <span className={`transition-colors duration-300 ${reqUpper ? "text-emerald-500" : "text-slate-600"}`}>
+                            {reqUpper ? "✓" : "○"} 1 Letra Mayúscula
+                        </span>
+                        <span className={`transition-colors duration-300 ${reqNum ? "text-emerald-500" : "text-slate-600"}`}>
+                            {reqNum ? "✓" : "○"} 1 Número
+                        </span>
+                        <span className={`transition-colors duration-300 ${reqSpec ? "text-emerald-500" : "text-slate-600"}`}>
+                            {reqSpec ? "✓" : "○"} 1 Símbolo Especial (!@#$...)
+                        </span>
+                    </div>
                 </div>
 
                 <div className="relative">
@@ -138,7 +184,21 @@ export default function Registro() {
                     />
                 </div>
 
-                {/* 🔴 Mensaje de Error Visual (Alineado para textos largos) */}
+                {/* 🔥 TÉRMINOS Y CONDICIONES */}
+                <label className="flex items-start gap-3 cursor-pointer mt-6 mb-4 p-2">
+                    <input 
+                        type="checkbox" 
+                        checked={aceptaTerminos}
+                        onChange={(e) => setAceptaTerminos(e.target.checked)}
+                        required
+                        className="mt-0.5 w-4 h-4 shrink-0 rounded border-slate-700 bg-slate-950 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-slate-900 cursor-pointer accent-emerald-500" 
+                    />
+                    <span className="text-xs text-slate-400 font-medium leading-relaxed">
+                        He leído y acepto los <Link href="#" className="text-emerald-400 hover:text-emerald-300 hover:underline transition-colors">Términos y Condiciones</Link> y la Política de Privacidad de CALIBRE.
+                    </span>
+                </label>
+
+                {/* 🔴 Mensaje de Error Visual */}
                 {errorMsg && (
                     <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/30 text-red-400 p-3 rounded-xl text-xs font-bold animate-pulse">
                         <AlertCircle size={16} className="shrink-0 mt-0.5" />
@@ -147,9 +207,9 @@ export default function Registro() {
                 )}
 
                 <button 
-                    disabled={loading}
+                    disabled={loading || !passwordValida}
                     type="submit" 
-                    className="w-full mt-2 group flex items-center justify-center gap-3 bg-emerald-600 text-slate-950 px-8 py-4 rounded-full font-black text-xs uppercase tracking-widest hover:bg-emerald-500 transition-all hover:scale-[1.02] shadow-[0_0_20px_rgba(16,185,129,0.2)] disabled:opacity-50"
+                    className="w-full mt-4 group flex items-center justify-center gap-3 bg-emerald-600 text-slate-950 px-8 py-4 rounded-full font-black text-xs uppercase tracking-widest hover:bg-emerald-500 transition-all hover:scale-[1.02] shadow-[0_0_20px_rgba(16,185,129,0.2)] disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed"
                 >
                     {loading ? 'Creando cuenta...' : <>Comenzar ahora <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" /></>}
                 </button>

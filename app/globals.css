@@ -23,6 +23,15 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  
+  /* 🔥 AQUÍ MATAMOS LA BARRA GLOBAL PARA FIREFOX Y EDGE */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* 🔥 Y AQUÍ MATAMOS LA BARRA GLOBAL PARA CHROME Y SAFARI */
+body::-webkit-scrollbar {
+  display: none;
 }
 
 @layer components {
@@ -39,7 +48,7 @@ body {
   }
 }
 
-/* PERSONALIZACIÓN DE SCROLLBAR (ESTILO CALIBRE) */
+/* PERSONALIZACIÓN DE SCROLLBAR (ESTILO CALIBRE) - (La mantenemos por si la usas dentro de algún modal) */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
 }
