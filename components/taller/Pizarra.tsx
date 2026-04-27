@@ -126,7 +126,8 @@ export default function Pizarra({
       const telefono = o.vehiculos?.clientes?.telefono;
       const cliente = o.vehiculos?.clientes?.nombre || 'Estimado(a)';
       const vehiculo = `${o.vehiculos?.marca} ${o.vehiculos?.modelo}`;
-      const linkUrl = `${window.location.origin}/estado/${o.id}`;
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://calibreapp.cl';
+      const linkUrl = `${baseUrl}/estado/${o.id}`;
       
       const msj = `Hola ${cliente}, te escribimos de ${nombreTaller}. 🔧\nEl presupuesto preliminar para tu ${vehiculo} (Patente: ${o.vehiculos?.patente}) es de *$${totalFinal.toLocaleString('es-CL')}*.\n\nPuedes revisar el detalle y seguir el estado de tu vehículo en tiempo real aquí:\n👉 ${linkUrl}\n\n¿Nos confirmas por aquí para proceder con el trabajo? Quedamos atentos.`;
       
@@ -137,7 +138,8 @@ export default function Pizarra({
   }
 
   const compartirLinkCliente = async (o: any) => {
-      const linkUrl = `${window.location.origin}/estado/${o.id}`;
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://calibreapp.cl';
+      const linkUrl = `${baseUrl}/estado/${o.id}`;
       const patente = o.vehiculos?.patente || 'tu vehículo';
       const mensaje = `¡Hola! Puedes revisar el detalle y seguir el estado de ${patente} en tiempo real aquí:\n👉 ${linkUrl}`;
 
