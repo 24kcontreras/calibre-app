@@ -17,7 +17,9 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Faltan variables de entorno en Vercel' }, { status: 500 });
         }
 
-        const commerceOrder = `ORD-${taller_id}-${Date.now()}`;
+        // 🔥 CORRECCIÓN: Cortamos el ID a 8 caracteres para no superar el límite de 45 de Flow
+        const commerceOrder = `ORD-${taller_id.substring(0, 8)}-${Date.now()}`;
+        
         const params: Record<string, string> = {
             apiKey: apiKey.trim(),
             commerceOrder: commerceOrder,
@@ -42,13 +44,9 @@ export async function POST(request: Request) {
 
         const formData = new URLSearchParams(params);
         
-        // 🔥 AQUÍ ESTÁ LA CORRECCIÓN CLAVE: Obligamos a Vercel a hablar el idioma exacto de Flow
         const response = await fetch(`${flowUrl}/payment/create`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: formData.toString(),
+            body: formData,
         });
 
         const data = await response.json();
