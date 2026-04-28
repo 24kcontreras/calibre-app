@@ -27,6 +27,8 @@ import ModalAnalisisIA from '@/components/modals/ModalAnalisisIA'
 import ModalActaRecepcion from '@/components/modals/ModalActaRecepcion'
 import ModalNuevaOrden from '@/components/modals/ModalNuevaOrden'
 import ModalEditarOrden from '@/components/modals/ModalEditarOrden'
+// 👇 NUEVA INYECCIÓN: El Cerebro del CRM
+import ModalCRM from '@/components/modals/ModalCRM' 
 import Paywall from '@/components/Paywall'
 
 export default function CalibreApp() {
@@ -53,6 +55,8 @@ export default function CalibreApp() {
   const [modalMarketing, setModalMarketing] = useState(false)
   const [modalScanner, setModalScanner] = useState(false)
   const [modalConfiguracion, setModalConfiguracion] = useState(false)
+  // 👇 NUEVA INYECCIÓN: Estado para el Modal CRM
+  const [modalCrm, setModalCrm] = useState(false) 
   
   const [generandoPDF, setGenerandoPDF] = useState(false)
   const [modalItemVisible, setModalItemVisible] = useState(false)
@@ -201,8 +205,7 @@ export default function CalibreApp() {
   if (!session) return <Login />
 
   // 🔥 VALIDACIÓN DE SUSCRIPCIÓN (HARD LOCK DE LA FASE 4)
-  // Comparamos la fecha de vencimiento del taller con la fecha actual
-  const fechaVencimiento = configTaller?.fecha_vencimiento; // <-- ¡CORREGIDO AQUÍ!
+  const fechaVencimiento = configTaller?.fecha_vencimiento;
   const hoy = new Date();
   const estaVencido = fechaVencimiento && new Date(fechaVencimiento) < hoy;
 
@@ -229,7 +232,16 @@ export default function CalibreApp() {
           </div>
       )}
 
-      <Header nombreTaller={nombreTaller} cajaTotal={cajaTotal} onOpenTelemetria={() => setModalTelemetria(true)} onOpenScanner={() => setModalScanner(true)} onOpenConfiguracion={() => setModalConfiguracion(true)} onOpenMarketing={() => setModalMarketing(true)} />
+      {/* 👇 NUEVA INYECCIÓN: Le pasamos la función onOpenCRM al Header */}
+      <Header 
+        nombreTaller={nombreTaller} 
+        cajaTotal={cajaTotal} 
+        onOpenTelemetria={() => setModalTelemetria(true)} 
+        onOpenCRM={() => setModalCrm(true)} 
+        onOpenScanner={() => setModalScanner(true)} 
+        onOpenConfiguracion={() => setModalConfiguracion(true)} 
+        onOpenMarketing={() => setModalMarketing(true)} 
+      />
 
       {soloLectura && (
           <div className="bg-red-500/10 border border-red-500/50 p-4 rounded-2xl mb-6 mx-auto w-full max-w-7xl flex items-center gap-3 z-20 relative">
@@ -283,7 +295,11 @@ export default function CalibreApp() {
       {modalEditarOrden && <ModalEditarOrden orden={modalEditarOrden} soloLectura={soloLectura} cargarTodo={cargarTodo} onClose={() => setModalEditarOrden(null)} />}
       {modalActa && <ModalActaRecepcion orden={modalActa} onClose={() => setModalActa(null)} />}
       {modalAlerta && <ModalAlerta alertaForm={alertaForm} setAlertaForm={setAlertaForm} guardarAlertaBD={guardarAlertaBD} guardandoAlerta={guardandoAlerta} onClose={() => setModalAlerta(null)} ordenActiva={modalAlerta} resolverAlertaBD={async (id: string) => { await supabase.from('alertas_desgaste').update({ estado: 'Resuelta' }).eq('id', id); toast.success("Alerta resuelta!"); await cargarTodo(); setModalAlerta(null); }} />}
-      {modalTelemetria && <ModalTelemetria onClose={() => setModalTelemetria(false)} gananciasEsteMes={gananciasEsteMes} autosEsteMes={autosEsteMes} ticketPromedio={ticketPromedio} pctServicio={pctServicio} pctRepuesto={pctRepuesto} ingresosServicio={ingresosServicio} ingresosRepuesto={ingresosRepuesto} topMarcas={topMarcas} topMecanicos={topMecanicos} historial={historial} oportunidades={oportunidadesVenta} nombreTaller={nombreTaller} />}      {modalHistorial && <ModalHistorial onClose={() => setModalHistorial(false)} busquedaHistorial={busquedaHistorial} setBusquedaHistorial={setBusquedaHistorial} historialFiltrado={historialFiltrado} configPDF={{ nombreTaller, direccion: configTaller?.direccion_taller || '', telefono: configTaller?.telefono_taller || '', garantia: configTaller?.garantia_taller || '', logoUrl: configTaller?.logo_url || null, incluirIva: configTaller?.incluir_iva || false }} />}
+      {modalTelemetria && <ModalTelemetria onClose={() => setModalTelemetria(false)} gananciasEsteMes={gananciasEsteMes} autosEsteMes={autosEsteMes} ticketPromedio={ticketPromedio} pctServicio={pctServicio} pctRepuesto={pctRepuesto} ingresosServicio={ingresosServicio} ingresosRepuesto={ingresosRepuesto} topMarcas={topMarcas} topMecanicos={topMecanicos} historial={historial} oportunidades={oportunidadesVenta} nombreTaller={nombreTaller} />}      
+      {modalHistorial && <ModalHistorial onClose={() => setModalHistorial(false)} busquedaHistorial={busquedaHistorial} setBusquedaHistorial={setBusquedaHistorial} historialFiltrado={historialFiltrado} configPDF={{ nombreTaller, direccion: configTaller?.direccion_taller || '', telefono: configTaller?.telefono_taller || '', garantia: configTaller?.garantia_taller || '', logoUrl: configTaller?.logo_url || null, incluirIva: configTaller?.incluir_iva || false }} />}
+      
+      {/* 👇 NUEVA INYECCIÓN: Renderizado del Modal CRM */}
+      {modalCrm && <ModalCRM onClose={() => setModalCrm(false)} oportunidades={oportunidadesVenta} nombreTaller={nombreTaller} />}
       
       {/* 🔥 MODAL CONFIGURACIÓN ACTUALIZADO CON LOS PROPS DE PAGO */}
       {modalConfiguracion && <ModalConfiguracion 

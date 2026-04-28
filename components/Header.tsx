@@ -1,5 +1,6 @@
 'use client'
-import { Settings, BarChart3, ScanLine, Megaphone, Wrench, AlertCircle, X, Clock } from 'lucide-react';
+// 🔥 Agregamos el ícono 'Users' a los imports
+import { Settings, BarChart3, ScanLine, Megaphone, Wrench, AlertCircle, X, Clock, Users } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 
@@ -7,6 +8,7 @@ export default function Header({
     nombreTaller,
     cajaTotal, 
     onOpenTelemetria,
+    onOpenCRM, // 🔥 Agregamos el prop para abrir el CRM
     onOpenScanner,
     onOpenConfiguracion,
     onOpenMarketing
@@ -105,6 +107,12 @@ export default function Header({
                     <button onClick={onOpenTelemetria} className="group flex items-center gap-2.5 bg-purple-600/10 border border-purple-600/30 hover:bg-purple-600 hover:border-purple-500 px-4 py-2.5 rounded-xl text-purple-500 hover:text-white transition-all shadow-lg hover:scale-105 shrink-0" title="Dashboard de Métricas">
                         <BarChart3 size={16} />
                         <span className="text-[10px] font-black uppercase tracking-widest">Métricas</span>
+                    </button>
+
+                    {/* 🔥 EL NUEVO BOTÓN DEL CRM (Naranja) */}
+                    <button onClick={onOpenCRM} className="group flex items-center gap-2.5 bg-orange-600/10 border border-orange-600/30 hover:bg-orange-600 hover:border-orange-500 px-4 py-2.5 rounded-xl text-orange-500 hover:text-white transition-all shadow-lg hover:scale-105 shrink-0" title="CRM de Retención">
+                        <Users size={16} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">CRM</span>
                     </button>
                     
                     <button onClick={onOpenMarketing} className="group flex items-center gap-2.5 bg-cyan-700/10 border border-cyan-700/30 hover:bg-cyan-700 hover:border-cyan-500 px-4 py-2.5 rounded-xl text-cyan-500 hover:text-white transition-all shadow-lg hover:scale-105 shrink-0" title="Campañas de Retención">
