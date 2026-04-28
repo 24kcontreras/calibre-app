@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import toast from 'react-hot-toast'
 
 export const useTaller = () => {
   const [session, setSession] = useState<any>(null)
@@ -13,7 +14,6 @@ export const useTaller = () => {
   const [configTaller, setConfigTaller] = useState<any>(null)
   const [esOnboarding, setEsOnboarding] = useState(false)
 
-  // Esta función ahora solo maneja cosas menores del Auth (como si es nuevo usuario)
   const extraerDatosConfiguracionAuth = (metadata: any) => {
       if (!metadata || !metadata.nombre_taller) {
           setNombreTaller('MI TALLER');
@@ -27,43 +27,32 @@ export const useTaller = () => {
     const currentTallerId = tId || session?.user?.id;
     if (!currentTallerId) return;
 
-    // 🔥 1. CORRECCIÓN VITAL: Traemos TODOS los datos del taller desde la DB
-    const { data: tData } = await supabase.from('talleres').select('*').eq('id', currentTallerId).single();
-    
-    if (tData) {
-        // Combinamos la info de la DB con el estado configTaller
-        setConfigTaller((prev: any) => ({ ...prev, ...tData }));
+    try {
+        const { data: configData } = await supabase.from('talleres').select('*').eq('id', currentTallerId).single();
+        if (configData) {
+            setConfigTaller(configData);
+            setNombreTaller(configData.nombre_taller || 'MI TALLER');
+            
+            const hoy = new Date();
+            if (configData.fecha_vencimiento && new Date(configData.fecha_vencimiento) < hoy) {
+                setSoloLectura(true);
+            } else {
+                setSoloLectura(false);
+            }
+        }
+
+        const { data: vData } = await supabase.from('vehiculos').select('*, clientes(*), alertas_desgaste(*)').eq('taller_id', currentTallerId).order('created_at', { ascending: false });
+        if (vData) setVehiculos(vData);
+
+        const { data: oAbiertas } = await supabase.from('ordenes_trabajo').select('*, vehiculos(*, clientes(*)), items_orden(*), fotos_orden(*)').eq('taller_id', currentTallerId).neq('estado', 'Finalizada').order('created_at', { ascending: false });
+        if (oAbiertas) setOrdenesAbiertas(oAbiertas);
+
+        const { data: oCerradas } = await supabase.from('ordenes_trabajo').select('*, vehiculos(*, clientes(*)), items_orden(*), fotos_orden(*)').eq('taller_id', currentTallerId).eq('estado', 'Finalizada').order('updated_at', { ascending: false });
+        if (oCerradas) setHistorial(oCerradas);
         
-        // Sobrescribimos el nombre del taller con el oficial de la base de datos
-        if (tData.nombre_taller) setNombreTaller(tData.nombre_taller);
-
-        // Validamos Lock-In
-        const vencido = tData.fecha_vencimiento ? new Date(tData.fecha_vencimiento) < new Date() : false;
-        setSoloLectura(!tData.pago_confirmado || vencido);
+    } catch (error) {
+        console.error("Error cargando datos:", error);
     }
-
-    // 2. Traemos Vehículos
-    const { data: vData } = await supabase.from('vehiculos')
-      .select('*, clientes(*), alertas_desgaste(*)') 
-      .eq('taller_id', currentTallerId)
-      .order('created_at', { ascending: false })
-    setVehiculos(vData || [])
-
-    // 3. Traemos Órdenes Activas
-    const { data: oAbiertas } = await supabase.from('ordenes_trabajo')
-      .select('*, vehiculos!inner(*, clientes(*), alertas_desgaste(*)), items_orden(*), fotos_orden(*), comentarios_orden(*)') 
-      .eq('estado', 'Abierta')
-      .eq('vehiculos.taller_id', currentTallerId)
-      .order('created_at', { ascending: false })
-    setOrdenesAbiertas(oAbiertas || [])
-
-    // 4. Traemos Historial
-    const { data: oFinalizadas } = await supabase.from('ordenes_trabajo')
-      .select('*, vehiculos!inner(*, clientes(*), alertas_desgaste(*)), items_orden(*), fotos_orden(*), comentarios_orden(*)') 
-      .eq('estado', 'Finalizada')
-      .eq('vehiculos.taller_id', currentTallerId)
-      .order('created_at', { ascending: false }).limit(200) 
-    setHistorial(oFinalizadas || [])
   }
 
   useEffect(() => {
@@ -78,9 +67,7 @@ export const useTaller = () => {
         if (isMounted) {
             setSession(currentSession);
             if (currentSession?.user?.id) {
-                // Primero leemos si es Onboarding desde Auth
                 extraerDatosConfiguracionAuth(currentSession.user.user_metadata);
-                // Y luego traemos los datos financieros pesados desde Supabase
                 await cargarTodo(currentSession.user.id);
             }
         }
@@ -108,6 +95,53 @@ export const useTaller = () => {
         authListener.subscription?.unsubscribe();
     }
   }, [])
+
+  // 🔥 LISTENER EN TIEMPO REAL: Aprobaciones y Reviews
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    const channel = supabase.channel('taller_notificaciones')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'ordenes_trabajo',
+          filter: `taller_id=eq.${session.user.id}` // Escucha solo las de tu taller
+        },
+        (payload: any) => {
+          const oldRecord = payload.old;
+          const newRecord = payload.new;
+
+          // 💰 NOTIFICACIÓN: PRESUPUESTO APROBADO
+          if (oldRecord.sub_estado === 'Pendiente Aprobación' && newRecord.sub_estado === 'Esperando Repuestos') {
+              toast.success(`¡Caja Asegurada! 💰 Presupuesto Aprobado.`, {
+                  duration: 6000,
+                  icon: '🔥',
+                  style: { background: '#022c22', color: '#34d399', border: '1px solid #059669', fontSize: '14px', fontWeight: 'bold' }
+              });
+              cargarTodo(); // Recargamos la pizarra
+          }
+
+          // ⭐ NOTIFICACIÓN: NUEVO REVIEW DE CLIENTE
+          if (oldRecord.feedback_final_estrellas === null && newRecord.feedback_final_estrellas > 0 || 
+              oldRecord.feedback_final_estrellas === 0 && newRecord.feedback_final_estrellas > 0) {
+              toast(`¡Un cliente te calificó con ${newRecord.feedback_final_estrellas} Estrellas! ⭐`, {
+                  duration: 6000,
+                  icon: '⭐',
+                  style: { background: '#422006', color: '#facc15', border: '1px solid #ca8a04', fontSize: '14px', fontWeight: 'bold' }
+              });
+              cargarTodo(); 
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [session?.user?.id]);
+
 
   // 🔥 CÁLCULOS DERIVADOS (Telemetría, Finanzas y Oportunidades)
   const cajaTotal = historial.reduce((acc, o) => acc + (o.items_orden?.reduce((s: number, i: any) => s + i.precio, 0) || 0) + (o.costo_revision || 0) - (o.descuento || 0), 0)
