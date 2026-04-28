@@ -22,7 +22,6 @@ interface ModalConfiguracionProps {
   setIncluirIva?: (val: boolean) => void;
   esOnboarding?: boolean; 
   vehiculos?: any[];
-  // 🔥 NUEVAS PROPS PARA LA SUSCRIPCIÓN
   fechaVencimiento?: string;
   tallerId?: string;
   email?: string;
@@ -55,7 +54,6 @@ export default function ModalConfiguracion({
 
   const [cargandoPago, setCargandoPago] = useState(false);
 
-  // 🔥 LÓGICA DE PAGO DESDE AJUSTES
   const iniciarPago = async () => {
       if (!tallerId || !email) return toast.error("Error identificando tu cuenta");
       setCargandoPago(true);
@@ -78,7 +76,6 @@ export default function ModalConfiguracion({
       }
   };
 
-  // 🔥 CALCULAR DÍAS RESTANTES
   const calcularDias = () => {
       if (!fechaVencimiento) return 0;
       const hoy = new Date();
@@ -88,7 +85,6 @@ export default function ModalConfiguracion({
   };
   const diasRestantes = calcularDias();
 
-  // 🔥 FUNCIÓN DE EXPORTACIÓN (CSV/EXCEL)
   const exportarDatosCSV = () => {
     if (!vehiculos || vehiculos.length === 0) {
       alert("No hay clientes o vehículos registrados para exportar.");
@@ -137,7 +133,6 @@ export default function ModalConfiguracion({
         {/* CONTENIDO ESCROLEABLE */}
         <div className="p-6 md:p-8 space-y-8 overflow-y-auto custom-scrollbar-dark">
             
-            {/* 🔥 PANEL DE SUSCRIPCIÓN (SOFT LOCK) */}
             {!esOnboarding && fechaVencimiento && (
                 <div className="bg-gradient-to-br from-slate-900 to-slate-950 p-5 rounded-2xl border border-slate-800 shadow-xl relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-[40px] pointer-events-none"></div>
@@ -163,7 +158,6 @@ export default function ModalConfiguracion({
                 </div>
             )}
 
-            {/* 1. INFORMACIÓN DEL TALLER */}
             <div className="space-y-4">
                 <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">Nombre Oficial del Taller <span className="text-red-500">*</span></label>
@@ -176,14 +170,18 @@ export default function ModalConfiguracion({
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
+                    {/* 🔥 PASO 1.1: EL TELÉFONO AHORA ES OBLIGATORIO Y ESTÁ DESTACADO */}
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><Phone size={12} className="text-slate-500"/> Teléfono (PDF)</label>
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                            <Phone size={12} className="text-emerald-500"/> Teléfono (WhatsApp) <span className="text-red-500">*</span>
+                        </label>
                         <input 
                             value={inputTelefono || ''} 
                             onChange={(e) => setInputTelefono?.(e.target.value)} 
-                            placeholder="+569..."
+                            placeholder="+56912345678"
                             className="w-full p-3 rounded-xl border border-slate-700 bg-slate-950/50 text-xs text-slate-300 font-bold outline-none focus:border-emerald-500 transition-colors" 
                         />
+                        {esOnboarding && <p className="text-[8px] text-slate-500 mt-1 uppercase font-bold">Vital para notificaciones</p>}
                     </div>
                     <div className="space-y-2">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><MapPin size={12} className="text-slate-500"/> Dirección (PDF)</label>
@@ -197,7 +195,6 @@ export default function ModalConfiguracion({
                 </div>
             </div>
 
-            {/* 2. LOGO DEL TALLER PARA PDFs */}
             <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2"><ImageIcon size={12} className="text-emerald-500"/> Logo para Informes PDF</label>
                 <div className="flex items-center gap-4 bg-slate-950/50 p-4 rounded-3xl border border-slate-800">
@@ -218,7 +215,6 @@ export default function ModalConfiguracion({
                 </div>
             </div>
 
-            {/* 3. TÉRMINOS DE GARANTÍA */}
             <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2"><FileText size={12} className="text-emerald-500"/> Términos de Garantía</label>
                 <textarea
@@ -229,7 +225,6 @@ export default function ModalConfiguracion({
                 />
             </div>
 
-            {/* 4. CONFIGURACIÓN DE IVA (TOGGLE) */}
             <div className="flex items-center justify-between bg-slate-950/50 p-4 rounded-2xl border border-slate-800">
                 <div>
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><Percent size={12} className="text-emerald-500"/> Aplicar IVA (19%)</label>
@@ -246,15 +241,15 @@ export default function ModalConfiguracion({
 
         {/* FOOTER DEL MODAL */}
         <div className="p-6 border-t border-slate-800 bg-slate-900 shrink-0 space-y-3 relative z-10">
+            {/* 🔥 PASO 1.2: BLOQUEO DE BOTÓN SI NO HAY TELÉFONO O NOMBRE */}
             <button 
                 onClick={guardarConfiguracion} 
-                disabled={guardandoConfiguracion || !inputTaller.trim()}
-                className="w-full py-4 bg-emerald-600 text-slate-950 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-emerald-500 transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(16,185,129,0.2)] hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
+                disabled={guardandoConfiguracion || !inputTaller.trim() || !inputTelefono?.trim()}
+                className="w-full py-4 bg-emerald-600 text-slate-950 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-emerald-500 transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(16,185,129,0.2)] hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed"
             >
                 <Save size={16} /> {guardandoConfiguracion ? 'Guardando...' : (esOnboarding ? 'Guardar y Comenzar' : 'Guardar Ajustes')}
             </button>
 
-            {/* 🔥 BOTÓN DE EXPORTAR EXCEL */}
             {!esOnboarding && (
                 <button 
                     type="button"

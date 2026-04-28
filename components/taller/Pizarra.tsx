@@ -127,7 +127,7 @@ export default function Pizarra({
       const cliente = o.vehiculos?.clientes?.nombre || 'Estimado(a)';
       const vehiculo = `${o.vehiculos?.marca} ${o.vehiculos?.modelo}`;
       const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://calibreapp.cl';
-      const linkUrl = `${baseUrl}/estado/${o.id}`;
+      const linkUrl = `${baseUrl}/presupuesto/${o.id}`;
       
       const msj = `Hola ${cliente}, te escribimos de ${nombreTaller}. 🔧\nEl presupuesto preliminar para tu ${vehiculo} (Patente: ${o.vehiculos?.patente}) es de *$${totalFinal.toLocaleString('es-CL')}*.\n\nPuedes revisar el detalle y seguir el estado de tu vehículo en tiempo real aquí:\n👉 ${linkUrl}\n\n¿Nos confirmas por aquí para proceder con el trabajo? Quedamos atentos.`;
       

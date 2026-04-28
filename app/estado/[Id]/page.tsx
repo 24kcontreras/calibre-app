@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { CheckCircle2,ClipboardList ,Circle, Clock, Wrench, Search, Package, CheckSquare, CarFront, AlertCircle, Fuel, AlertTriangle, ShieldAlert, Camera, Car, BatteryWarning, Droplets, ChevronDown } from 'lucide-react'
+import { CheckCircle2, ClipboardList, Circle, Clock, Wrench, Search, Package, CheckSquare, CarFront, AlertCircle, Fuel, AlertTriangle, ShieldAlert, Camera, Car, BatteryWarning, Droplets, ChevronDown, ShieldCheck, Thermometer, CircleDot } from 'lucide-react'
 import CalificacionCliente from '@/components/CalificacionCliente';
 import Car3DViewer from '@/components/Car3DViewer'
 
@@ -18,7 +18,7 @@ export default function EstadoVehiculoCliente() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   
-  // 🔥 NUEVO ESTADO PARA EL ACORDEÓN
+  // 🔥 ESTADO PARA EL ACORDEÓN
   const [recepcionDesplegada, setRecepcionDesplegada] = useState(false);
 
   useEffect(() => {
@@ -93,6 +93,8 @@ export default function EstadoVehiculoCliente() {
   const repuestos = orden.items_orden?.filter((i: any) => i.tipo_item === 'repuesto') || [];
 
   const combustibleValue = Number(orden.nivel_combustible) || 0;
+  const gradosAguja = (combustibleValue / 100) * 180 - 90; // 🔥 Calculamos los grados para el cliente
+
   let testigosPrendidos: string[] = [];
   try { testigosPrendidos = typeof orden.testigos === 'string' ? JSON.parse(orden.testigos) : (orden.testigos || []); } catch (e) { testigosPrendidos = []; }
   
@@ -133,85 +135,104 @@ export default function EstadoVehiculoCliente() {
             </div>
         </section>
 
-        {/* VISOR 3D INTERACTIVO PARA EL CLIENTE */}
-        {marcadoresDanos.length > 0 && (
-            <section className="bg-slate-900/40 backdrop-blur-md rounded-3xl border border-slate-700/50 p-5 shadow-2xl mb-8">
-                <h3 className="text-sm font-black text-slate-100 uppercase tracking-widest mb-4 flex items-center gap-2">
-                    <Car className="text-orange-400" size={18} />
-                    Inspección de Carrocería 3D
-                </h3>
-                
-                <div className="rounded-xl overflow-hidden border border-slate-800/50 relative">
-                    <Car3DViewer 
-                        marcadores={marcadoresDanos} 
-                        soloLectura={true} 
-                    />
-                </div>
-
-                {orden.danos_previos && (
-                    <div className="mt-4 bg-slate-950/50 p-4 rounded-xl border border-slate-800">
-                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Notas del Taller:</p>
-                        <p className="text-xs text-slate-300 font-bold italic">
-                            "{orden.danos_previos}"
-                        </p>
-                    </div>
-                )}
-            </section>
-        )}
-
-        {/* 🔥 SECCIÓN: ACTA DE RECEPCIÓN (AHORA ES UN ACORDEÓN DESPLEGABLE) */}
-        <section className="bg-slate-900/30 backdrop-blur-md rounded-3xl border border-slate-800 shadow-xl mb-8 overflow-hidden transition-all duration-300">
+        {/* 🔥 FASE 2: SECCIÓN UNIFICADA ACTA DE RECEPCIÓN + 3D */}
+        <section className="bg-slate-900/30 backdrop-blur-md rounded-3xl border border-emerald-900/30 shadow-xl mb-8 overflow-hidden transition-all duration-300">
             {/* BOTÓN PARA DESPLEGAR */}
             <button 
                 onClick={() => setRecepcionDesplegada(!recepcionDesplegada)}
                 className="w-full flex items-center justify-between p-6 focus:outline-none hover:bg-slate-800/50 transition-colors"
             >
-                <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                    <ClipboardList size={16} className="text-emerald-500"/> Estado Inicial de Recepción
+                <h3 className="text-sm font-black text-emerald-400 uppercase tracking-widest flex items-center gap-2">
+                    <ShieldCheck size={18} className="text-emerald-500"/> Estado Inicial de Recepción
                 </h3>
-                <ChevronDown size={18} className={`text-slate-400 transition-transform duration-500 ${recepcionDesplegada ? 'rotate-180' : ''}`} />
+                <ChevronDown size={20} className={`text-emerald-400 transition-transform duration-500 ${recepcionDesplegada ? 'rotate-180' : ''}`} />
             </button>
             
             {/* CONTENIDO OCULTO/VISIBLE */}
-            <div className={`transition-all duration-500 ease-in-out overflow-hidden px-6 ${recepcionDesplegada ? 'max-h-[1500px] pb-6 opacity-100' : 'max-h-0 opacity-0 pb-0'}`}>
-                <div className="border-t border-slate-800 pt-5 space-y-5">
+            <div className={`transition-all duration-500 ease-in-out overflow-hidden px-6 ${recepcionDesplegada ? 'max-h-[2500px] pb-6 opacity-100' : 'max-h-0 opacity-0 pb-0'}`}>
+                <div className="border-t border-slate-800/50 pt-5 space-y-6">
                     
-                    {/* Combustible */}
-                    <div>
-                        <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1"><Fuel size={12} className="text-blue-400"/> Nivel de Combustible: <span className="text-slate-200 ml-1">{combustibleValue}%</span></h4>
-                        <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden relative">
-                            <div className={`h-full absolute left-0 top-0 transition-all duration-500 ${combustibleValue <= 15 ? 'bg-red-500' : combustibleValue <= 50 ? 'bg-yellow-500' : 'bg-emerald-500'}`} style={{ width: `${combustibleValue}%` }}></div>
-                        </div>
-                    </div>
+                    <p className="text-[11px] md:text-xs text-slate-400 font-bold leading-relaxed mb-2">
+                        Este es el reporte visual y técnico exacto de cómo ingresó tu vehículo a nuestras instalaciones. Documenta daños previos de carrocería, nivel de combustible y alertas en el tablero.
+                    </p>
 
-                    {/* Testigos */}
-                    {testigosPrendidos.length > 0 && (
-                        <div>
-                            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1"><AlertTriangle size={12} className="text-red-400"/> Testigos Encendidos en Tablero</h4>
-                            <div className="flex flex-wrap gap-2">
-                                {testigosPrendidos.includes('check_engine') && <span className="bg-red-950/50 text-red-400 border border-red-900/50 px-2 py-1 rounded text-[9px] font-bold uppercase flex items-center gap-1"><AlertCircle size={10}/> Check Engine</span>}
-                                {testigosPrendidos.includes('aceite') && <span className="bg-red-950/50 text-red-400 border border-red-900/50 px-2 py-1 rounded text-[9px] font-bold uppercase flex items-center gap-1"><Droplets size={10}/> Presión Aceite</span>}
-                                {testigosPrendidos.includes('bateria') && <span className="bg-red-950/50 text-red-400 border border-red-900/50 px-2 py-1 rounded text-[9px] font-bold uppercase flex items-center gap-1"><BatteryWarning size={10}/> Batería</span>}
-                                {testigosPrendidos.includes('abs') && <span className="bg-yellow-950/50 text-yellow-400 border border-yellow-900/50 px-2 py-1 rounded text-[9px] font-bold uppercase flex items-center gap-1"><AlertCircle size={10}/> ABS</span>}
+                    {/* Mapa 3D */}
+                    {marcadoresDanos.length > 0 && (
+                        <div className="bg-slate-950/50 p-4 rounded-2xl border border-slate-800">
+                            <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                <Car size={14} className="text-orange-400" /> Mapa de Daños Carrocería 3D
+                            </h4>
+                            <div className="rounded-xl overflow-hidden border border-slate-800/50 relative">
+                                <Car3DViewer marcadores={marcadoresDanos} soloLectura={true} />
                             </div>
+                            <p className="text-[11px] text-slate-300 font-bold italic text-center w-full mt-3 bg-slate-900 p-3 rounded-xl border border-slate-800">
+                                {orden.danos_previos ? `"${orden.danos_previos}"` : "Carrocería sin detalles adicionales reportados."}
+                            </p>
                         </div>
                     )}
 
-                    {/* Objetos de valor */}
-                    <div className="grid grid-cols-1 gap-3">
-                        <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800">
-                            <h4 className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-1"><ShieldAlert size={10} className="text-purple-400"/> Objetos de Valor</h4>
-                            <p className="text-[10px] text-slate-300 italic">{orden.objetos_valor ? `"${orden.objetos_valor}"` : "Sin objetos declarados."}</p>
+                    {/* Combustible y Testigos en Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* Combustible SVG Premium */}
+                        <div className="bg-slate-950/50 p-4 rounded-2xl border border-slate-800 flex flex-col">
+                            <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                <Fuel size={14} className="text-blue-400" /> Nivel Combustible
+                            </h4>
+                            <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex flex-col items-center flex-1 justify-center">
+                                <svg viewBox="0 0 200 120" className="w-full max-w-[160px] drop-shadow-[0_0_15px_rgba(51,65,85,0.5)]">
+                                    <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#1e293b" strokeWidth="6" strokeLinecap="round" />
+                                    <line x1="20" y1="100" x2="35" y2="100" stroke="#ef4444" strokeWidth="6" strokeLinecap="round"/> 
+                                    <line x1="43" y1="43" x2="54" y2="54" stroke="#94a3b8" strokeWidth="4" strokeLinecap="round"/> 
+                                    <line x1="100" y1="20" x2="100" y2="35" stroke="#94a3b8" strokeWidth="6" strokeLinecap="round"/> 
+                                    <line x1="157" y1="43" x2="146" y2="54" stroke="#94a3b8" strokeWidth="4" strokeLinecap="round"/> 
+                                    <line x1="180" y1="100" x2="165" y2="100" stroke="#10b981" strokeWidth="6" strokeLinecap="round"/> 
+                                    <g style={{ transform: `rotate(${gradosAguja}deg)`, transformOrigin: '100px 100px', transition: 'transform 1s cubic-bezier(0.4, 0, 0.2, 1)' }}>
+                                        <polygon points="97,100 103,100 100,25" fill="#ef4444" />
+                                        <circle cx="100" cy="100" r="10" fill="#0f172a" stroke="#ef4444" strokeWidth="3" />
+                                    </g>
+                                    <text x="28" y="118" fill="#ef4444" fontSize="16" fontWeight="900" textAnchor="middle">E</text>
+                                    <text x="100" y="55" fill="#64748b" fontSize="14" fontWeight="bold" textAnchor="middle">1/2</text>
+                                    <text x="172" y="118" fill="#10b981" fontSize="16" fontWeight="900" textAnchor="middle">F</text>
+                                </svg>
+                                <div className={`text-lg font-black mt-2 ${combustibleValue <= 15 ? 'text-red-400' : 'text-emerald-400'}`}>{combustibleValue}%</div>
+                            </div>
                         </div>
+
+                        {/* Testigos */}
+                        <div className="bg-slate-950/50 p-4 rounded-2xl border border-slate-800 flex flex-col">
+                            <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                <AlertTriangle size={14} className="text-red-400" /> Testigos Encendidos
+                            </h4>
+                            {testigosPrendidos.length > 0 ? (
+                                <div className="flex flex-col gap-2">
+                                    {testigosPrendidos.includes('check_engine') && <span className="bg-red-950/30 text-red-400 border border-red-900/50 px-3 py-2 rounded-lg text-[10px] font-bold uppercase flex items-center gap-2"><AlertCircle size={12}/> Check Engine</span>}
+                                    {testigosPrendidos.includes('aceite') && <span className="bg-red-950/30 text-red-400 border border-red-900/50 px-3 py-2 rounded-lg text-[10px] font-bold uppercase flex items-center gap-2"><Droplets size={12}/> Presión Aceite</span>}
+                                    {testigosPrendidos.includes('bateria') && <span className="bg-red-950/30 text-red-400 border border-red-900/50 px-3 py-2 rounded-lg text-[10px] font-bold uppercase flex items-center gap-2"><BatteryWarning size={12}/> Batería</span>}
+                                    {testigosPrendidos.includes('abs') && <span className="bg-yellow-950/30 text-yellow-400 border border-yellow-900/50 px-3 py-2 rounded-lg text-[10px] font-bold uppercase flex items-center gap-2"><AlertCircle size={12}/> ABS</span>}
+                                    {testigosPrendidos.includes('temperatura') && <span className="bg-red-950/30 text-red-400 border border-red-900/50 px-3 py-2 rounded-lg text-[10px] font-bold uppercase flex items-center gap-2"><Thermometer size={12}/> Temperatura</span>}
+                                    {testigosPrendidos.includes('frenos') && <span className="bg-red-950/30 text-red-400 border border-red-900/50 px-3 py-2 rounded-lg text-[10px] font-bold uppercase flex items-center gap-2"><CircleDot size={12}/> Frenos</span>}
+                                </div>
+                            ) : (
+                                <div className="h-full flex items-center justify-center border border-dashed border-slate-800 rounded-xl p-4 bg-slate-900/30">
+                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Sin alertas en tablero</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Objetos de valor */}
+                    <div className="bg-slate-950/50 p-4 rounded-xl border border-slate-800">
+                        <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1"><ShieldAlert size={14} className="text-purple-400"/> Objetos de Valor</h4>
+                        <p className="text-xs text-slate-300 font-bold italic">{orden.objetos_valor ? `"${orden.objetos_valor}"` : "Sin objetos declarados al ingresar."}</p>
                     </div>
 
                     {/* Fotos Iniciales */}
                     {fotosRecepcion.length > 0 && (
                         <div>
-                            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1"><Camera size={12} className="text-emerald-400"/> Evidencia Fotográfica</h4>
-                            <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar-dark">
+                            <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-1"><Camera size={14} className="text-emerald-400"/> Evidencia Fotográfica</h4>
+                            <div className="flex gap-3 overflow-x-auto pb-2 custom-scrollbar-dark snap-x">
                                 {fotosRecepcion.map((foto: any) => (
-                                    <a href={foto.url} target="_blank" rel="noreferrer" key={foto.id} className="w-20 h-20 shrink-0 rounded-lg overflow-hidden border border-slate-700 block">
+                                    <a href={foto.url} target="_blank" rel="noreferrer" key={foto.id} className="w-24 h-24 shrink-0 rounded-xl overflow-hidden border border-slate-700 block snap-center shadow-md">
                                         <img src={foto.url} alt="Evidencia" className="w-full h-full object-cover hover:scale-110 transition-transform" />
                                     </a>
                                 ))}

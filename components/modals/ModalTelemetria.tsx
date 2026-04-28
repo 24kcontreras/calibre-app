@@ -1,4 +1,5 @@
-import { X, BarChart3, TrendingUp, CarFront, Wrench, Package, DollarSign, Wallet, Calendar, CheckCircle2, Star } from 'lucide-react';
+import { X, BarChart3, TrendingUp, CarFront, Wrench, Package, DollarSign, Wallet, Calendar, CheckCircle2, Star, Download } from 'lucide-react';
+import { descargarExcelSupremo } from '@/utils/excelGenerator';
 
 export default function ModalTelemetria({
   onClose,
@@ -11,7 +12,9 @@ export default function ModalTelemetria({
   ingresosRepuesto,
   topMarcas,
   topMecanicos,
-  historial
+  historial,
+  oportunidades = [], // 🔥 Agregado para el Excel
+  nombreTaller = 'Taller' // 🔥 Agregado para el Excel
 }: any) {
 
   // 🔥 CÁLCULOS V2: Productividad Real ($) por Mecánico
@@ -57,6 +60,19 @@ export default function ModalTelemetria({
 
         <div className="p-6 lg:p-8 overflow-y-auto custom-scrollbar-dark relative z-10">
           
+          {/* 🔥 EL GRAN BOTÓN DEL EXCEL SUPREMO */}
+          <div className="mb-8">
+              <button 
+                  onClick={() => descargarExcelSupremo(historial, oportunidades, nombreTaller)}
+                  className="w-full bg-gradient-to-r from-emerald-600 to-emerald-400 text-slate-950 py-4 rounded-2xl font-black text-xs md:text-sm uppercase tracking-widest hover:from-emerald-500 hover:to-emerald-300 transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(16,185,129,0.2)] hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] hover:scale-[1.01]"
+              >
+                  <Download size={18} /> Descargar Reporte Mensual (Excel Inteligente)
+              </button>
+              <p className="text-center text-[9px] text-slate-500 font-bold uppercase tracking-widest mt-2">
+                  Incluye: Resumen Financiero, Productividad, Análisis de Marcas y Oportunidades CRM
+              </p>
+          </div>
+
           {/* 💰 TARJETAS PRINCIPALES */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="bg-slate-950/50 p-5 rounded-3xl border border-emerald-900/30 relative overflow-hidden group">

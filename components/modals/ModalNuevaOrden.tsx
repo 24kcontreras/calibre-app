@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import imageCompression from 'browser-image-compression'
 import toast from 'react-hot-toast'
-import { Mic, CheckCircle, Camera, Car, Fuel, AlertTriangle, ShieldAlert, X, AlertCircle, Droplets, BatteryWarning, Thermometer, CircleDot, LifeBuoy, Settings, Zap, Wind, Activity, Undo2 } from 'lucide-react'
+import { Mic, CheckCircle, Camera, Car, Fuel, AlertTriangle, ShieldAlert, X, AlertCircle, Droplets, BatteryWarning, Thermometer, CircleDot, LifeBuoy, Settings, Zap, Wind, Activity, Undo2, ShieldCheck } from 'lucide-react'
 import Car3DViewer from '@/components/Car3DViewer'
 
 const TESTIGOS_CONFIG = [
@@ -91,7 +91,7 @@ export default function ModalNuevaOrden({ vehiculo, onClose, soloLectura, sessio
 
     return (
         <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-            <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700/50 rounded-[35px] p-6 w-full max-w-xl shadow-2xl relative my-auto max-h-[95vh] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700/50 rounded-[35px] p-6 w-full max-w-xl shadow-2xl relative my-auto max-h-[95vh] overflow-y-auto custom-scrollbar-dark">
                 
                 <button onClick={onClose} className="absolute top-6 right-6 text-slate-500 hover:text-emerald-400 transition-colors z-20 bg-slate-900/50 rounded-full p-1 border border-slate-700 shadow-sm">
                     <X size={20} />
@@ -102,7 +102,7 @@ export default function ModalNuevaOrden({ vehiculo, onClose, soloLectura, sessio
 
                 <div className="space-y-4">
                     <div className="relative">
-                        <textarea value={descripcionOrden} onChange={(e) => setDescripcionOrden(e.target.value)} className="w-full p-4 pr-14 rounded-2xl bg-slate-900 border border-slate-700 text-sm text-slate-200 outline-none min-h-[80px]" placeholder="Problema Reportado..." />
+                        <textarea value={descripcionOrden} onChange={(e) => setDescripcionOrden(e.target.value)} className="w-full p-4 pr-14 rounded-2xl bg-slate-900 border border-slate-700 text-sm text-slate-200 outline-none min-h-[80px] custom-scrollbar-dark" placeholder="Problema Reportado..." />
                         <button type="button" onClick={iniciarDictado} className={`absolute right-3 top-3 p-2 rounded-xl transition-all ${escuchando ? 'bg-red-500/20 text-red-500 animate-pulse' : 'bg-slate-800 text-emerald-400'}`}><Mic size={18} /></button>
                     </div>
                     <div className="grid grid-cols-3 gap-4">
@@ -116,81 +116,99 @@ export default function ModalNuevaOrden({ vehiculo, onClose, soloLectura, sessio
                     </button>
 
                     {mostrarActa && (
-                        <div className="mt-4 p-5 bg-slate-950/50 border border-slate-800 rounded-[25px] space-y-6">
+                        <div className="mt-4 space-y-6">
                             
-                            {/* 🔥 MEDIDOR DE COMBUSTIBLE ACTUALIZADO */}
-                            <div>
-                                <label className="text-[10px] font-black text-slate-500 uppercase mb-3 flex items-center gap-2"><div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div> Nivel de Combustible</label>
-                                <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex flex-col items-center">
-                                    <svg viewBox="0 0 200 120" className="w-full max-w-[200px] drop-shadow-[0_0_15px_rgba(51,65,85,0.5)]">
-                                        <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#1e293b" strokeWidth="6" strokeLinecap="round" />
-                                        <line x1="20" y1="100" x2="35" y2="100" stroke="#ef4444" strokeWidth="6" strokeLinecap="round"/> 
-                                        <line x1="43" y1="43" x2="54" y2="54" stroke="#94a3b8" strokeWidth="4" strokeLinecap="round"/> 
-                                        <line x1="100" y1="20" x2="100" y2="35" stroke="#94a3b8" strokeWidth="6" strokeLinecap="round"/> 
-                                        <line x1="157" y1="43" x2="146" y2="54" stroke="#94a3b8" strokeWidth="4" strokeLinecap="round"/> 
-                                        <line x1="180" y1="100" x2="165" y2="100" stroke="#10b981" strokeWidth="6" strokeLinecap="round"/> 
-                                        <g style={{ transform: `rotate(${gradosAguja}deg)`, transformOrigin: '100px 100px', transition: 'transform 1s cubic-bezier(0.4, 0, 0.2, 1)' }}>
-                                            <polygon points="97,100 103,100 100,25" fill="#ef4444" />
-                                            <circle cx="100" cy="100" r="10" fill="#0f172a" stroke="#ef4444" strokeWidth="3" />
-                                        </g>
-                                        <text x="28" y="118" fill="#ef4444" fontSize="16" fontWeight="900" textAnchor="middle">E</text>
-                                        <text x="100" y="55" fill="#64748b" fontSize="14" fontWeight="bold" textAnchor="middle">1/2</text>
-                                        <text x="172" y="118" fill="#10b981" fontSize="16" fontWeight="900" textAnchor="middle">F</text>
-                                    </svg>
-                                    <input type="range" min="0" max="100" step="5" value={nivelCombustible} onChange={(e) => setNivelCombustible(parseInt(e.target.value))} className="w-full h-2 bg-slate-700 rounded-lg appearance-none mt-4" />
-                                    <div className={`text-xl font-black mt-2 ${nivelCombustible <= 15 ? 'text-red-400' : 'text-emerald-400'}`}>{nivelCombustible}%</div>
+                            {/* 🔥 FASE 2: BLOQUE UNIFICADO DE CREACIÓN */}
+                            <div className="bg-slate-800/30 border border-emerald-900/30 rounded-3xl p-5 shadow-inner">
+                                <div className="mb-6 border-b border-slate-700/50 pb-4">
+                                    <h2 className="text-lg md:text-xl font-black text-emerald-400 uppercase tracking-widest flex items-center gap-2">
+                                        <ShieldCheck size={22} /> Estado Inicial de Recepción
+                                    </h2>
+                                    <p className="text-[11px] md:text-xs text-slate-400 font-bold mt-2 leading-relaxed">
+                                        Registra el estado visual y técnico exacto de cómo ingresa el vehículo. Documenta daños previos de carrocería, nivel de combustible y alertas en el tablero.
+                                    </p>
                                 </div>
-                            </div>
 
-                            <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
-                                {TESTIGOS_CONFIG.map(t => (
-                                    <button key={t.id} type="button" onClick={() => toggleTestigo(t.id)} className={`p-2 rounded-xl border flex flex-col items-center gap-2 transition-all duration-300 ${testigosSeleccionados.includes(t.id) ? (t.type==='rojo'?'bg-red-500/10 border-red-500/50 text-red-400 shadow-[0_0_10px_rgba(239,68,68,0.2)]':'bg-yellow-500/10 border-yellow-500/50 text-yellow-400 shadow-[0_0_10px_rgba(234,179,8,0.2)]') : 'bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800'}`}>
-                                        <img 
-                                            src={t.imgSrc} 
-                                            alt={t.label} 
-                                            className="w-7 h-7 object-contain brightness-150 contrast-125 saturate-150 drop-shadow-md" 
-                                        />
-                                        <span className="text-[8px] font-black uppercase text-center leading-tight">{t.label}</span>
-                                    </button>
-                                ))}
-                            </div>
-
-                            <div className="border-t border-slate-800 pt-4">
-                                <div className="flex items-center justify-between mb-3">
-                                    <div className="flex flex-col">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase flex items-center gap-2">
-                                            <Car size={14} className="text-orange-400"/> Mapa 3D
-                                        </label>
-                                        <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">
-                                            Mapeo de referencia de daños
-                                        </span>
+                                <div className="space-y-4">
+                                    {/* Mapa 3D */}
+                                    <div className="bg-slate-950/50 p-4 rounded-2xl border border-slate-800">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                                                <Car size={14} className="text-orange-400"/> Mapa de Daños 3D
+                                            </h4>
+                                            <div className="flex items-center bg-slate-900 border border-slate-700 rounded-lg overflow-hidden shadow-sm">
+                                                <span className="text-[9px] font-black text-slate-400 px-3 py-1 flex items-center gap-1.5">
+                                                    Daños: <span className="text-orange-400 text-xs">{marcadoresDanos.length}</span>
+                                                </span>
+                                                {marcadoresDanos.length > 0 && (
+                                                    <button 
+                                                        type="button" 
+                                                        onClick={deshacerUltimoPunto} 
+                                                        className="flex items-center gap-1.5 bg-slate-800 hover:bg-red-500/20 hover:text-red-400 text-slate-300 px-3 py-1 transition-all border-l border-slate-700 text-[10px] font-bold uppercase tracking-wider"
+                                                    >
+                                                        <Undo2 size={12} /> Deshacer
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="relative w-full rounded-xl overflow-hidden border border-slate-800/50 bg-slate-900/50 flex justify-center items-center [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                                            <Car3DViewer marcadores={marcadoresDanos} setMarcadores={setMarcadoresDanos} soloLectura={false} />
+                                        </div>
+                                        <input type="text" value={danosPrevios} onChange={(e) => setDanosPrevios(e.target.value)} placeholder="Notas adicionales de carrocería (Opcional)..." className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 mt-3 text-xs text-slate-200 outline-none focus:border-emerald-500/50 transition-colors" />
                                     </div>
-                                    
-                                    <div className="flex items-center bg-slate-900 border border-slate-700 rounded-lg overflow-hidden shadow-sm">
-                                        <span className="text-[9px] font-black text-slate-400 px-3 py-1.5 flex items-center gap-1.5">
-                                            Daños: <span className="text-orange-400 text-xs">{marcadoresDanos.length}</span>
-                                        </span>
-                                        {marcadoresDanos.length > 0 && (
-                                            <button 
-                                                type="button" 
-                                                onClick={deshacerUltimoPunto} 
-                                                className="flex items-center gap-1.5 bg-slate-800 hover:bg-red-500/20 hover:text-red-400 text-slate-300 px-3 py-1.5 transition-all border-l border-slate-700 text-[10px] font-bold uppercase tracking-wider"
-                                                title="Deshacer último punto"
-                                            >
-                                                <Undo2 size={12} /> Deshacer
-                                            </button>
-                                        )}
+
+                                    {/* Grid Combustible y Testigos */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="bg-slate-950/50 p-4 rounded-2xl border border-slate-800 flex flex-col">
+                                            <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                                <Fuel size={14} className="text-blue-400" /> Nivel Combustible
+                                            </h4>
+                                            <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex flex-col items-center flex-1 justify-center">
+                                                <svg viewBox="0 0 200 120" className="w-full max-w-[160px] drop-shadow-[0_0_15px_rgba(51,65,85,0.5)]">
+                                                    <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#1e293b" strokeWidth="6" strokeLinecap="round" />
+                                                    <line x1="20" y1="100" x2="35" y2="100" stroke="#ef4444" strokeWidth="6" strokeLinecap="round"/> 
+                                                    <line x1="43" y1="43" x2="54" y2="54" stroke="#94a3b8" strokeWidth="4" strokeLinecap="round"/> 
+                                                    <line x1="100" y1="20" x2="100" y2="35" stroke="#94a3b8" strokeWidth="6" strokeLinecap="round"/> 
+                                                    <line x1="157" y1="43" x2="146" y2="54" stroke="#94a3b8" strokeWidth="4" strokeLinecap="round"/> 
+                                                    <line x1="180" y1="100" x2="165" y2="100" stroke="#10b981" strokeWidth="6" strokeLinecap="round"/> 
+                                                    <g style={{ transform: `rotate(${gradosAguja}deg)`, transformOrigin: '100px 100px', transition: 'transform 1s cubic-bezier(0.4, 0, 0.2, 1)' }}>
+                                                        <polygon points="97,100 103,100 100,25" fill="#ef4444" />
+                                                        <circle cx="100" cy="100" r="10" fill="#0f172a" stroke="#ef4444" strokeWidth="3" />
+                                                    </g>
+                                                    <text x="28" y="118" fill="#ef4444" fontSize="16" fontWeight="900" textAnchor="middle">E</text>
+                                                    <text x="100" y="55" fill="#64748b" fontSize="14" fontWeight="bold" textAnchor="middle">1/2</text>
+                                                    <text x="172" y="118" fill="#10b981" fontSize="16" fontWeight="900" textAnchor="middle">F</text>
+                                                </svg>
+                                                <input type="range" min="0" max="100" step="5" value={nivelCombustible} onChange={(e) => setNivelCombustible(parseInt(e.target.value))} className="w-full h-2 bg-slate-700 rounded-lg appearance-none mt-4" />
+                                                <div className={`text-lg font-black mt-2 ${nivelCombustible <= 15 ? 'text-red-400' : 'text-emerald-400'}`}>{nivelCombustible}%</div>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-slate-950/50 p-4 rounded-2xl border border-slate-800">
+                                            <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                                <AlertTriangle size={14} className="text-red-400" /> Testigos (Marcar)
+                                            </h4>
+                                            <div className="grid grid-cols-3 gap-2 max-h-[180px] overflow-y-auto custom-scrollbar-dark pr-1">
+                                                {TESTIGOS_CONFIG.map(t => (
+                                                    <button key={t.id} type="button" onClick={() => toggleTestigo(t.id)} className={`p-2 rounded-xl border flex flex-col items-center gap-1.5 transition-all duration-300 ${testigosSeleccionados.includes(t.id) ? (t.type==='rojo'?'bg-red-500/10 border-red-500/50 text-red-400 shadow-[0_0_10px_rgba(239,68,68,0.2)]':'bg-yellow-500/10 border-yellow-500/50 text-yellow-400 shadow-[0_0_10px_rgba(234,179,8,0.2)]') : 'bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800'}`}>
+                                                        <img src={t.imgSrc} alt={t.label} className="w-6 h-6 object-contain brightness-150 contrast-125 saturate-150 drop-shadow-md" />
+                                                        <span className="text-[7px] font-black uppercase text-center leading-tight">{t.label}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                
-                                <div className="relative w-full rounded-xl overflow-hidden border border-slate-800/50 bg-slate-950/50 flex justify-center items-center [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                                    <Car3DViewer marcadores={marcadoresDanos} setMarcadores={setMarcadoresDanos} soloLectura={false} />
-                                </div>
-                                
-                                <input type="text" value={danosPrevios} onChange={(e) => setDanosPrevios(e.target.value)} placeholder="Notas (Ej: Parachoques trizado)..." className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 mt-3 text-xs text-slate-200 outline-none focus:border-emerald-500/50 transition-colors" />
                             </div>
 
-                            <input type="text" value={objetosValor} onChange={(e) => setObjetosValor(e.target.value)} placeholder="Objetos de Valor..." className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200 outline-none focus:border-emerald-500/50 transition-colors" />
+                            {/* Objetos de Valor Independientes */}
+                            <div className="bg-slate-950/50 p-5 rounded-2xl border border-slate-800">
+                                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                    <ShieldAlert size={14} className="text-purple-400" /> Objetos de Valor Declarados
+                                </h4>
+                                <input type="text" value={objetosValor} onChange={(e) => setObjetosValor(e.target.value)} placeholder="Ej: Lentes de sol, Silla de bebé, Dinero..." className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200 outline-none focus:border-emerald-500/50 transition-colors" />
+                            </div>
                         </div>
                     )}
                     
