@@ -1,36 +1,28 @@
-import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx-js-style';
 
 export const descargarExcelSupremo = (historial: any[], oportunidades: any[], nombreTaller: string) => {
     
     // ==========================================
-    // 1. CÁLCULOS: RESUMEN EJECUTIVO
+    // 1. CÁLCULOS
     // ==========================================
-    let totalIngresos = 0;
-    let totalDescuentos = 0;
-    let totalCostoRevision = 0;
-    let totalManoObra = 0;
-    let totalRepuestos = 0;
+    let totalIngresos = 0, totalDescuentos = 0, totalCostoRevision = 0, totalManoObra = 0, totalRepuestos = 0;
 
     historial.forEach(o => {
-        const desc = o.descuento || 0;
-        const rev = o.costo_revision || 0;
-        totalDescuentos += desc;
-        totalCostoRevision += rev;
-        
+        totalDescuentos += (o.descuento || 0);
+        totalCostoRevision += (o.costo_revision || 0);
         let subtotalItems = 0;
         o.items_orden?.forEach((i: any) => {
             subtotalItems += i.precio;
             if (i.tipo_item === 'servicio') totalManoObra += i.precio;
             if (i.tipo_item === 'repuesto') totalRepuestos += i.precio;
         });
-
-        totalIngresos += (subtotalItems + rev - desc);
+        totalIngresos += (subtotalItems + (o.costo_revision || 0) - (o.descuento || 0));
     });
 
     const ticketPromedio = historial.length > 0 ? Math.round(totalIngresos / historial.length) : 0;
 
     const resumenData = [
-        { "Métrica Financiera": "Total Órdenes Finalizadas", "Valor": historial.length },
+        { "Métrica Financiera": "Total Órdenes Finalizadas", "Valor": historial.length.toString() },
         { "Métrica Financiera": "Ingresos Brutos Totales", "Valor": `$${totalIngresos.toLocaleString('es-CL')}` },
         { "Métrica Financiera": "Ingresos por Mano de Obra", "Valor": `$${totalManoObra.toLocaleString('es-CL')}` },
         { "Métrica Financiera": "Ingresos por Repuestos", "Valor": `$${totalRepuestos.toLocaleString('es-CL')}` },
@@ -39,92 +31,68 @@ export const descargarExcelSupremo = (historial: any[], oportunidades: any[], no
         { "Métrica Financiera": "Ticket Promedio por Auto", "Valor": `$${ticketPromedio.toLocaleString('es-CL')}` },
     ];
 
-    // ==========================================
-    // 2. CÁLCULOS: RENDIMIENTO MECÁNICOS
-    // ==========================================
     const mecanicosMap: any = {};
     historial.forEach(o => {
         const m = o.mecanico && o.mecanico !== 'Sin asignar' ? o.mecanico.toUpperCase() : 'TALLER / SIN ASIGNAR';
         const totalOrden = (o.items_orden?.reduce((sum: number, i: any) => sum + i.precio, 0) || 0) + (o.costo_revision || 0) - (o.descuento || 0);
-        
-        if (!mecanicosMap[m]) mecanicosMap[m] = { "Nombre Mecánico": m, "Autos Terminados": 0, "Producción ($)": 0 };
+        if (!mecanicosMap[m]) mecanicosMap[m] = { "Nombre Mecánico": m, "Autos Terminados": 0, "Producción Total": 0 };
         mecanicosMap[m]["Autos Terminados"] += 1;
-        mecanicosMap[m]["Producción ($)"] += totalOrden;
+        mecanicosMap[m]["Producción Total"] += totalOrden;
     });
-    const mecanicosData = Object.values(mecanicosMap).sort((a: any, b: any) => b["Producción ($)"] - a["Producción ($)"]);
-
-    // ==========================================
-    // 3. CÁLCULOS: INTELIGENCIA DE MARCAS
-    // ==========================================
-    const marcasMap: any = {};
-    historial.forEach(o => {
-        const marca = o.vehiculos?.marca ? o.vehiculos.marca.toUpperCase() : 'DESCONOCIDA';
-        const totalOrden = (o.items_orden?.reduce((sum: number, i: any) => sum + i.precio, 0) || 0) + (o.costo_revision || 0) - (o.descuento || 0);
-        
-        if (!marcasMap[marca]) marcasMap[marca] = { "Marca de Vehículo": marca, "Cantidad Atendida": 0, "Rentabilidad ($)": 0 };
-        marcasMap[marca]["Cantidad Atendida"] += 1;
-        marcasMap[marca]["Rentabilidad ($)"] += totalOrden;
-    });
-    const marcasData = Object.values(marcasMap).sort((a: any, b: any) => b["Rentabilidad ($)"] - a["Rentabilidad ($)"]);
-
-    // ==========================================
-    // 4. CÁLCULOS: CRM (OPORTUNIDADES DE VENTA)
-    // ==========================================
-    const crmData = oportunidades.map(op => ({
-        "Nivel Riesgo": op.nivel_riesgo,
-        "Componente / Falla": op.pieza,
-        "Observación Mecánico": op.observacion || 'Sin observaciones',
-        "Patente": op.vehiculos?.patente,
-        "Marca y Modelo": `${op.vehiculos?.marca} ${op.vehiculos?.modelo}`,
-        "Cliente": op.vehiculos?.clientes?.nombre || 'Desconocido',
-        "Teléfono (WhatsApp)": op.vehiculos?.clientes?.telefono || 'No registrado',
-        "Fecha Detección": new Date(op.created_at).toLocaleDateString('es-CL')
+    const mecanicosData = Object.values(mecanicosMap).sort((a: any, b: any) => b["Producción Total"] - a["Producción Total"]).map((m: any) => ({
+        "Nombre Mecánico": m["Nombre Mecánico"],
+        "Autos Terminados": m["Autos Terminados"],
+        "Producción Total": `$${m["Producción Total"].toLocaleString('es-CL')}`
     }));
 
-    // ==========================================
-    // 5. CÁLCULOS: BASE DE DATOS CONTABLE
-    // ==========================================
     const dbData = historial.map(o => {
-        const subtotalItems = o.items_orden?.reduce((sum: number, i: any) => sum + i.precio, 0) || 0;
-        const totalNeto = subtotalItems + (o.costo_revision || 0) - (o.descuento || 0);
+        const mo = o.items_orden?.filter((i:any) => i.tipo_item === 'servicio').reduce((sum:number, i:any) => sum + i.precio, 0) || 0;
+        const rep = o.items_orden?.filter((i:any) => i.tipo_item === 'repuesto').reduce((sum:number, i:any) => sum + i.precio, 0) || 0;
         return {
             "ID Orden": o.id.substring(0, 8),
             "Fecha Cierre": new Date(o.updated_at).toLocaleDateString('es-CL'),
             "Patente": o.vehiculos?.patente,
             "Cliente": o.vehiculos?.clientes?.nombre || 'Desconocido',
-            "RUT": o.vehiculos?.clientes?.rut || '-',
-            "Diagnóstico ($)": o.costo_revision || 0,
-            "Mano de Obra ($)": o.items_orden?.filter((i:any) => i.tipo_item === 'servicio').reduce((sum:number, i:any) => sum + i.precio, 0) || 0,
-            "Repuestos ($)": o.items_orden?.filter((i:any) => i.tipo_item === 'repuesto').reduce((sum:number, i:any) => sum + i.precio, 0) || 0,
-            "Descuento ($)": o.descuento || 0,
-            "TOTAL PAGADO ($)": totalNeto,
-            "Mecánico": o.mecanico || 'Sin asignar'
+            "Mano de Obra": `$${mo.toLocaleString('es-CL')}`,
+            "Repuestos": `$${rep.toLocaleString('es-CL')}`,
+            "Diagnóstico": `$${(o.costo_revision || 0).toLocaleString('es-CL')}`,
+            "Descuento": `$${(o.descuento || 0).toLocaleString('es-CL')}`,
+            "TOTAL PAGADO": `$${(mo + rep + (o.costo_revision || 0) - (o.descuento || 0)).toLocaleString('es-CL')}`,
+            "Mecánico Asignado": o.mecanico || 'Sin asignar'
         };
     });
 
     // ==========================================
-    // CONSTRUCCIÓN DEL EXCEL (Libro de trabajo)
+    // 2. CREACIÓN DEL EXCEL Y ESTILOS
     // ==========================================
     const wb = XLSX.utils.book_new();
 
-    // Convertir arrays a hojas de Excel
+    const aplicarEstilos = (ws: any, anchos: number[]) => {
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+            const address = XLSX.utils.encode_col(C) + "1"; // Fila 1 (Cabecera)
+            if (!ws[address]) continue;
+            ws[address].s = {
+                font: { bold: true, color: { rgb: "FFFFFF" } },
+                fill: { fgColor: { rgb: "0F172A" } }, // Slate 950
+                alignment: { horizontal: "center", vertical: "center" }
+            };
+        }
+        ws['!cols'] = anchos.map(w => ({ wch: w }));
+    };
+
     const wsResumen = XLSX.utils.json_to_sheet(resumenData);
-    const wsMecanicos = XLSX.utils.json_to_sheet(mecanicosData);
-    const wsMarcas = XLSX.utils.json_to_sheet(marcasData);
-    const wsCRM = XLSX.utils.json_to_sheet(crmData.length > 0 ? crmData : [{"Aviso": "No hay oportunidades pendientes"}]);
-    const wsDB = XLSX.utils.json_to_sheet(dbData.length > 0 ? dbData : [{"Aviso": "No hay órdenes finalizadas"}]);
-
-    // Añadir hojas al libro
+    aplicarEstilos(wsResumen, [35, 25]);
     XLSX.utils.book_append_sheet(wb, wsResumen, "1. Resumen Ejecutivo");
-    XLSX.utils.book_append_sheet(wb, wsMecanicos, "2. Rendimiento Mecánicos");
-    XLSX.utils.book_append_sheet(wb, wsMarcas, "3. Analítica de Marcas");
-    XLSX.utils.book_append_sheet(wb, wsCRM, "4. CRM Ventas Futuras");
-    XLSX.utils.book_append_sheet(wb, wsDB, "5. Base de Datos Contable");
 
-    // Nombre del archivo con la fecha de hoy
-    const fechaArchivo = new Date().toISOString().split('T')[0];
-    const fileName = `Reporte_Supremo_${nombreTaller.replace(/\s+/g, '_')}_${fechaArchivo}.xlsx`;
+    const wsMecanicos = XLSX.utils.json_to_sheet(mecanicosData.length > 0 ? mecanicosData : [{"Aviso": "Sin datos"}]);
+    aplicarEstilos(wsMecanicos, [30, 20, 25]);
+    XLSX.utils.book_append_sheet(wb, wsMecanicos, "2. Mecánicos");
 
-    // Descargar el archivo
-    XLSX.writeFile(wb, fileName);
+    const wsDB = XLSX.utils.json_to_sheet(dbData.length > 0 ? dbData : [{"Aviso": "Sin datos"}]);
+    aplicarEstilos(wsDB, [12, 15, 15, 25, 18, 18, 18, 18, 20, 25]);
+    XLSX.utils.book_append_sheet(wb, wsDB, "3. Base de Datos");
+
+    const fechaStr = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(wb, `Reporte_Financiero_${nombreTaller.replace(/\s+/g, '_')}_${fechaStr}.xlsx`);
 }
