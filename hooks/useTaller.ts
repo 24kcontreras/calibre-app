@@ -27,32 +27,38 @@ export const useTaller = () => {
     const currentTallerId = tId || session?.user?.id;
     if (!currentTallerId) return;
 
-    try {
-        const { data: configData } = await supabase.from('talleres').select('*').eq('id', currentTallerId).single();
-        if (configData) {
-            setConfigTaller(configData);
-            setNombreTaller(configData.nombre_taller || 'MI TALLER');
-            
-            const hoy = new Date();
-            if (configData.fecha_vencimiento && new Date(configData.fecha_vencimiento) < hoy) {
-                setSoloLectura(true);
-            } else {
-                setSoloLectura(false);
-            }
-        }
-
-        const { data: vData } = await supabase.from('vehiculos').select('*, clientes(*), alertas_desgaste(*)').eq('taller_id', currentTallerId).order('created_at', { ascending: false });
-        if (vData) setVehiculos(vData);
-
-        const { data: oAbiertas } = await supabase.from('ordenes_trabajo').select('*, vehiculos(*, clientes(*)), items_orden(*), fotos_orden(*)').eq('taller_id', currentTallerId).neq('estado', 'Finalizada').order('created_at', { ascending: false });
-        if (oAbiertas) setOrdenesAbiertas(oAbiertas);
-
-        const { data: oCerradas } = await supabase.from('ordenes_trabajo').select('*, vehiculos(*, clientes(*)), items_orden(*), fotos_orden(*)').eq('taller_id', currentTallerId).eq('estado', 'Finalizada').order('updated_at', { ascending: false });
-        if (oCerradas) setHistorial(oCerradas);
-        
-    } catch (error) {
-        console.error("Error cargando datos:", error);
+    // 1. Datos del Taller
+    const { data: tData } = await supabase.from('talleres').select('*').eq('id', currentTallerId).single();
+    if (tData) {
+        setConfigTaller((prev: any) => ({ ...prev, ...tData }));
+        if (tData.nombre_taller) setNombreTaller(tData.nombre_taller);
+        const vencido = tData.fecha_vencimiento ? new Date(tData.fecha_vencimiento) < new Date() : false;
+        setSoloLectura(!tData.pago_confirmado || vencido);
     }
+
+    // 2. Vehículos
+    const { data: vData } = await supabase.from('vehiculos')
+      .select('*, clientes(*), alertas_desgaste(*)') 
+      .eq('taller_id', currentTallerId)
+      .order('created_at', { ascending: false })
+    setVehiculos(vData || [])
+
+    // 🔥 CORRECCIÓN VITAL 1: Restauramos la consulta a la BD que hace funcionar la Pizarra
+    // 3. Órdenes Activas
+    const { data: oAbiertas } = await supabase.from('ordenes_trabajo')
+      .select('*, vehiculos(*, clientes(*), alertas_desgaste(*)), items_orden(*), fotos_orden(*), comentarios_orden(*)') 
+      .eq('taller_id', currentTallerId)
+      .neq('estado', 'Finalizada')
+      .order('created_at', { ascending: false })
+    setOrdenesAbiertas(oAbiertas || [])
+
+    // 4. Historial
+    const { data: oFinalizadas } = await supabase.from('ordenes_trabajo')
+      .select('*, vehiculos(*, clientes(*), alertas_desgaste(*)), items_orden(*), fotos_orden(*), comentarios_orden(*)') 
+      .eq('taller_id', currentTallerId)
+      .eq('estado', 'Finalizada')
+      .order('updated_at', { ascending: false })
+    setHistorial(oFinalizadas || [])
   }
 
   useEffect(() => {
@@ -96,7 +102,7 @@ export const useTaller = () => {
     }
   }, [])
 
-  // 🔥 LISTENER EN TIEMPO REAL: Aprobaciones y Reviews
+  // 🔥 CORRECCIÓN VITAL 2: Restauramos el Escuchador en Tiempo Real
   useEffect(() => {
     if (!session?.user?.id) return;
 
@@ -107,28 +113,26 @@ export const useTaller = () => {
           event: 'UPDATE',
           schema: 'public',
           table: 'ordenes_trabajo',
-          filter: `taller_id=eq.${session.user.id}` // Escucha solo las de tu taller
+          filter: `taller_id=eq.${session.user.id}`
         },
         (payload: any) => {
           const oldRecord = payload.old;
           const newRecord = payload.new;
 
-          // 💰 NOTIFICACIÓN: PRESUPUESTO APROBADO
+          // Notificación: Dinero Aprobado
           if (oldRecord.sub_estado === 'Pendiente Aprobación' && newRecord.sub_estado === 'Esperando Repuestos') {
               toast.success(`¡Caja Asegurada! 💰 Presupuesto Aprobado.`, {
-                  duration: 6000,
-                  icon: '🔥',
+                  duration: 6000, icon: '🔥',
                   style: { background: '#022c22', color: '#34d399', border: '1px solid #059669', fontSize: '14px', fontWeight: 'bold' }
               });
-              cargarTodo(); // Recargamos la pizarra
+              cargarTodo(); 
           }
 
-          // ⭐ NOTIFICACIÓN: NUEVO REVIEW DE CLIENTE
-          if (oldRecord.feedback_final_estrellas === null && newRecord.feedback_final_estrellas > 0 || 
-              oldRecord.feedback_final_estrellas === 0 && newRecord.feedback_final_estrellas > 0) {
+          // Notificación: Estrellas
+          if ((oldRecord.feedback_final_estrellas === null && newRecord.feedback_final_estrellas > 0) || 
+              (oldRecord.feedback_final_estrellas === 0 && newRecord.feedback_final_estrellas > 0)) {
               toast(`¡Un cliente te calificó con ${newRecord.feedback_final_estrellas} Estrellas! ⭐`, {
-                  duration: 6000,
-                  icon: '⭐',
+                  duration: 6000, icon: '⭐',
                   style: { background: '#422006', color: '#facc15', border: '1px solid #ca8a04', fontSize: '14px', fontWeight: 'bold' }
               });
               cargarTodo(); 
