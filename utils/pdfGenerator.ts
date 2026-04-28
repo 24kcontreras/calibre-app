@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf';
-import 'jspdf-autotable'; // 🔥 TRUCO MÁGICO: Lo importamos así para que no pelee con Next.js
+import autoTable from 'jspdf-autotable'; // 🔥 Restaurado a tu versión original confiable
 
 interface ConfigPDF {
     nombreTaller: string;
@@ -193,8 +193,8 @@ export const generarDocumentoPDF = async (o: any, resumenIA: string = "", config
                 ]);
             }
 
-            // 🔥 ASÍ SE LLAMA AUTOTABLE AHORA PARA EVITAR EL ERROR
-            (doc as any).autoTable({
+            // 🔥 VOLVEMOS A AUTOTABLE ORIGINAL
+            autoTable(doc, {
                 startY: finalY,
                 head: [['Descripción del Servicio', 'Valor']],
                 body: bodyServicios,
@@ -214,7 +214,7 @@ export const generarDocumentoPDF = async (o: any, resumenIA: string = "", config
             doc.text("REPUESTOS E INSUMOS UTILIZADOS", 14, finalY);
             finalY += 2;
 
-            (doc as any).autoTable({
+            autoTable(doc, {
                 startY: finalY,
                 head: [['Descripción del Repuesto', 'Procedencia']],
                 body: repuestos.map((i: any) => [i.descripcion.toUpperCase(), i.procedencia.toUpperCase()]),
@@ -243,7 +243,7 @@ export const generarDocumentoPDF = async (o: any, resumenIA: string = "", config
 
         if (descuento > 0) footerCobros.unshift(['DESCUENTO APLICADO', `-$${descuento.toLocaleString('es-CL')}`]);
 
-        (doc as any).autoTable({
+        autoTable(doc, {
             startY: finalY,
             margin: { left: xStartCobros },
             body: footerCobros,
@@ -383,7 +383,7 @@ export const generarDocumentoPDF = async (o: any, resumenIA: string = "", config
 // =========================================================================
 // 2. FUNCIÓN NUEVA: RADIOGRAFÍA GERENCIAL MENSUAL
 // =========================================================================
-export const generarRadiografiaMensualPDF = async (historial: any[], oportunidades: any[], configPDF: ConfigPDF) => {
+export const generarRadiografiaMensualPDF = async (historial: any[] = [], oportunidades: any[] = [], configPDF: ConfigPDF) => {
     try {
         const doc = new jsPDF();
         const pageWidth = doc.internal.pageSize.getWidth();
@@ -427,7 +427,7 @@ export const generarRadiografiaMensualPDF = async (historial: any[], oportunidad
 
         let posicionY = 22;
 
-        if (configPDF.logoUrl) {
+        if (configPDF?.logoUrl) {
             try {
                 const logoB64 = await urlABase64PNG(configPDF.logoUrl);
                 const props = doc.getImageProperties(logoB64);
@@ -438,10 +438,12 @@ export const generarRadiografiaMensualPDF = async (historial: any[], oportunidad
             } catch (err) { console.error("Error al cargar logo", err); }
         }
 
+        const nombreAUsar = configPDF?.nombreTaller || 'MI TALLER';
+
         doc.setFontSize(22);
         doc.setTextColor(30, 41, 59);
         doc.setFont("helvetica", "bold");
-        doc.text(configPDF.nombreTaller.toUpperCase(), 14, posicionY);
+        doc.text(nombreAUsar.toUpperCase(), 14, posicionY);
 
         doc.setFontSize(7);
         doc.setTextColor(16, 185, 129);
@@ -466,7 +468,8 @@ export const generarRadiografiaMensualPDF = async (historial: any[], oportunidad
         doc.text("1. RESUMEN EJECUTIVO", 14, posicionY);
         posicionY += 4;
 
-        (doc as any).autoTable({
+        // 🔥 BLINDADO PARA EVITAR QUE EXPLOTE SI NO HAY DATOS
+        autoTable(doc, {
             startY: posicionY,
             head: [['Métrica', 'Valor']],
             body: [
@@ -487,7 +490,7 @@ export const generarRadiografiaMensualPDF = async (historial: any[], oportunidad
         doc.text("2. DISTRIBUCIÓN DE INGRESOS", 14, posicionY);
         posicionY += 4;
 
-        (doc as any).autoTable({
+        autoTable(doc, {
             startY: posicionY,
             head: [['Concepto', 'Monto Generado']],
             body: [
@@ -509,10 +512,15 @@ export const generarRadiografiaMensualPDF = async (historial: any[], oportunidad
         doc.text("3. RANKING DE PRODUCTIVIDAD (MECÁNICOS)", 14, posicionY);
         posicionY += 4;
 
-        (doc as any).autoTable({
+        // 🔥 EL BLINDAJE CONTRA EL ERROR SILENCIOSO (SI NO HAY MECÁNICOS ESTE MES)
+        const bodyMecanicos = rendimientoMecanicos.length > 0 
+            ? rendimientoMecanicos.map(([nombre, total]: any, i: number) => [`#${i + 1}`, nombre, `$${total.toLocaleString('es-CL')}`])
+            : [['-', 'Sin registros de mecánicos este mes', '-']];
+
+        autoTable(doc, {
             startY: posicionY,
             head: [['Posición', 'Nombre del Mecánico', 'Producción Total ($)']],
-            body: rendimientoMecanicos.map(([nombre, total]: any, i: number) => [`#${i + 1}`, nombre, `$${total.toLocaleString('es-CL')}`]),
+            body: bodyMecanicos,
             theme: 'grid',
             headStyles: { fillColor: [71, 85, 105], fontStyle: 'bold' },
             bodyStyles: { fontSize: 9 },
@@ -535,7 +543,7 @@ export const generarRadiografiaMensualPDF = async (historial: any[], oportunidad
         posicionY += 4;
 
         if (oportunidades.length > 0) {
-            (doc as any).autoTable({
+            autoTable(doc, {
                 startY: posicionY,
                 head: [['Cliente', 'Teléfono', 'Patente', 'Motivo / Alerta']],
                 body: oportunidades.map((op: any) => [op.vehiculos?.clientes?.nombre || 'S/N', op.vehiculos?.clientes?.telefono || 'S/N', op.vehiculos?.patente, op.pieza || 'Mantenimiento']),
@@ -561,10 +569,10 @@ export const generarRadiografiaMensualPDF = async (historial: any[], oportunidad
             doc.text(`PÁGINA ${i} DE ${pageCount}`, pageWidth - 14, 292, { align: 'right' });
         }
 
-        doc.save(`Radiografia_Mensual_${configPDF.nombreTaller.replace(/\s+/g, '_')}_${nombreMes}.pdf`);
+        doc.save(`Radiografia_Mensual_${nombreAUsar.replace(/\s+/g, '_')}_${nombreMes}.pdf`);
         
     } catch (e) {
-        console.error("Error al generar Radiografía PDF:", e);
+        console.error("Error al generar PDF:", e);
         throw e;
     }
 };
