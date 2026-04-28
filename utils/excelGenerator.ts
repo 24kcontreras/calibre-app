@@ -21,14 +21,15 @@ export const descargarExcelSupremo = (historial: any[], oportunidades: any[], no
 
     const ticketPromedio = historial.length > 0 ? Math.round(totalIngresos / historial.length) : 0;
 
+    // 🔥 MEJORA 1: Pasamos los números en crudo, no formateados como string
     const resumenData = [
-        { "Métrica Financiera": "Total Órdenes Finalizadas", "Valor": historial.length.toString() },
-        { "Métrica Financiera": "Ingresos Brutos Totales", "Valor": `$${totalIngresos.toLocaleString('es-CL')}` },
-        { "Métrica Financiera": "Ingresos por Mano de Obra", "Valor": `$${totalManoObra.toLocaleString('es-CL')}` },
-        { "Métrica Financiera": "Ingresos por Repuestos", "Valor": `$${totalRepuestos.toLocaleString('es-CL')}` },
-        { "Métrica Financiera": "Ingresos por Diagnósticos", "Valor": `$${totalCostoRevision.toLocaleString('es-CL')}` },
-        { "Métrica Financiera": "Dinero en Descuentos (Fugas)", "Valor": `$${totalDescuentos.toLocaleString('es-CL')}` },
-        { "Métrica Financiera": "Ticket Promedio por Auto", "Valor": `$${ticketPromedio.toLocaleString('es-CL')}` },
+        { "Métrica Financiera": "Total Órdenes Finalizadas", "Valor": historial.length },
+        { "Métrica Financiera": "Ingresos Brutos Totales", "Valor": totalIngresos },
+        { "Métrica Financiera": "Ingresos por Mano de Obra", "Valor": totalManoObra },
+        { "Métrica Financiera": "Ingresos por Repuestos", "Valor": totalRepuestos },
+        { "Métrica Financiera": "Ingresos por Diagnósticos", "Valor": totalCostoRevision },
+        { "Métrica Financiera": "Dinero en Descuentos (Fugas)", "Valor": totalDescuentos },
+        { "Métrica Financiera": "Ticket Promedio por Auto", "Valor": ticketPromedio },
     ];
 
     const mecanicosMap: any = {};
@@ -39,12 +40,15 @@ export const descargarExcelSupremo = (historial: any[], oportunidades: any[], no
         mecanicosMap[m]["Autos Terminados"] += 1;
         mecanicosMap[m]["Producción Total"] += totalOrden;
     });
+    
+    // 🔥 MEJORA 1: Números en crudo
     const mecanicosData = Object.values(mecanicosMap).sort((a: any, b: any) => b["Producción Total"] - a["Producción Total"]).map((m: any) => ({
         "Nombre Mecánico": m["Nombre Mecánico"],
         "Autos Terminados": m["Autos Terminados"],
-        "Producción Total": `$${m["Producción Total"].toLocaleString('es-CL')}`
+        "Producción Total": m["Producción Total"]
     }));
 
+    // 🔥 MEJORA 1: Números en crudo
     const dbData = historial.map(o => {
         const mo = o.items_orden?.filter((i:any) => i.tipo_item === 'servicio').reduce((sum:number, i:any) => sum + i.precio, 0) || 0;
         const rep = o.items_orden?.filter((i:any) => i.tipo_item === 'repuesto').reduce((sum:number, i:any) => sum + i.precio, 0) || 0;
@@ -53,11 +57,11 @@ export const descargarExcelSupremo = (historial: any[], oportunidades: any[], no
             "Fecha Cierre": new Date(o.updated_at).toLocaleDateString('es-CL'),
             "Patente": o.vehiculos?.patente,
             "Cliente": o.vehiculos?.clientes?.nombre || 'Desconocido',
-            "Mano de Obra": `$${mo.toLocaleString('es-CL')}`,
-            "Repuestos": `$${rep.toLocaleString('es-CL')}`,
-            "Diagnóstico": `$${(o.costo_revision || 0).toLocaleString('es-CL')}`,
-            "Descuento": `$${(o.descuento || 0).toLocaleString('es-CL')}`,
-            "TOTAL PAGADO": `$${(mo + rep + (o.costo_revision || 0) - (o.descuento || 0)).toLocaleString('es-CL')}`,
+            "Mano de Obra": mo,
+            "Repuestos": rep,
+            "Diagnóstico": (o.costo_revision || 0),
+            "Descuento": (o.descuento || 0),
+            "TOTAL PAGADO": (mo + rep + (o.costo_revision || 0) - (o.descuento || 0)),
             "Mecánico Asignado": o.mecanico || 'Sin asignar'
         };
     });
@@ -67,30 +71,68 @@ export const descargarExcelSupremo = (historial: any[], oportunidades: any[], no
     // ==========================================
     const wb = XLSX.utils.book_new();
 
-    const aplicarEstilos = (ws: any, anchos: number[]) => {
+    // 🔥 MEJORA 2: Función de estilos más robusta
+    const aplicarEstilosAvanzados = (ws: any, anchos: number[], columnasMoneda: string[] = []) => {
         const range = XLSX.utils.decode_range(ws['!ref']);
-        for (let C = range.s.c; C <= range.e.c; ++C) {
-            const address = XLSX.utils.encode_col(C) + "1"; // Fila 1 (Cabecera)
-            if (!ws[address]) continue;
-            ws[address].s = {
-                font: { bold: true, color: { rgb: "FFFFFF" } },
-                fill: { fgColor: { rgb: "0F172A" } }, // Slate 950
-                alignment: { horizontal: "center", vertical: "center" }
-            };
+        
+        for (let R = range.s.r; R <= range.e.r; ++R) {
+            for (let C = range.s.c; C <= range.e.c; ++C) {
+                const address = XLSX.utils.encode_cell({c: C, r: R});
+                if (!ws[address]) continue;
+
+                // Estilo base
+                let style: any = {
+                    font: { name: 'Calibri', sz: 11 },
+                    border: {
+                        top: {style: "thin", color: {auto: 1}},
+                        bottom: {style: "thin", color: {auto: 1}},
+                        left: {style: "thin", color: {auto: 1}},
+                        right: {style: "thin", color: {auto: 1}}
+                    }
+                };
+
+                // Cabecera (Fila 0)
+                if (R === 0) {
+                    style.font = { bold: true, color: { rgb: "FFFFFF" } };
+                    style.fill = { fgColor: { rgb: "0F172A" } }; // Slate 950
+                    style.alignment = { horizontal: "center", vertical: "center" };
+                } else {
+                    // Filas de datos
+                    const headerAddress = XLSX.utils.encode_cell({c: C, r: 0});
+                    const headerName = ws[headerAddress] ? ws[headerAddress].v : '';
+
+                    // Alternar colores de fila para legibilidad
+                    if (R % 2 !== 0) {
+                         style.fill = { fgColor: { rgb: "F8FAFC" } }; // Slate 50
+                    }
+
+                    // Formato Moneda si aplica
+                    if (columnasMoneda.includes(headerName)) {
+                        style.numFmt = '"$"#,##0';
+                        style.alignment = { horizontal: "right" };
+                    } else if (typeof ws[address].v === 'number') {
+                         style.alignment = { horizontal: "right" };
+                    } else {
+                         style.alignment = { horizontal: "left" };
+                    }
+                }
+                ws[address].s = style;
+            }
         }
         ws['!cols'] = anchos.map(w => ({ wch: w }));
     };
 
+    // Aplicar a cada hoja
     const wsResumen = XLSX.utils.json_to_sheet(resumenData);
-    aplicarEstilos(wsResumen, [35, 25]);
+    aplicarEstilosAvanzados(wsResumen, [35, 25], ["Valor"]);
     XLSX.utils.book_append_sheet(wb, wsResumen, "1. Resumen Ejecutivo");
 
     const wsMecanicos = XLSX.utils.json_to_sheet(mecanicosData.length > 0 ? mecanicosData : [{"Aviso": "Sin datos"}]);
-    aplicarEstilos(wsMecanicos, [30, 20, 25]);
+    aplicarEstilosAvanzados(wsMecanicos, [30, 20, 25], ["Producción Total"]);
     XLSX.utils.book_append_sheet(wb, wsMecanicos, "2. Mecánicos");
 
     const wsDB = XLSX.utils.json_to_sheet(dbData.length > 0 ? dbData : [{"Aviso": "Sin datos"}]);
-    aplicarEstilos(wsDB, [12, 15, 15, 25, 18, 18, 18, 18, 20, 25]);
+    aplicarEstilosAvanzados(wsDB, [12, 15, 15, 25, 18, 18, 18, 18, 20, 25], ["Mano de Obra", "Repuestos", "Diagnóstico", "Descuento", "TOTAL PAGADO"]);
     XLSX.utils.book_append_sheet(wb, wsDB, "3. Base de Datos");
 
     const fechaStr = new Date().toISOString().split('T')[0];
