@@ -261,7 +261,6 @@ export default function CalibreApp() {
            <Recepcion 
              soloLectura={soloLectura} 
              vehiculos={vehiculos} 
-             oportunidadesVenta={oportunidadesVenta} 
              session={session} 
              cargarTodo={cargarTodo} 
              abrirOrdenModal={(v: any) => setModalNuevaOrden(v)} 

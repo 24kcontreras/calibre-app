@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Plus, Search, AlertTriangle, PhoneForwarded, CheckCircle2, Info, Bot, MessageSquare, FileText, ChevronDown } from 'lucide-react'
+import { Plus, Search, AlertTriangle, Info, FileText, ChevronDown } from 'lucide-react'
 import toast from 'react-hot-toast'
 import CAR_DATA from '@/app/taller/autos.json'
 
@@ -37,20 +37,17 @@ const validarRutChileno = (rutCompleto: string) => {
 interface RecepcionProps {
   soloLectura: boolean;
   vehiculos: any[];
-  oportunidadesVenta: any[];
   session: any;
   cargarTodo: () => Promise<void>;
   abrirOrdenModal: (vehiculo: any) => void;
   nombreTaller: string;
-  // 🔥 Agregamos el prop para abrir el modal de información que me pasaste
   abrirInfoModal?: (vehiculo: any) => void; 
 }
 
-export default function Recepcion({ soloLectura, vehiculos, oportunidadesVenta, session, cargarTodo, abrirOrdenModal, nombreTaller, abrirInfoModal }: RecepcionProps) {
+export default function Recepcion({ soloLectura, vehiculos, session, cargarTodo, abrirOrdenModal, nombreTaller, abrirInfoModal }: RecepcionProps) {
   const [loading, setLoading] = useState(false)
   const [recepcionAbierta, setRecepcionAbierta] = useState(false)
   const [busqueda, setBusqueda] = useState('')
-  const [tabIzquierda, setTabIzquierda] = useState<'alertas' | 'agenda'>('alertas')
 
   const [nombreInput, setNombreInput] = useState('')
   const [rutInput, setRutInput] = useState('')
@@ -140,43 +137,6 @@ export default function Recepcion({ soloLectura, vehiculos, oportunidadesVenta, 
     } else { await ejecutarRegistroCompleto(null, fd) }
   }
 
-  const llamarARevisionWhatsapp = (vehiculo: any) => {
-      const telefono = vehiculo.clientes?.telefono;
-      const cliente = vehiculo.clientes?.nombre || 'Estimado(a)';
-      const modelo = `${vehiculo.marca} ${vehiculo.modelo}`;
-      const msj = `Hola ${cliente} 👋, te escribimos de ${nombreTaller}. \nTe contactamos porque tenemos registrado que a tu ${modelo} (Patente: ${vehiculo.patente}) le corresponde una revisión pendiente. ¿Te gustaría agendar una cita esta semana? 🔧`;
-      if (telefono && telefono.startsWith('+569') && telefono.length === 12) {
-          window.open(`https://wa.me/${telefono.replace('+', '')}?text=${encodeURIComponent(msj)}`, '_blank');
-      } else { toast.error("El cliente no tiene un teléfono válido registrado."); }
-  }
-
-  const enviarRecordatorioPredictivo = (vehiculo: any) => {
-      const telefono = vehiculo.clientes?.telefono;
-      const cliente = vehiculo.clientes?.nombre || 'Estimado(a)';
-      const modelo = `${vehiculo.marca} ${vehiculo.modelo}`;
-      const alerta = vehiculo.alertas_desgaste?.find((a: any) => a.estado === 'Pendiente');
-      
-      let msj = "";
-      if (alerta) {
-          msj = `Hola *${cliente}* 👋, te escribimos de *${nombreTaller}*. \n\nRevisando el historial de tu *${modelo}*, recordamos que hace un tiempo quedó pendiente revisar: *${alerta.pieza}*.\n\nTe escribimos para sugerirte un chequeo preventivo y evitar que se convierta en una falla costosa. ¿Te gustaría que coordinemos una visita esta semana? 🔧`;
-      } else {
-          msj = `Hola *${cliente}* 👋, te escribimos de *${nombreTaller}*. \n\nYa han pasado varios meses desde la última mantención de tu *${modelo}*. Para cuidar tu motor y mantener tu garantía, te sugerimos agendar tu cambio de aceite y filtros preventivo.\n\n¿Tienes disponibilidad esta semana para que lo ingresemos? 🚗✨`;
-      }
-
-      if (telefono && telefono.startsWith('+569') && telefono.length === 12) {
-          window.open(`https://wa.me/${telefono.replace('+', '')}?text=${encodeURIComponent(msj)}`, '_blank');
-      } else { toast.error("El cliente no tiene un teléfono válido registrado."); }
-  };
-
-  const resolverAlertaDirecta = async (alertaId: string) => {
-      if (soloLectura) return;
-      try {
-          await supabase.from('alertas_desgaste').update({ estado: 'Resuelta' }).eq('id', alertaId);
-          toast.success("¡Alerta marcada como resuelta!");
-          await cargarTodo();
-      } catch (error) { toast.error("Error al actualizar la alerta"); }
-  }
-
   const rutSinFormato = rutInput.replace(/[^0-9kK]/g, '');
   const isRutValid = rutSinFormato.length >= 8 && validarRutChileno(rutInput);
   const isRutInvalid = rutSinFormato.length >= 8 && !isRutValid;
@@ -187,8 +147,6 @@ export default function Recepcion({ soloLectura, vehiculos, oportunidadesVenta, 
     (v.clientes?.nombre || '').toLowerCase().includes(tLimpio) ||
     (v.clientes?.rut || '').replace(/[^0-9kK]/g, '').includes(tLimpio)
   )
-
-  const vehiculosConAlertas = vehiculos.filter(v => v.alertas_desgaste?.some((a: any) => a.estado === 'Pendiente'));
 
   return (
     <div className="space-y-4 md:space-y-6 h-full flex flex-col">
@@ -312,13 +270,14 @@ export default function Recepcion({ soloLectura, vehiculos, oportunidadesVenta, 
             </div>
         </section>
 
-        {/* SECCIÓN 2: BUSCADOR (LISTA MINIMALISTA) */}
-        <section className="bg-slate-900/40 backdrop-blur-md p-5 rounded-3xl shadow-2xl border border-slate-700/50 shrink-0">
-            <div className="relative">
+        {/* SECCIÓN 2: BUSCADOR DE VEHÍCULOS (Ahora ocupa todo el espacio restante) */}
+        <section className="bg-slate-900/40 backdrop-blur-md p-5 rounded-3xl shadow-2xl border border-slate-700/50 flex flex-col flex-1 min-h-[350px]">
+            <div className="relative shrink-0">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
                 <input value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Buscar Patente o RUT..." className="w-full p-3 pl-9 rounded-xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm uppercase text-xs font-bold text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all" />
             </div>
-            <div className="space-y-2 mt-3 max-h-40 overflow-y-auto custom-scrollbar-dark pr-2">
+            
+            <div className="space-y-2 mt-4 overflow-y-auto custom-scrollbar-dark pr-2 flex-1">
                 {vehiculosFiltrados.map(v => {
                     const alertaPendiente = v.alertas_desgaste?.find((a: any) => a.estado === 'Pendiente');
                     return (
@@ -334,7 +293,6 @@ export default function Recepcion({ soloLectura, vehiculos, oportunidadesVenta, 
                                     )}
                                 </div>
                                 <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
-                                    {/* 🔥 BOTÓN DE INFORMACIÓN RECONECTADO */}
                                     <button 
                                         onClick={() => abrirInfoModal && abrirInfoModal(v)} 
                                         className="bg-blue-600/20 text-blue-400 p-1.5 rounded-lg hover:bg-blue-600 hover:text-white transition-colors" 
@@ -350,88 +308,12 @@ export default function Recepcion({ soloLectura, vehiculos, oportunidadesVenta, 
                         </div>
                     </div>
                 )})}
-            </div>
-        </section>
-
-        {/* SECCIÓN 3: PESTAÑAS (TABS) ALERTAS/AGENDA */}
-        <section className="bg-slate-900/40 backdrop-blur-md p-5 rounded-3xl shadow-2xl border border-slate-700/50 flex flex-col flex-1 min-h-[320px]">
-            <div className="flex gap-2 mb-4 border-b border-slate-800 pb-2 shrink-0">
-                <button 
-                    onClick={() => setTabIzquierda('alertas')} 
-                    className={`flex-1 text-[10px] font-black uppercase tracking-widest pb-2 border-b-2 transition-all flex items-center justify-center gap-1 ${tabIzquierda === 'alertas' ? 'border-red-500 text-red-400' : 'border-transparent text-slate-500 hover:text-slate-300'}`}
-                >
-                    <AlertTriangle size={12}/> Alertas ({vehiculosConAlertas.length})
-                </button>
-                <button 
-                    onClick={() => setTabIzquierda('agenda')} 
-                    className={`flex-1 text-[10px] font-black uppercase tracking-widest pb-2 border-b-2 transition-all flex items-center justify-center gap-1 ${tabIzquierda === 'agenda' ? 'border-blue-500 text-blue-400' : 'border-transparent text-slate-500 hover:text-slate-300'}`}
-                >
-                    <Bot size={12}/> Agenda
-                </button>
-            </div>
-            
-            <div className="space-y-2 overflow-y-auto custom-scrollbar-dark pr-2 flex-1">
-                {tabIzquierda === 'alertas' && (
-                    <>
-                        {vehiculosConAlertas.map(v => {
-                            const alerta = v.alertas_desgaste?.find((a: any) => a.estado === 'Pendiente');
-                            return (
-                                <div key={`alerta-${v.id}`} className="p-3 bg-slate-950/50 backdrop-blur-sm rounded-xl border border-slate-800 hover:border-red-500/50 transition-all group">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <div className="overflow-hidden">
-                                            <p className="font-black text-[10px] text-slate-200 uppercase truncate">{v.clientes?.nombre}</p>
-                                            <p className="text-[9px] text-slate-500 font-bold uppercase truncate">{v.marca} {v.modelo} • {v.patente}</p>
-                                        </div>
-                                    </div>
-                                    <div className="bg-slate-900 rounded-lg p-2 mb-2">
-                                        <p className="text-[8px] font-bold text-red-400 uppercase tracking-wider flex items-center gap-1">
-                                            <AlertTriangle size={10} className="shrink-0" /> 
-                                            <span className="truncate">Desgaste: {alerta?.pieza}</span>
-                                        </p>
-                                    </div>
-                                    <button onClick={() => llamarARevisionWhatsapp(v)} className="w-full bg-blue-600/10 text-blue-400 border border-blue-600/30 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-slate-950 transition-all flex items-center justify-center gap-1">
-                                        <PhoneForwarded size={10} /> Contactar
-                                    </button>
-                                </div>
-                            );
-                        })}
-                        {vehiculosConAlertas.length === 0 && (
-                            <div className="text-center p-4 border border-dashed border-slate-800 rounded-xl h-full flex flex-col items-center justify-center">
-                                <CheckCircle2 size={24} className="text-slate-700 mb-2"/>
-                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Sin alertas críticas pendientes.</p>
-                            </div>
-                        )}
-                    </>
-                )}
-
-                {tabIzquierda === 'agenda' && (
-                    <>
-                        {oportunidadesVenta.filter(v => !v.alertas_desgaste?.some((a: any) => a.estado === 'Pendiente')).map(v => (
-                            <div key={`agenda-${v.id}`} className="p-3 bg-slate-950/50 backdrop-blur-sm rounded-xl border border-slate-800 hover:border-blue-500/50 transition-all group">
-                                <div className="flex justify-between items-start mb-2">
-                                    <div className="overflow-hidden">
-                                        <p className="font-black text-[10px] text-slate-200 uppercase truncate">{v.clientes?.nombre}</p>
-                                        <p className="text-[9px] text-slate-500 font-bold uppercase truncate">{v.marca} {v.modelo} • {v.patente}</p>
-                                    </div>
-                                </div>
-                                <div className="bg-slate-900 rounded-lg p-2 mb-2">
-                                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                                        <Bot size={10} className="text-blue-500 shrink-0" /> 
-                                        <span className="truncate">Sugerir Mantención Preventiva</span>
-                                    </p>
-                                </div>
-                                <button onClick={() => enviarRecordatorioPredictivo(v)} className="w-full bg-blue-600/10 text-blue-400 border border-blue-600/30 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-slate-950 transition-all flex items-center justify-center gap-1">
-                                    <MessageSquare size={10} /> Enviar Aviso
-                                </button>
-                            </div>
-                        ))}
-                        {oportunidadesVenta.filter(v => !v.alertas_desgaste?.some((a: any) => a.estado === 'Pendiente')).length === 0 && (
-                            <div className="text-center p-4 border border-dashed border-slate-800 rounded-xl h-full flex flex-col items-center justify-center">
-                                <Bot size={24} className="text-slate-700 mb-2"/>
-                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">No hay mantenciones próximas.</p>
-                            </div>
-                        )}
-                    </>
+                
+                {vehiculosFiltrados.length === 0 && (
+                    <div className="text-center p-4 border border-dashed border-slate-800 rounded-xl h-full flex flex-col items-center justify-center min-h-[150px]">
+                        <Search size={24} className="text-slate-700 mb-2"/>
+                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">No se encontraron vehículos.</p>
+                    </div>
                 )}
             </div>
         </section>
