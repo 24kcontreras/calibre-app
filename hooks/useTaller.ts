@@ -43,21 +43,25 @@ export const useTaller = () => {
       .order('created_at', { ascending: false })
     setVehiculos(vData || [])
 
-    // 🔥 CORRECCIÓN VITAL 1: Restauramos la consulta a la BD que hace funcionar la Pizarra
+    // 🔥 CORRECCIÓN APLICADA: Obligamos a Supabase a cruzar las tablas con !inner
     // 3. Órdenes Activas
-    const { data: oAbiertas } = await supabase.from('ordenes_trabajo')
-      .select('*, vehiculos(*, clientes(*), alertas_desgaste(*)), items_orden(*), fotos_orden(*), comentarios_orden(*)') 
-      .eq('taller_id', currentTallerId)
+    const { data: oAbiertas, error: errAbiertas } = await supabase.from('ordenes_trabajo')
+      .select('*, vehiculos!inner(*, clientes(*), alertas_desgaste(*)), items_orden(*), fotos_orden(*), comentarios_orden(*)') 
+      .eq('vehiculos.taller_id', currentTallerId)
       .neq('estado', 'Finalizada')
       .order('created_at', { ascending: false })
+    
+    if (errAbiertas) console.error("🔥 ERROR SUPABASE (PIZARRA):", errAbiertas.message);
     setOrdenesAbiertas(oAbiertas || [])
 
     // 4. Historial
-    const { data: oFinalizadas } = await supabase.from('ordenes_trabajo')
-      .select('*, vehiculos(*, clientes(*), alertas_desgaste(*)), items_orden(*), fotos_orden(*), comentarios_orden(*)') 
-      .eq('taller_id', currentTallerId)
+    const { data: oFinalizadas, error: errFinalizadas } = await supabase.from('ordenes_trabajo')
+      .select('*, vehiculos!inner(*, clientes(*), alertas_desgaste(*)), items_orden(*), fotos_orden(*), comentarios_orden(*)') 
+      .eq('vehiculos.taller_id', currentTallerId)
       .eq('estado', 'Finalizada')
       .order('updated_at', { ascending: false })
+      
+    if (errFinalizadas) console.error("🔥 ERROR SUPABASE (HISTORIAL):", errFinalizadas.message);
     setHistorial(oFinalizadas || [])
   }
 
@@ -102,7 +106,7 @@ export const useTaller = () => {
     }
   }, [])
 
-  // 🔥 CORRECCIÓN VITAL 2: Restauramos el Escuchador en Tiempo Real
+  // 🔥 ESCUCHADOR EN VIVO (Mantiene los Toasts Mágicos activos)
   useEffect(() => {
     if (!session?.user?.id) return;
 
@@ -112,8 +116,7 @@ export const useTaller = () => {
         {
           event: 'UPDATE',
           schema: 'public',
-          table: 'ordenes_trabajo',
-          filter: `taller_id=eq.${session.user.id}`
+          table: 'ordenes_trabajo'
         },
         (payload: any) => {
           const oldRecord = payload.old;
