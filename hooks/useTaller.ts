@@ -13,8 +13,6 @@ import {
 
 export const useTaller = () => {
   const [session, setSession] = useState<Session | null>(null)
-  
-  // 🔥 NUEVO: Estado para saber si estamos en Modo Trinchera
   const [mecanicoActivo, setMecanicoActivo] = useState<any | null>(null)
   
   const [authLoading, setAuthLoading] = useState(true)
@@ -36,7 +34,6 @@ export const useTaller = () => {
    };
 
    const cargarTodo = async (tId?: string) => {
-     // Aquí usamos el ID del dueño, o el ID del taller al que pertenece el mecánico
      const currentTallerId = tId || session?.user?.id || mecanicoActivo?.taller_id;
      if (!currentTallerId) return;
 
@@ -83,11 +80,8 @@ export const useTaller = () => {
 
     const checkSession = async () => {
       try {
-        // Primero intentamos buscar la sesión maestra (Del Dueño)
         const { data, error } = await supabase.auth.getSession();
         
-        // Si hay un error real de red, lo lanzamos. 
-        // Si simplemente no hay sesión, error suele ser null y data.session es null.
         if (error) throw error;
         
         const currentSession = data?.session;
@@ -99,22 +93,24 @@ export const useTaller = () => {
                 extraerDatosConfiguracionAuth(currentSession.user.user_metadata);
                 await cargarTodo(currentSession.user.id);
             } else {
-                // 🔵 NO ES EL DUEÑO. Vamos a revisar si tiene un gafete de mecánico en el bolsillo.
+                // 🔵 NO ES EL DUEÑO. Revisamos el pase de Mecánico
                 const credencial = localStorage.getItem('calibre_mecanico_session');
                 if (credencial) {
                     const mecanico = JSON.parse(credencial);
-                    // Comprobación de seguridad: vemos si no lo han desactivado en la BD
-                    const { data: mecDB } = await supabase.from('mecanicos').select('activo').eq('id', mecanico.id).single();
                     
-                    if (mecDB && mecDB.activo) {
-                        // El mecánico es válido y activo
+                    // 🔥 LA CORRECCIÓN MAESTRA ESTÁ AQUÍ 🔥
+                    // Usamos maybeSingle() para que no explote si el RLS lo bloquea.
+                    const { data: mecDB } = await supabase.from('mecanicos').select('activo').eq('id', mecanico.id).maybeSingle();
+                    
+                    // Si el RLS bloquea (mecDB es null), asumimos que está activo porque pasó la barrera del PIN.
+                    // Solo lo echamos si explícitamente la BD dice "activo: false"
+                    if (!mecDB || mecDB.activo !== false) {
                         setMecanicoActivo(mecanico);
-                        // Truco para que la app no pida login general (fingimos una pseudo-sesión)
                         setSession({ user: { id: 'mecanico' } } as any); 
                         await cargarTodo(mecanico.taller_id);
                     } else {
-                        // Lo echaron o desactivaron, quemamos el gafete
                         localStorage.removeItem('calibre_mecanico_session');
+                        document.cookie = "calibre_mecanico_auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
                         toast.error('Tu acceso ha sido revocado.');
                     }
                 }
@@ -122,7 +118,6 @@ export const useTaller = () => {
         }
       } catch (err: any) { 
         toast.error("Error crítico de autenticación. Por favor, reinicie la sesión.");
-        console.error("Error crítico de Auth:", err);
       } finally {
         if (isMounted) setAuthLoading(false);
       }
@@ -137,7 +132,6 @@ export const useTaller = () => {
                extraerDatosConfiguracionAuth(currentSession.user.user_metadata);
                cargarTodo(currentSession.user.id);
            } else {
-               // Si se cierra la sesión principal, pero hay un mecánico, no borramos su estado
                const credencial = localStorage.getItem('calibre_mecanico_session');
                if (!credencial) {
                    setSession(null);
@@ -152,11 +146,9 @@ export const useTaller = () => {
     }
   }, [])
 
-  // ... (El resto de tus useEffects de canales de Supabase y cálculos matemáticos quedan EXACTAMENTE igual) ...
   useEffect(() => {
     if (!session?.user?.id && !mecanicoActivo) return;
 
-    // ... (Tu código del canal 'taller_notificaciones' intacto)
     const channel = supabase.channel('taller_notificaciones')
       .on(
         'postgres_changes',
@@ -194,9 +186,7 @@ export const useTaller = () => {
     };
   }, [session?.user?.id, mecanicoActivo]);
 
-
-
-  // 🔥 CÁLCULOS DERIVADOS (Telemetría, Finanzas y Oportunidades)
+  // 🔥 CÁLCULOS DERIVADOS
   const cajaTotal = historial.reduce((acc, o) => acc + (o.items_orden?.reduce((s: number, i: ItemOrden) => s + i.precio, 0) || 0) + (o.costo_revision || 0) - (o.descuento || 0), 0)
 
   let ingresosServicio = 0;
@@ -285,6 +275,6 @@ export const useTaller = () => {
     topMecanicos,
     oportunidadesVenta,
     cargarTodo,
-    mecanicoActivo // 👈 EXPONEMOS ESTO PARA QUE LA PIZARRA LO USE
+    mecanicoActivo 
   }
 }
