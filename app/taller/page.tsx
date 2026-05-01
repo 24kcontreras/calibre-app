@@ -268,7 +268,6 @@ export default function CalibreApp() {
   // --- PANTALLAS DE CARGA Y LOGIN ---
   if (authLoading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center"><Wrench className="animate-spin text-emerald-500" size={64} /></div>
   
-  // 🔥 El Frontend maneja la seguridad perfectamente, no necesitamos middleware para esto.
   if (!session && !mecanicoActivo) return <Login />
 
   // 🔥 VALIDACIÓN DE SUSCRIPCIÓN (HARD LOCK DE LA FASE 4)
