@@ -12,7 +12,8 @@ import Recepcion from '@/components/taller/Recepcion'
 import Pizarra from '@/components/taller/Pizarra'
 import { Vehiculo, OrdenTrabajo, ItemOrden } from '@/hooks/types'
 
-// 🔥 IMPORTAMOS TODOS TUS MODALES
+// 🔥 IMPORTAMOS EL NUEVO BOTTOM NAV Y TODOS TUS MODALES
+import BottomNav from '@/components/taller/BottomNav'
 import ModalTelemetria from '@/components/modals/ModalTelemetria'
 import ModalHistorial from '@/components/modals/ModalHistorial'
 import ModalConfiguracion from '@/components/modals/ModalConfiguracion'
@@ -42,7 +43,7 @@ export default function CalibreApp() {
     mecanicoActivo
   } = useTaller()
 
-  // 🔥 NUEVO ESTADO: Controla las pestañas en versión Móvil
+  // 🔥 NUEVO ESTADO: Controla las pestañas en versión Móvil (Taller vs Recepción)
   const [vistaMecanico, setVistaMecanico] = useState<'pizarra' | 'recepcion'>('pizarra');
 
   // 🎛️ ESTADOS PARA MOSTRAR/OCULTAR MODALES
@@ -246,8 +247,9 @@ export default function CalibreApp() {
   }
 
   // --- SI LA SUSCRIPCIÓN ESTÁ AL DÍA, RENDERIZAMOS LA APP NORMAL ---
+  // 🔥 Ajustamos el padding-bottom (pb-32 en móvil) para que la barra de navegación no tape la última tarjeta
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-6 font-sans w-full mx-auto relative overflow-hidden pb-24 md:pb-6">
+    <main className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-6 font-sans w-full mx-auto relative overflow-hidden pb-32 md:pb-6">
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-emerald-900/10 rounded-full blur-[120px] pointer-events-none z-0"></div>
       <Toaster position="bottom-right" toastOptions={{ style: { background: '#1e293b', color: '#f8fafc', border: '1px solid #334155' } }} />
 
@@ -258,7 +260,7 @@ export default function CalibreApp() {
           </div>
       )}
 
-      {/* HEADER ULTRACOMPACTO */}
+      {/* HEADER ULTRACOMPACTO (Los botones en móvil se ocultarán mediante las clases de Tailwind que ajustaste) */}
       <Header 
         nombreTaller={nombreTaller} 
         cajaTotal={cajaTotal} 
@@ -270,7 +272,7 @@ export default function CalibreApp() {
         mecanicoActivo={mecanicoActivo}
       />
 
-      {/* 📱 PESTAÑAS MÓVILES (Ocultas en escritorio) */}
+      {/* 📱 PESTAÑAS MÓVILES (Para alternar entre Recepción y Pizarra) */}
       <div className="flex md:hidden bg-slate-900/60 p-1.5 rounded-2xl mb-6 border border-slate-800 shadow-inner">
         <button 
           onClick={() => setVistaMecanico('pizarra')}
@@ -337,12 +339,22 @@ export default function CalibreApp() {
       {vistaMecanico === 'pizarra' && (
         <button 
           onClick={() => setVistaMecanico('recepcion')}
-          className="md:hidden fixed bottom-6 right-6 w-14 h-14 bg-blue-600 text-white rounded-full shadow-[0_0_20px_rgba(37,99,235,0.5)] flex items-center justify-center z-50 hover:bg-blue-500 transition-all active:scale-95"
+          className="md:hidden fixed bottom-20 right-6 w-14 h-14 bg-blue-600 text-white rounded-full shadow-[0_0_20px_rgba(37,99,235,0.5)] flex items-center justify-center z-40 hover:bg-blue-500 transition-all active:scale-95"
           title="Buscar o Añadir Vehículo"
         >
           <Plus size={28} />
         </button>
       )}
+
+      {/* 🔥 NUEVO BOTTOM NAVIGATION BAR (Solo en móvil) */}
+      <BottomNav 
+          mecanicoActivo={mecanicoActivo}
+          onOpenScanner={() => setModalScanner(true)}
+          onOpenTelemetria={() => setModalTelemetria(true)}
+          onOpenCRM={() => setModalCrm(true)}
+          onOpenMarketing={() => setModalMarketing(true)}
+          onOpenConfiguracion={() => setModalConfiguracion(true)}
+      />
 
       {/* --- RENDERIZADO DE MODALES (CAPA FLOTANTE) --- */}
       {modalNuevaOrden && <ModalNuevaOrden vehiculo={modalNuevaOrden} soloLectura={soloLectura} session={session} cargarTodo={cargarTodo} onClose={() => setModalNuevaOrden(null)} />}
