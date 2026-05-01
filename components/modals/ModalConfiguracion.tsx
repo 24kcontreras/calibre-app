@@ -1,6 +1,7 @@
+'use client'
 import { useState, useEffect } from 'react'
-import { Settings, Save, LogOut, Upload, FileText, Percent, Image as ImageIcon, MapPin, Phone, Sparkles, Download, ShieldCheck, CreditCard, BookOpen, ChevronDown, Users, Plus, QrCode, PowerOff, X, Loader2, Key, Check } from 'lucide-react'
-import toast from 'react-hot-toast'
+import { Settings, Save, LogOut, Upload, FileText, Percent, Image as ImageIcon, MapPin, Phone, Sparkles, Download, ShieldCheck, CreditCard, BookOpen, ChevronDown, Users, Plus, QrCode, PowerOff, X, Loader2, Key, Check, Copy } from 'lucide-react'
+import toast, { Toaster } from 'react-hot-toast'
 import { supabase } from '@/lib/supabase'
 import { QRCodeSVG } from 'qrcode.react'
 
@@ -308,88 +309,109 @@ export default function ModalConfiguracion({
 
             {/* 🔵 PESTAÑA: EQUIPO Y MECÁNICOS */}
             {pestañaActiva === 'equipo' && (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="flex flex-col gap-6">
                     
-                    {/* Formulario Alta */}
-                    <div className="lg:col-span-1 bg-slate-950 border border-slate-800 p-6 rounded-3xl h-fit">
-                        <h3 className="text-sm font-black uppercase tracking-widest text-blue-400 mb-6 flex items-center gap-2"><Plus size={16}/> Alta Operario</h3>
-                        <form onSubmit={crearMecanico} className="space-y-4">
-                            <div>
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 block">Nombre Real</label>
-                                <input type="text" required value={nuevoMecanico.nombre} onChange={e => setNuevoMecanico({...nuevoMecanico, nombre: e.target.value})} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-100 focus:border-blue-500 outline-none" placeholder="Ej: Pedro Mecánico" />
-                            </div>
-                            <div>
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 block">Usuario Único</label>
-                                <input type="text" required value={nuevoMecanico.usuario} onChange={e => setNuevoMecanico({...nuevoMecanico, usuario: e.target.value})} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-100 focus:border-blue-500 outline-none lowercase" placeholder="Ej: pedro88" />
-                            </div>
-                            <div>
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 block">PIN (4 Dígitos)</label>
-                                <input type="text" required maxLength={4} minLength={4} pattern="\d{4}" value={nuevoMecanico.pin} onChange={e => setNuevoMecanico({...nuevoMecanico, pin: e.target.value.replace(/\D/g, '')})} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-center tracking-[0.5em] text-lg font-black text-emerald-400 focus:border-blue-500 outline-none" placeholder="••••" />
-                            </div>
-                            <button type="submit" disabled={guardandoMecanico} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest text-xs py-3 rounded-xl transition-colors mt-2 disabled:opacity-50">
-                                {guardandoMecanico ? 'Creando...' : 'Crear Acceso'}
-                            </button>
-                        </form>
+                    {/* 🔥 🪪 TARJETA DE IDENTIFICACIÓN DEL TALLER (NUEVA) */}
+                    <div className="bg-blue-950/30 border border-blue-900/50 p-4 md:p-6 rounded-3xl flex flex-col md:flex-row items-center justify-between shadow-inner gap-4 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                        <div className="text-center md:text-left relative z-10">
+                            <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">ID de tu Taller (Pase de Acceso para Mecánicos)</p>
+                            <p className="text-lg md:text-xl font-mono font-black text-slate-200 tracking-wider bg-slate-950/50 px-3 py-1 rounded-lg border border-blue-900/30 inline-block">{tallerId}</p>
+                        </div>
+                        <button 
+                            type="button"
+                            onClick={() => {
+                                navigator.clipboard.writeText(tallerId || '');
+                                toast.success("¡ID copiado al portapapeles!");
+                            }}
+                            className="w-full md:w-auto bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-[0_0_15px_rgba(37,99,235,0.3)] hover:scale-105 flex items-center justify-center gap-2 relative z-10"
+                        >
+                            <Copy size={16} /> Copiar ID
+                        </button>
                     </div>
 
-                    {/* Lista Mecánicos */}
-                    <div className="lg:col-span-2">
-                        <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-6">Personal Autorizado</h3>
-                        {cargandoMecanicos ? (
-                            <Loader2 className="animate-spin text-blue-500 mx-auto" />
-                        ) : mecanicos.length === 0 ? (
-                            <div className="text-center p-8 bg-slate-950 rounded-2xl border border-slate-800 border-dashed text-slate-500 text-sm font-bold">
-                                No tienes mecánicos en tu equipo aún.
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                {mecanicos.map(mec => (
-                                    <div key={mec.id} className={`flex flex-col p-5 rounded-2xl border ${mec.activo ? 'bg-slate-950 border-slate-800' : 'bg-red-950/20 border-red-900/50 opacity-70'}`}>
-                                        <div className="flex items-center gap-3 mb-4">
-                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black ${mec.activo ? 'bg-blue-900/30 text-blue-400' : 'bg-red-900/30 text-red-500'}`}>
-                                                {mec.nombre.substring(0,2).toUpperCase()}
-                                            </div>
-                                            <div>
-                                                <h4 className="font-black text-slate-200">{mec.nombre}</h4>
-                                                <p className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">USER: {mec.usuario}</p>
-                                            </div>
-                                        </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        {/* Formulario Alta */}
+                        <div className="lg:col-span-1 bg-slate-950 border border-slate-800 p-6 rounded-3xl h-fit">
+                            <h3 className="text-sm font-black uppercase tracking-widest text-blue-400 mb-6 flex items-center gap-2"><Plus size={16}/> Alta Operario</h3>
+                            <form onSubmit={crearMecanico} className="space-y-4">
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 block">Nombre Real</label>
+                                    <input type="text" required value={nuevoMecanico.nombre} onChange={e => setNuevoMecanico({...nuevoMecanico, nombre: e.target.value})} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-100 focus:border-blue-500 outline-none" placeholder="Ej: Pedro Mecánico" />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 block">Usuario Único</label>
+                                    <input type="text" required value={nuevoMecanico.usuario} onChange={e => setNuevoMecanico({...nuevoMecanico, usuario: e.target.value})} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-100 focus:border-blue-500 outline-none lowercase" placeholder="Ej: pedro88" />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 block">PIN (4 Dígitos)</label>
+                                    <input type="text" required maxLength={4} minLength={4} pattern="\d{4}" value={nuevoMecanico.pin} onChange={e => setNuevoMecanico({...nuevoMecanico, pin: e.target.value.replace(/\D/g, '')})} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-center tracking-[0.5em] text-lg font-black text-emerald-400 focus:border-blue-500 outline-none" placeholder="••••" />
+                                </div>
+                                <button type="submit" disabled={guardandoMecanico} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest text-xs py-3 rounded-xl transition-colors mt-2 disabled:opacity-50">
+                                    {guardandoMecanico ? 'Creando...' : 'Crear Acceso'}
+                                </button>
+                            </form>
+                        </div>
 
-                                        {/* 🔥 EDICIÓN DE PIN EN LÍNEA */}
-                                        {editandoPinId === mec.id ? (
-                                            <div className="flex items-center gap-2 mt-auto animate-in fade-in zoom-in duration-200">
-                                                <input
-                                                    type="text"
-                                                    maxLength={4}
-                                                    value={nuevoPinValue}
-                                                    onChange={e => setNuevoPinValue(e.target.value.replace(/\D/g, ''))}
-                                                    className="w-full bg-slate-900 border border-blue-500 rounded-lg px-3 py-2 text-center font-black tracking-[0.5em] text-blue-400 focus:outline-none placeholder-slate-600"
-                                                    placeholder="••••"
-                                                />
-                                                <button onClick={() => actualizarPinMecanico(mec.id)} disabled={guardandoPin || nuevoPinValue.length !== 4} className="p-2.5 bg-blue-600 hover:bg-blue-500 rounded-lg text-white transition-colors disabled:opacity-50">
-                                                    {guardandoPin ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
-                                                </button>
-                                                <button onClick={() => setEditandoPinId(null)} className="p-2.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-400 transition-colors">
-                                                    <X size={16} />
-                                                </button>
+                        {/* Lista Mecánicos */}
+                        <div className="lg:col-span-2">
+                            <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-6">Personal Autorizado</h3>
+                            {cargandoMecanicos ? (
+                                <Loader2 className="animate-spin text-blue-500 mx-auto" />
+                            ) : mecanicos.length === 0 ? (
+                                <div className="text-center p-8 bg-slate-950 rounded-2xl border border-slate-800 border-dashed text-slate-500 text-sm font-bold">
+                                    No tienes mecánicos en tu equipo aún.
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {mecanicos.map(mec => (
+                                        <div key={mec.id} className={`flex flex-col p-5 rounded-2xl border ${mec.activo ? 'bg-slate-950 border-slate-800' : 'bg-red-950/20 border-red-900/50 opacity-70'}`}>
+                                            <div className="flex items-center gap-3 mb-4">
+                                                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black ${mec.activo ? 'bg-blue-900/30 text-blue-400' : 'bg-red-900/30 text-red-500'}`}>
+                                                    {mec.nombre.substring(0,2).toUpperCase()}
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-black text-slate-200">{mec.nombre}</h4>
+                                                    <p className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">USER: {mec.usuario}</p>
+                                                </div>
                                             </div>
-                                        ) : (
-                                            <div className="flex items-center gap-2 mt-auto">
-                                                <button onClick={() => setQrVisible(mec)} disabled={!mec.activo} className="flex-1 py-2 bg-slate-900 hover:bg-slate-800 rounded-lg text-emerald-400 transition-colors disabled:opacity-20 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest border border-slate-800">
-                                                    <QrCode size={14} /> Gafete
-                                                </button>
-                                                <button onClick={() => { setEditandoPinId(mec.id); setNuevoPinValue(''); }} disabled={!mec.activo} className="p-2 rounded-lg bg-slate-900 border-slate-800 hover:bg-blue-900/50 hover:border-blue-500/50 hover:text-blue-400 text-slate-400 border transition-colors disabled:opacity-20" title="Modificar PIN">
-                                                    <Key size={16} />
-                                                </button>
-                                                <button onClick={() => toggleEstadoMecanico(mec.id, mec.activo)} className={`p-2 rounded-lg transition-colors border ${mec.activo ? 'bg-slate-900 border-slate-800 hover:bg-red-900/50 text-slate-400 hover:text-red-400 hover:border-red-500/50' : 'bg-red-900/50 border-red-500/50 text-red-400 hover:bg-emerald-900/50 hover:text-emerald-400'}`} title={mec.activo ? "Desvincular (Bloquear Acceso)" : "Restaurar Acceso"}>
-                                                    <PowerOff size={16} />
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+
+                                            {/* 🔥 EDICIÓN DE PIN EN LÍNEA */}
+                                            {editandoPinId === mec.id ? (
+                                                <div className="flex items-center gap-2 mt-auto animate-in fade-in zoom-in duration-200">
+                                                    <input
+                                                        type="text"
+                                                        maxLength={4}
+                                                        value={nuevoPinValue}
+                                                        onChange={e => setNuevoPinValue(e.target.value.replace(/\D/g, ''))}
+                                                        className="w-full bg-slate-900 border border-blue-500 rounded-lg px-3 py-2 text-center font-black tracking-[0.5em] text-blue-400 focus:outline-none placeholder-slate-600"
+                                                        placeholder="••••"
+                                                    />
+                                                    <button onClick={() => actualizarPinMecanico(mec.id)} disabled={guardandoPin || nuevoPinValue.length !== 4} className="p-2.5 bg-blue-600 hover:bg-blue-500 rounded-lg text-white transition-colors disabled:opacity-50">
+                                                        {guardandoPin ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                                                    </button>
+                                                    <button onClick={() => setEditandoPinId(null)} className="p-2.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-400 transition-colors">
+                                                        <X size={16} />
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-2 mt-auto">
+                                                    <button onClick={() => setQrVisible(mec)} disabled={!mec.activo} className="flex-1 py-2 bg-slate-900 hover:bg-slate-800 rounded-lg text-emerald-400 transition-colors disabled:opacity-20 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest border border-slate-800">
+                                                        <QrCode size={14} /> Gafete
+                                                    </button>
+                                                    <button onClick={() => { setEditandoPinId(mec.id); setNuevoPinValue(''); }} disabled={!mec.activo} className="p-2 rounded-lg bg-slate-900 border-slate-800 hover:bg-blue-900/50 hover:border-blue-500/50 hover:text-blue-400 text-slate-400 border transition-colors disabled:opacity-20" title="Modificar PIN">
+                                                        <Key size={16} />
+                                                    </button>
+                                                    <button onClick={() => toggleEstadoMecanico(mec.id, mec.activo)} className={`p-2 rounded-lg transition-colors border ${mec.activo ? 'bg-slate-900 border-slate-800 hover:bg-red-900/50 text-slate-400 hover:text-red-400 hover:border-red-500/50' : 'bg-red-900/50 border-red-500/50 text-red-400 hover:bg-emerald-900/50 hover:text-emerald-400'}`} title={mec.activo ? "Desvincular (Bloquear Acceso)" : "Restaurar Acceso"}>
+                                                        <PowerOff size={16} />
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}
