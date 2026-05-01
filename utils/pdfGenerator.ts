@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable'; // 🔥 Restaurado a tu versión original confiable
+import toast from 'react-hot-toast';
 
 interface ConfigPDF {
     nombreTaller: string;
@@ -65,9 +66,11 @@ export const generarDocumentoPDF = async (o: any, resumenIA: string = "", config
                 const altoCalculado = (props.height * anchoDeseado) / props.width;
                 doc.addImage(logoB64, 'PNG', 14, 12, anchoDeseado, altoCalculado);
                 posicionYHeader = 12 + altoCalculado + 8; 
-            } catch (err) {
-                console.error("Error logo", err);
-            }
+                } catch (err) {
+                    toast.error("Error al cargar el logo en el PDF");
+                    console.error("Error logo", err);
+                }
+
         }
 
         doc.setFontSize(24);
@@ -341,7 +344,10 @@ export const generarDocumentoPDF = async (o: any, resumenIA: string = "", config
                     doc.setTextColor(100, 116, 139);
                     doc.text(`Nota técnica: ${f.descripcion}`, 14, y + pdfAlto + 5);
                     y += pdfAlto + 15;
-                } catch (e) { console.error("Error cargando imagen en PDF"); }
+                } catch (e) { 
+                    toast.error("Error cargando imagen de evidencia");
+                    console.error("Error cargando imagen en PDF"); 
+                }
             }
             finalY = y; 
         }
@@ -375,6 +381,7 @@ export const generarDocumentoPDF = async (o: any, resumenIA: string = "", config
         return doc.output('datauristring');
 
     } catch (e) {
+        toast.error("Error al generar la Radiografía Mensual");
         console.error("Error al generar PDF:", e);
         throw e;
     }
@@ -435,7 +442,10 @@ export const generarRadiografiaMensualPDF = async (historial: any[] = [], oportu
                 const altoCalculado = (props.height * anchoDeseado) / props.width;
                 doc.addImage(logoB64, 'PNG', 14, 12, anchoDeseado, altoCalculado);
                 posicionY = 12 + altoCalculado + 8; 
-            } catch (err) { console.error("Error al cargar logo", err); }
+            } catch (err) { 
+                toast.error("Error al cargar el logo en la radiografía");
+                console.error("Error al cargar logo", err); 
+            }
         }
 
         const nombreAUsar = configPDF?.nombreTaller || 'MI TALLER';
@@ -570,9 +580,10 @@ export const generarRadiografiaMensualPDF = async (historial: any[] = [], oportu
         }
 
         doc.save(`Radiografia_Mensual_${nombreAUsar.replace(/\s+/g, '_')}_${nombreMes}.pdf`);
-        
     } catch (e) {
+        toast.error("Error crítico al generar el PDF");
         console.error("Error al generar PDF:", e);
         throw e;
     }
+
 };

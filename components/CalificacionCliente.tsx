@@ -29,8 +29,8 @@ export default function CalificacionCliente({ ordenId, tipo }: { ordenId: string
             setEnviado(true);
             toast.success("¡Calificación enviada con éxito!");
         } catch (err: any) {
+            toast.error("Error al guardar la calificación. Intenta nuevamente.");
             console.error("Error guardando feedback:", err);
-            toast.error("Hubo un error de conexión. Intenta nuevamente.");
         } finally {
             setEnviando(false);
         }

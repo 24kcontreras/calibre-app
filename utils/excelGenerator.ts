@@ -137,4 +137,4 @@ export const descargarExcelSupremo = (historial: any[], oportunidades: any[], no
 
     const fechaStr = new Date().toISOString().split('T')[0];
     XLSX.writeFile(wb, `Reporte_Financiero_${nombreTaller.replace(/\s+/g, '_')}_${fechaStr}.xlsx`);
-}
+} 

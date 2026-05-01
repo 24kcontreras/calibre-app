@@ -46,8 +46,9 @@ export async function POST(req: Request) {
     
     return NextResponse.json({ resultado: texto });
     
-  } catch (error: any) {
-    console.error("❌ ERROR IA:", error);
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : "Error desconocido";
+    console.error("❌ ERROR IA:", msg);
     return NextResponse.json({ 
         resultado: "<b>⚠️ Error de conexión</b><br>No pudimos procesar la consulta técnica. Revisa tu conexión a internet o el estado de la API."
     });

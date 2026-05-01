@@ -52,8 +52,8 @@ export default function ModalTelemetria({
         await generarRadiografiaMensualPDF(historial, oportunidades, configParaPDF);
         toast.success("¡Radiografía generada con éxito!", { id: toastId });
     } catch (error) {
-        console.error(error);
         toast.error("Hubo un problema al generar el PDF", { id: toastId });
+        console.error(error);
     }
   };
 

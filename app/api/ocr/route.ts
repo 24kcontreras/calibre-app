@@ -56,8 +56,9 @@ export async function POST(req: Request) {
 
     return NextResponse.json(datosVehiculo);
     
-  } catch (error: any) {
-    console.error("❌ ERROR OCR:", error);
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : "Error desconocido";
+    console.error("❌ ERROR OCR:", msg);
     return NextResponse.json({ error: "No se pudo procesar la imagen" }, { status: 500 });
   }
 }

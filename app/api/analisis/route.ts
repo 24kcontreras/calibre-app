@@ -45,8 +45,9 @@ export async function POST(req: Request) {
     
     return NextResponse.json({ resultado: texto });
     
-  } catch (error: any) {
-    console.error("❌ ERROR REAL DE LA IA (ANÁLISIS):", error.message || error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : "Error desconocido";
+    console.error("❌ ERROR REAL DE LA IA (ANÁLISIS):", msg);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

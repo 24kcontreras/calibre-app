@@ -4,6 +4,8 @@ import { supabase } from '@/lib/supabase'
 import { Plus, Search, AlertTriangle, Info, FileText, ChevronDown } from 'lucide-react'
 import toast from 'react-hot-toast'
 import CAR_DATA from '@/app/taller/autos.json'
+import { Session } from '@supabase/supabase-js'
+import { Vehiculo, AlertaDesgaste } from '@/hooks/types'
 
 const MARCAS = Object.keys(CAR_DATA).sort();
 
@@ -34,14 +36,15 @@ const validarRutChileno = (rutCompleto: string) => {
   return dvCalculado === dvIngresado;
 }
 
+
 interface RecepcionProps {
   soloLectura: boolean;
-  vehiculos: any[];
-  session: any;
+  vehiculos: Vehiculo[];
+  session: Session | null;
   cargarTodo: () => Promise<void>;
-  abrirOrdenModal: (vehiculo: any) => void;
+  abrirOrdenModal: (vehiculo: Vehiculo) => void;
   nombreTaller: string;
-  abrirInfoModal?: (vehiculo: any) => void; 
+  abrirInfoModal?: (vehiculo: Vehiculo) => void; 
 }
 
 export default function Recepcion({ soloLectura, vehiculos, session, cargarTodo, abrirOrdenModal, nombreTaller, abrirInfoModal }: RecepcionProps) {
@@ -57,7 +60,7 @@ export default function Recepcion({ soloLectura, vehiculos, session, cargarTodo,
   const [marcaInput, setMarcaInput] = useState('')
   const [modeloInput, setModeloInput] = useState('') 
 
-  const handleRutChange = (e: any) => {
+  const handleRutChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       let v = e.target.value.replace(/[^0-9kK]/g, '').toUpperCase().slice(0, 9);
       if (v.length > 1) v = v.slice(0, -1).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '-' + v.slice(-1);
       setRutInput(v);
@@ -105,7 +108,10 @@ export default function Recepcion({ soloLectura, vehiculos, session, cargarTodo,
                 abrirOrdenModal(nV[0]); 
             }
         }
-    } catch (error: any) { toast.error("Error en registro: " + error.message); } 
+    } catch (error: unknown) { 
+        const msg = error instanceof Error ? error.message : "Error desconocido";
+        toast.error("Error en registro: " + msg); 
+    } 
     finally { setLoading(false); }
   }
 
@@ -278,10 +284,11 @@ export default function Recepcion({ soloLectura, vehiculos, session, cargarTodo,
             </div>
             
             <div className="space-y-2 mt-4 overflow-y-auto custom-scrollbar-dark pr-2 flex-1">
-                {vehiculosFiltrados.map(v => {
-                    const alertaPendiente = v.alertas_desgaste?.find((a: any) => a.estado === 'Pendiente');
-                    return (
-                    <div key={v.id} className="p-3 bg-slate-800/50 backdrop-blur-sm rounded-xl flex justify-between items-center group border border-slate-700/50 hover:border-emerald-500/50 transition-all">
+                 {vehiculosFiltrados.map(v => {
+                     const alertaPendiente = v.alertas_desgaste?.find((a: AlertaDesgaste) => a.estado === 'Pendiente');
+                     return (
+                     <div key={v.id} className="p-3 bg-slate-800/50 backdrop-blur-sm rounded-xl flex justify-between items-center group border border-slate-700/50 hover:border-emerald-500/50 transition-all">
+
                         <div className="overflow-hidden pr-2 w-full">
                             <div className="flex items-center justify-between w-full">
                                 <div className="flex items-center gap-2">

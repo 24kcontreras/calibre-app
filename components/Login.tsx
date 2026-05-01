@@ -1,183 +1,184 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { ArrowRight, Mail, Lock, AlertCircle } from 'lucide-react'
-import Link from 'next/link'
+import { Wrench, Lock, Mail, ArrowRight, Loader2, UserSquare, ShieldAlert, QrCode } from 'lucide-react'
+import toast from 'react-hot-toast'
 import Image from 'next/image'
+import { useSearchParams } from 'next/navigation'
 
 export default function Login() {
+  const searchParams = useSearchParams();
+  
+  // Detectar si viene de un Código QR (?t=ID_TALLER&u=USUARIO)
+  const qrTaller = searchParams.get('t');
+  const qrUser = searchParams.get('u');
+
+  // Si viene del QR, abrimos la pestaña de operario por defecto
+  const [modo, setModo] = useState<'admin' | 'operario'>(qrTaller ? 'operario' : 'admin');
+  
+  // Estados para Administrador (Dueño)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  
+  // Estados para Operario (Mecánico)
+  const [tallerId, setTallerId] = useState(qrTaller || '')
+  const [usuarioMecanico, setUsuarioMecanico] = useState(qrUser || '')
+  const [pin, setPin] = useState('')
+
   const [loading, setLoading] = useState(false)
-  const [errorMsg, setErrorMsg] = useState('')
 
-  useEffect(() => {
-    const checkSess = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
-        window.location.reload(); 
-      }
-    }
-    checkSess();
-  }, []);
-
-  const validarContrasena = (pass: string) => {
-      const regex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+{}:;<>,.?~\\/-]).{8,}$/;
-      return regex.test(pass);
-  };
-
-  const handleLogin = async (e: React.FormEvent) => {
+  // 1. INICIO DE SESIÓN PARA EL DUEÑO (ADMIN)
+  const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    setErrorMsg('')
-    
-    if (!validarContrasena(password)) {
-        setErrorMsg('La contraseña no cumple el formato corporativo. Revisa los requisitos.');
-        setLoading(false);
-        return;
-    }
+    const toastId = toast.loading('Accediendo al panel de control...')
 
     try {
-        const { error } = await supabase.auth.signInWithPassword({ email, password })
-        
-        if (error) {
-            if (error.message.includes("Email not confirmed")) {
-                setErrorMsg('Por seguridad, debes confirmar tu correo. Revisa tu bandeja de entrada o carpeta de Spam.');
-            } else {
-                setErrorMsg('Credenciales incorrectas. Verifica tu correo y contraseña.');
-            }
-            setLoading(false)
-            return
-        }
-        
-        window.location.href = '/'
-    } catch (err) {
-        setErrorMsg('Ocurrió un error inesperado al iniciar sesión.')
-        setLoading(false)
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) throw error
+      toast.success('¡Bienvenido a Calibre OS!', { id: toastId })
+      window.location.href = '/taller' // Recargamos para que los hooks detecten la sesión
+    } catch (error: any) {
+      toast.error('Credenciales incorrectas.', { id: toastId })
+      setLoading(false)
     }
   }
 
-  const handleGoogleLogin = async () => {
-    try {
-        setErrorMsg('')
-        setLoading(true)
-        const { data, error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: { redirectTo: `${window.location.origin}/` }
-        })
+  // 2. INICIO DE SESIÓN PARA MECÁNICOS (OPERARIOS)
+  const handleOperarioLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    const toastId = toast.loading('Verificando Gafete Inteligente...')
 
-        if (error) {
-            setErrorMsg(`Error de Google: ${error.message}`)
-            setLoading(false)
-        }
-    } catch (err) {
-        setErrorMsg('El sistema bloqueó la conexión con Google.')
-        setLoading(false)
+    try {
+      // Llamamos a nuestro Guardia Virtual en Supabase (RPC)
+      const { data, error } = await supabase.rpc('iniciar_sesion_mecanico', {
+        p_taller_id: tallerId,
+        p_usuario: usuarioMecanico.toLowerCase().trim(),
+        p_pin: pin
+      });
+
+      if (error) throw error;
+
+      // Si todo sale bien, guardamos su pase de acceso en el celular (Local Storage)
+      localStorage.setItem('calibre_mecanico_session', JSON.stringify(data));
+      
+      toast.success(`¡A la trinchera, ${data.nombre}!`, { id: toastId })
+      
+      // Lo enviamos a la pizarra operativa
+      window.location.href = '/taller' 
+      
+    } catch (error: any) {
+      toast.error('PIN incorrecto o acceso revocado.', { id: toastId })
+      setLoading(false)
+      setPin('') // Le borramos el PIN para que intente de nuevo
     }
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-4 selection:bg-emerald-500 selection:text-slate-950 relative overflow-hidden">
-        
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-600/10 rounded-full blur-[150px] pointer-events-none -z-10"></div>
+    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      {/* Fondos abstractos Cyberpunk */}
+      <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-emerald-900/20 rounded-full blur-[120px] pointer-events-none z-0"></div>
+      <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-blue-900/10 rounded-full blur-[120px] pointer-events-none z-0"></div>
 
-      <div className="w-full max-w-md bg-slate-900/80 backdrop-blur-xl p-8 sm:p-12 rounded-[40px] border border-slate-800 shadow-2xl relative z-10">
+      <div className="w-full max-w-md bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-[40px] shadow-2xl p-8 relative z-10">
         
-        <div className="flex flex-col items-center justify-center mb-10">
-            <div className="mb-4">
-                <Image 
-                    src="/logo-calibre.png" 
-                    alt="Logo Calibre" 
-                    width={70} 
-                    height={70} 
-                    priority
-                    className="object-contain drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]"
-                />
+        {/* LOGO */}
+        <div className="flex flex-col items-center mb-8">
+            <div className="w-16 h-16 bg-slate-950 border border-slate-800 rounded-2xl flex items-center justify-center mb-4 shadow-inner">
+                <Image src="/logo-calibre.png" alt="Logo" width={32} height={32} className="drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
             </div>
-            <h1 className="text-3xl font-black uppercase tracking-tighter">Calibre<span className="text-emerald-500">.</span></h1>
-            <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-2">Acceso Operadores</h2>
+            <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-100">Calibre<span className="text-emerald-500">.</span></h1>
+            <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mt-1">Sistema Operativo Automotriz</p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-5">
-            <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-                <input 
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    placeholder="Email Corporativo" 
-                    className="w-full p-4 pl-12 rounded-2xl border border-slate-800 bg-slate-950 text-sm text-slate-200 outline-none focus:border-emerald-500 transition-colors font-bold"
-                />
-            </div>
-            
-            {/* 🔥 CONTENEDOR DE CONTRASEÑA + LINK DE RECUPERACIÓN */}
-            <div className="space-y-2">
-                <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-                    <input 
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        placeholder="Contraseña" 
-                        className="w-full p-4 pl-12 rounded-2xl border border-slate-800 bg-slate-950 text-sm text-slate-200 outline-none focus:border-emerald-500 transition-colors font-bold"
-                    />
-                </div>
-                <div className="flex justify-end pr-2">
-                    <Link href="/recuperar" className="text-[10px] font-black text-emerald-500 hover:text-emerald-400 uppercase tracking-widest transition-colors">
-                        ¿Olvidaste tu contraseña?
-                    </Link>
-                </div>
-            </div>
-
-            {errorMsg && (
-                <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/30 text-red-400 p-3 rounded-xl text-xs font-bold animate-pulse">
-                    <AlertCircle size={16} className="shrink-0 mt-0.5" />
-                    <span className="leading-relaxed">{errorMsg}</span>
-                </div>
-            )}
-
+        {/* SWITCH DE MODO (ADMIN / OPERARIO) */}
+        <div className="flex bg-slate-950 p-1 rounded-2xl mb-8 border border-slate-800 relative">
             <button 
-                disabled={loading}
-                type="submit" 
-                className="w-full mt-2 group flex items-center justify-center gap-3 bg-emerald-600 text-slate-950 px-8 py-4 rounded-full font-black text-xs uppercase tracking-widest hover:bg-emerald-500 transition-all hover:scale-[1.02] shadow-[0_0_20px_rgba(16,185,129,0.2)] disabled:opacity-50"
+                type="button"
+                onClick={() => setModo('admin')}
+                className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 z-10 ${modo === 'admin' ? 'text-white' : 'text-slate-500 hover:text-slate-300'}`}
             >
-                {loading ? 'Autenticando...' : <>Acceder al Sistema <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" /></>}
+                <ShieldAlert size={14} /> Dueño
             </button>
-        </form>
-
-        <div className="flex items-center gap-4 my-8">
-            <div className="h-px bg-slate-800 flex-1"></div>
-            <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">O continúa con</span>
-            <div className="h-px bg-slate-800 flex-1"></div>
+            <button 
+                type="button"
+                onClick={() => setModo('operario')}
+                className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 z-10 ${modo === 'operario' ? 'text-white' : 'text-slate-500 hover:text-slate-300'}`}
+            >
+                <Wrench size={14} /> Operario
+            </button>
+            
+            {/* Animación del fondo del switch */}
+            <div className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-slate-800 rounded-xl transition-transform duration-300 shadow-md ${modo === 'admin' ? 'translate-x-0' : 'translate-x-[calc(100%+4px)]'}`}></div>
         </div>
 
-        <button 
-            onClick={handleGoogleLogin}
-            disabled={loading}
-            type="button" 
-            className="w-full py-4 px-4 flex items-center justify-center gap-3 rounded-2xl bg-slate-950 border border-slate-800 text-xs font-black text-slate-300 uppercase tracking-widest hover:border-slate-600 hover:text-slate-100 hover:bg-slate-900 transition-all disabled:opacity-50"
-        >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="18px" height="18px">
-                <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
-                <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/>
-                <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/>
-                <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/>
-            </svg>
-            Acceder con Google
-        </button>
+        {/* FORMULARIO DUEÑO */}
+        {modo === 'admin' && (
+            <form onSubmit={handleAdminLogin} className="space-y-5 animate-in fade-in slide-in-from-left-4 duration-300">
+                <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Correo Electrónico</label>
+                    <div className="relative">
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600" size={18} />
+                        <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-2xl py-4 pl-12 pr-4 text-sm font-bold text-slate-200 focus:border-emerald-500 outline-none transition-colors" placeholder="taller@ejemplo.com" />
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Contraseña</label>
+                    <div className="relative">
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600" size={18} />
+                        <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-2xl py-4 pl-12 pr-4 text-sm font-bold text-slate-200 focus:border-emerald-500 outline-none transition-colors" placeholder="••••••••" />
+                    </div>
+                </div>
+                <button type="submit" disabled={loading} className="w-full bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black text-xs uppercase tracking-widest py-4 rounded-2xl mt-4 flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)] disabled:opacity-50">
+                    {loading ? <Loader2 className="animate-spin" size={18} /> : <>Ingresar al Panel <ArrowRight size={18} /></>}
+                </button>
+            </form>
+        )}
 
-        <div className="mt-8 text-center">
-            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mr-2">
-                ¿Nuevo operador?
-            </span>
-            <Link href="/registro" className="text-[10px] font-black text-emerald-400 hover:text-emerald-300 uppercase tracking-widest border-b border-emerald-500/30 hover:border-emerald-400 pb-0.5 transition-all">
-                Crear cuenta aquí
-            </Link>
-        </div>
+        {/* FORMULARIO OPERARIO (MECÁNICO) */}
+        {modo === 'operario' && (
+            <form onSubmit={handleOperarioLogin} className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
+                
+                {qrUser && qrTaller ? (
+                    <div className="bg-emerald-950/30 border border-emerald-900/50 p-4 rounded-2xl flex items-center gap-4 mb-2">
+                        <div className="bg-emerald-500/20 p-3 rounded-full text-emerald-500">
+                            <QrCode size={24} />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Gafete Escaneado</p>
+                            <p className="text-sm font-bold text-slate-200">Usuario: @{usuarioMecanico}</p>
+                        </div>
+                    </div>
+                ) : (
+                    <>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">ID del Taller</label>
+                            <input type="text" required value={tallerId} onChange={(e) => setTallerId(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-2xl py-4 px-4 text-sm font-bold text-slate-200 focus:border-blue-500 outline-none transition-colors" placeholder="Ej: GARAGE-24K" />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Usuario</label>
+                            <div className="relative">
+                                <UserSquare className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600" size={18} />
+                                <input type="text" required value={usuarioMecanico} onChange={(e) => setUsuarioMecanico(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-2xl py-4 pl-12 pr-4 text-sm font-bold text-slate-200 focus:border-blue-500 outline-none transition-colors lowercase" placeholder="Ej: pedro88" />
+                            </div>
+                        </div>
+                    </>
+                )}
 
+                <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">PIN de Acceso</label>
+                    <input type="password" required maxLength={4} minLength={4} pattern="\d{4}" value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} className="w-full bg-slate-950 border border-slate-800 rounded-2xl py-4 px-4 text-center tracking-[1em] text-2xl font-black text-blue-400 focus:border-blue-500 outline-none transition-colors" placeholder="••••" />
+                </div>
+
+                <button type="submit" disabled={loading || pin.length !== 4} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase tracking-widest py-4 rounded-2xl mt-4 flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(37,99,235,0.2)] disabled:opacity-50">
+                    {loading ? <Loader2 className="animate-spin" size={18} /> : <>Entrar al Taller <Wrench size={18} /></>}
+                </button>
+            </form>
+        )}
       </div>
-    </main>
+      
+      <p className="mt-8 text-[10px] font-black uppercase tracking-[0.2em] text-slate-600 z-10">Seguridad Nivel Bancario</p>
+    </div>
   )
 }

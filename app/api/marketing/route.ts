@@ -39,8 +39,9 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ resultado: textoMejorado });
     
-  } catch (error: any) {
-    console.error("❌ ERROR MARKETING IA:", error);
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : "Error desconocido";
+    console.error("❌ ERROR MARKETING IA:", msg);
     return NextResponse.json({ error: "No pudimos mejorar el texto." }, { status: 500 });
   }
 }

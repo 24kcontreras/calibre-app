@@ -24,7 +24,7 @@ export default function TerminosPage() {
 
         {/* Intro */}
         <p className="text-slate-400 leading-relaxed mb-12 text-sm">
-          Bienvenido a <strong>CALIBRE (Neural Garage OS)</strong>. Los siguientes Términos y Condiciones (en adelante, los "Términos") constituyen un contrato legalmente vinculante entre usted (en adelante, "el Usuario", "el Taller" o "el Suscriptor") y CALIBRE SOFTWARE. Al registrarse, acceder o utilizar nuestra plataforma web y sus herramientas, usted declara haber leído, entendido y aceptado íntegramente estos Términos.
+          Bienvenido a <strong>CALIBRE (Neural Garage OS)</strong>. Los siguientes Términos y Condiciones (en adelante, los &quot;Términos&quot;) constituyen un contrato legalmente vinculante entre usted (en adelante, &quot;el Usuario&quot;, &quot;el Taller&quot; o &quot;el Suscriptor&quot;) y CALIBRE SOFTWARE. Al registrarse, acceder o utilizar nuestra plataforma web y sus herramientas, usted declara haber leído, entendido y aceptado íntegramente estos Términos.
         </p>
 
         {/* Contenido Legal Extenso */}
@@ -53,9 +53,9 @@ export default function TerminosPage() {
             <h2 className="text-red-400 font-black uppercase tracking-widest mb-4 flex items-center gap-3 text-lg">
                 <AlertTriangle size={20} /> <span className="font-mono">03.</span> Exención Absoluta por Asistencia de IA
             </h2>
-            <p className="text-slate-400 mb-4">La Plataforma integra herramientas de Inteligencia Artificial (IA), incluyendo la "Biblioteca Técnica" y el "Diagnóstico IA":</p>
+            <p className="text-slate-400 mb-4">La Plataforma integra herramientas de Inteligencia Artificial (IA), incluyendo la &quot;Biblioteca Técnica&quot; y el &quot;Diagnóstico IA&quot;:</p>
             <ul className="list-disc pl-5 space-y-2 text-slate-400">
-              <li><strong>Naturaleza referencial:</strong> Los datos generados por la IA (torques de culata, luces de válvulas, presiones, capacidades de fluidos, códigos OBD2, etc.) son aproximaciones probabilísticas y <strong>puramente referenciales</strong>. La IA está sujeta a "alucinaciones" (generación de datos falsos que parecen reales).</li>
+               <li><strong>Naturaleza referencial:</strong> Los datos generados por la IA (torques de culata, luces de válvulas, presiones, capacidades de fluidos, códigos OBD2, etc.) son aproximaciones probabilísticas y <strong>puramente referenciales</strong>. La IA está sujeta a &quot;alucinaciones&quot; (generación de datos falsos que parecen reales).</li>
               <li><strong>Obligación de verificación:</strong> CALIBRE <strong>NO reemplaza</strong> bajo ninguna circunstancia el manual oficial del fabricante (OEM) ni el criterio técnico y profesional del mecánico. Es obligación ineludible verificar todo dato numérico en las fuentes oficiales antes de intervenir un vehículo.</li>
               <li><strong>Exención de daños:</strong> La Empresa no asume responsabilidad civil, penal ni administrativa por daños físicos a personas, daños catastróficos a motores o vehículos, lucro cesante o cualquier otro perjuicio derivado de la aplicación de la información proporcionada por la IA de CALIBRE.</li>
             </ul>
@@ -109,7 +109,7 @@ export default function TerminosPage() {
                 <span className="text-emerald-500 font-mono">08.</span> Disponibilidad y "As Is"
             </h2>
             <p className="text-slate-400">
-              El servicio se entrega "tal cual" (As is) y "según disponibilidad". No garantizamos que el software esté 100% libre de errores o interrupciones. El Usuario es responsable de mantener un control paralelo o exportar sus registros vitales periódicamente ante eventuales fallos masivos en la nube.
+               El servicio se entrega &quot;tal cual&quot; (As is) y &quot;según disponibilidad&quot;. No garantizamos que el software esté 100% libre de errores o interrupciones. El Usuario es responsable de mantener un control paralelo o exportar sus registros vitales periódicamente ante eventuales fallos masivos en la nube.
             </p>
           </section>
 
@@ -127,7 +127,7 @@ export default function TerminosPage() {
                <span className="text-emerald-500 font-mono">10.</span> Límite Máximo de Responsabilidad
             </h2>
             <p className="text-slate-400 italic text-base leading-relaxed">
-              "En la medida máxima permitida por la ley aplicable, la responsabilidad total acumulada de CALIBRE SOFTWARE frente al Usuario por cualquier reclamo derivado de estos Términos, el uso del software, pérdida de datos o fallos de la IA, <strong>estará limitada estrictamente al monto total que el Usuario haya pagado a la Empresa por concepto de suscripción durante los últimos tres (3) meses</strong> anteriores al evento que originó el reclamo. Si el Usuario utiliza una versión gratuita, la responsabilidad de CALIBRE será cero ($0)."
+               &quot;En la medida máxima permitida por la ley aplicable, la responsabilidad total acumulada de CALIBRE SOFTWARE frente al Usuario por cualquier reclamo derivado de estos Términos, el uso del software, pérdida de datos o fallos de la IA, <strong>estará limitada estrictamente al monto total que el Usuario haya pagado a la Empresa por concepto de suscripción durante los últimos tres (3) meses</strong> anteriores al evento que originó el reclamo. Si el Usuario utiliza una versión gratuita, la responsabilidad de CALIBRE será cero ($0).&quot;
             </p>
           </section>
 

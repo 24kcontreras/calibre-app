@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { CheckCircle2, ClipboardList, Circle, Clock, Wrench, Search, Package, CheckSquare, CarFront, AlertCircle, Fuel, AlertTriangle, ShieldAlert, Camera, Car, BatteryWarning, Droplets, ChevronDown, ShieldCheck, Thermometer, CircleDot } from 'lucide-react'
 import CalificacionCliente from '@/components/CalificacionCliente';
 import Car3DViewer from '@/components/Car3DViewer'
+import toast from 'react-hot-toast';
 
 const PASOS_PROCESO = [
   { id: 'Diagnóstico', nombre: 'Diagnóstico en curso', icono: Search, desc: 'Revisando el vehículo detalladamente.' },
@@ -42,6 +43,7 @@ export default function EstadoVehiculoCliente() {
         if (err) throw err;
         setOrden(data);
       } catch (err: any) {
+        toast.error("No pudimos conectar con el servidor. Verifica tu conexión.");
         console.error('Error cargando orden:', err);
         setError('No pudimos encontrar la información de este vehículo. Verifica que el enlace sea correcto.');
       } finally {

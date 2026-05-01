@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import { NextResponse } from 'next/server';
+import { ItemOrden } from '@/hooks/types';
 
 // 🔥 LA SOLUCIÓN AL PROBLEMA: Le damos al servidor hasta 60 segundos de paciencia
 export const maxDuration = 60; 
@@ -40,7 +41,7 @@ export async function POST(req: Request) {
     });
 
     const repuestos = items && items.length > 0 
-        ? items.map((i: any) => `- ${i.descripcion} ($${i.precio})`).join('\n')
+        ? items.map((i: ItemOrden) => `- ${i.descripcion} ($${i.precio})`).join('\n')
         : 'Revisión general sin repuestos adicionales.';
 
     const prompt = `Actúa como el jefe de taller mecánico experto de "CALIBRE". Redacta un informe técnico final y profesional para el cliente sobre el servicio realizado a su vehículo.
@@ -66,8 +67,9 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ resumen: resumenGenerado });
     
-  } catch (error: any) {
-    console.error("❌ ERROR REAL DE LA IA (RESUMEN):", error.message || error);
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : "Error desconocido";
+    console.error("❌ ERROR REAL DE LA IA (RESUMEN):", msg);
     return NextResponse.json({ 
         resumen: "Se realizó la revisión técnica del vehículo por el problema reportado. Los trabajos y repuestos aplicados se encuentran detallados en el presente documento. Se recomienda cumplir rigurosamente con el plan de mantenciones del fabricante para prolongar la vida útil de los componentes." 
     });

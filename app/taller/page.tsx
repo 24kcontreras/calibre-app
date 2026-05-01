@@ -5,15 +5,14 @@ import { supabase } from '@/lib/supabase'
 import imageCompression from 'browser-image-compression'
 import toast, { Toaster } from 'react-hot-toast'
 import { Wrench, AlertTriangle, Bot } from 'lucide-react'
-
-// 🔥 1. IMPORTAMOS TUS NUEVOS MÓDULOS LIMPIOS
 import { useTaller } from '@/hooks/useTaller'
 import Login from '@/components/Login'
 import Header from '@/components/Header'
 import Recepcion from '@/components/taller/Recepcion'
 import Pizarra from '@/components/taller/Pizarra'
+import { Vehiculo, OrdenTrabajo, ItemOrden } from '@/hooks/types'
 
-// 🔥 2. IMPORTAMOS TODOS TUS MODALES
+// 🔥 IMPORTAMOS TODOS TUS MODALES
 import ModalTelemetria from '@/components/modals/ModalTelemetria'
 import ModalHistorial from '@/components/modals/ModalHistorial'
 import ModalConfiguracion from '@/components/modals/ModalConfiguracion'
@@ -27,42 +26,53 @@ import ModalAnalisisIA from '@/components/modals/ModalAnalisisIA'
 import ModalActaRecepcion from '@/components/modals/ModalActaRecepcion'
 import ModalNuevaOrden from '@/components/modals/ModalNuevaOrden'
 import ModalEditarOrden from '@/components/modals/ModalEditarOrden'
-// 👇 NUEVA INYECCIÓN: El Cerebro del CRM
+import ModalManual from '@/components/modals/ModalManual'
 import ModalCRM from '@/components/modals/ModalCRM' 
 import Paywall from '@/components/Paywall'
 
 export default function CalibreApp() {
   const router = useRouter()
   
-  // 🧠 EL CEREBRO: Trae todos los datos procesados desde tu nuevo Hook
+  // 🧠 EL CEREBRO: Traemos mecanicoActivo
   const { 
     session, authLoading, soloLectura, vehiculos, ordenesAbiertas, historial, 
     nombreTaller, configTaller, esOnboarding, cajaTotal, gananciasEsteMes, 
     autosEsteMes, ticketPromedio, pctServicio, pctRepuesto, ingresosServicio, 
-    ingresosRepuesto, topMarcas, topMecanicos, oportunidadesVenta, cargarTodo 
+    ingresosRepuesto, topMarcas, topMecanicos, oportunidadesVenta, cargarTodo,
+    mecanicoActivo // 👈 AQUÍ RECIBIMOS LA CREDENCIAL DEL MECÁNICO
   } = useTaller()
 
   // 🎛️ ESTADOS PARA MOSTRAR/OCULTAR MODALES
-  const [modalNuevaOrden, setModalNuevaOrden] = useState<any | null>(null)
-  const [modalEditarOrden, setModalEditarOrden] = useState<any | null>(null)
-  const [modalActa, setModalActa] = useState<any | null>(null)
-  const [modalVehiculoInfo, setVehiculoInfo] = useState<any | null>(null)
-  const [modalAnalisis, setModalAnalisis] = useState<any | null>(null)
-  const [modalAlerta, setModalAlerta] = useState<any | null>(null)
+  const [modalNuevaOrden, setModalNuevaOrden] = useState<Vehiculo | null>(null)
+  const [modalEditarOrden, setModalEditarOrden] = useState<OrdenTrabajo | null>(null)
+  const [modalActa, setModalActa] = useState<OrdenTrabajo | null>(null)
+  const [modalVehiculoInfo, setVehiculoInfo] = useState<Vehiculo | null>(null)
+  const [modalAnalisis, setModalAnalisis] = useState<OrdenTrabajo | null>(null)
+  const [modalAlerta, setModalAlerta] = useState<Vehiculo | null>(null)
   
   const [modalTelemetria, setModalTelemetria] = useState(false)
   const [modalHistorial, setModalHistorial] = useState(false)
   const [modalMarketing, setModalMarketing] = useState(false)
   const [modalScanner, setModalScanner] = useState(false)
   const [modalConfiguracion, setModalConfiguracion] = useState(false)
-  // 👇 NUEVA INYECCIÓN: Estado para el Modal CRM
+  const [modalManual, setModalManual] = useState(false)
   const [modalCrm, setModalCrm] = useState(false) 
   
   const [generandoPDF, setGenerandoPDF] = useState(false)
   const [modalItemVisible, setModalItemVisible] = useState(false)
 
   // 📝 ESTADOS DE FORMULARIOS PARA MODALES MENORES
-  const [itemForm, setItemForm] = useState({ id: null, orden_id: '', nombre: '', detalle: '', precio: '', tipo_item: 'servicio', procedencia: 'Taller' })  
+  interface ItemForm {
+    id: string | null;
+    orden_id: string;
+    nombre: string;
+    detalle: string;
+    precio: string;
+    tipo_item: 'servicio' | 'repuesto';
+    procedencia: string;
+  }
+
+  const [itemForm, setItemForm] = useState<ItemForm>({ id: null, orden_id: '', nombre: '', detalle: '', precio: '', tipo_item: 'servicio', procedencia: 'Taller' })  
   const [guardandoItem, setGuardandoItem] = useState(false)
 
   const [fotoForm, setFotoForm] = useState<{ordenId: string, file: File | null, preview: string, descripcion: string} | null>(null)
@@ -73,7 +83,7 @@ export default function CalibreApp() {
 
   const [codigoScanner, setCodigoScanner] = useState('')
   const [vehiculoScanner, setVehiculoScanner] = useState('')
-  const [resultadoScanner, setResultadoScanner] = useState<any>(null)
+  const [resultadoScanner, setResultadoScanner] = useState<Record<string, unknown> | null>(null)
   const [cargandoScanner, setCargandoScanner] = useState(false)
   const [busquedaHistorial, setBusquedaHistorial] = useState('')
 
@@ -97,9 +107,9 @@ export default function CalibreApp() {
         setInputGarantia(configTaller.garantia_taller || '')
         setIncluirIva(configTaller.incluir_iva || false)
         setLogoPreview(configTaller.logo_url || null)
-        if (esOnboarding) setModalConfiguracion(true)
+        if (esOnboarding && !mecanicoActivo) setModalConfiguracion(true)
     }
-  }, [configTaller, esOnboarding])
+  }, [configTaller, esOnboarding, mecanicoActivo])
 
   // --- FUNCIONES RÁPIDAS PARA MODALES MENORES ---
   const guardarItemBD = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -132,7 +142,10 @@ export default function CalibreApp() {
           await supabase.from('fotos_orden').insert([{ orden_id: fotoForm.ordenId, url: publicUrl, descripcion: fotoForm.descripcion || "Evidencia adjunta" }])
           
           setFotoForm(null); toast.success("Foto guardada"); await cargarTodo();
-      } catch (err: any) { toast.error("Error subiendo foto: " + err.message); } finally { setSubiendoFoto(false); }
+      } catch (err: unknown) { 
+          const msg = err instanceof Error ? err.message : "Error desconocido";
+          toast.error("Error subiendo foto: " + msg); 
+      } finally { setSubiendoFoto(false); }
   }
 
   const guardarAlertaBD = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -140,11 +153,16 @@ export default function CalibreApp() {
       if (!modalAlerta || guardandoAlerta || soloLectura) return;
       setGuardandoAlerta(true);
       try {
-          const payload = { vehiculo_id: modalAlerta.vehiculo_id || modalAlerta.id, pieza: alertaForm.pieza, nivel_riesgo: alertaForm.nivel_riesgo, observacion: alertaForm.observacion, taller_id: session?.user?.id };
+            const tallerIdBD = mecanicoActivo ? mecanicoActivo.taller_id : session?.user?.id;
+            const payload = { vehiculo_id: modalAlerta?.vehiculo_id || modalAlerta?.id, pieza: alertaForm.pieza, nivel_riesgo: alertaForm.nivel_riesgo, observacion: alertaForm.observacion, taller_id: tallerIdBD };
+
           const { error } = await supabase.from('alertas_desgaste').insert([payload]);
           if (error) throw error;
           toast.success("¡Alerta registrada!"); setModalAlerta(null); await cargarTodo(); 
-      } catch (err: any) { toast.error("Error guardando alerta"); } finally { setGuardandoAlerta(false); }
+      } catch (err: unknown) { 
+          const msg = err instanceof Error ? err.message : "Error desconocido";
+          toast.error("Error guardando alerta: " + msg); 
+      } finally { setGuardandoAlerta(false); }
   }
 
   const consultarScanner = async (e: React.FormEvent, tipo: 'scanner' | 'manual') => {
@@ -155,7 +173,10 @@ export default function CalibreApp() {
       const data = await res.json();
       if(data.error) throw new Error(data.error);
       setResultadoScanner(data);
-    } catch (err: any) { toast.error("Error IA: " + err.message); } finally { setCargandoScanner(false); }
+    } catch (err: unknown) { 
+        const msg = err instanceof Error ? err.message : "Error desconocido";
+        toast.error("Error IA: " + msg); 
+    } finally { setCargandoScanner(false); }
   }
 
   const guardarConfiguracion = async () => {
@@ -163,12 +184,13 @@ export default function CalibreApp() {
       setGuardandoConfiguracion(true); const toastId = toast.loading("Guardando ajustes...");
       
       const nombreLimpio = inputTaller.toUpperCase().trim();
-
+  
       try {
           let logoUrl = configTaller?.logo_url || null;
           if (logoFile) {
               setSubiendoLogo(true);
-              const fileName = `${session.user.id}/logo_${Date.now()}.png`;
+            const fileName = `${session?.user?.id}/logo_${Date.now()}.png`;
+
               await supabase.storage.from('logos').upload(fileName, await imageCompression(logoFile, { maxSizeMB: 0.5, maxWidthOrHeight: 1024, useWebWorker: true }), { upsert: true });
               logoUrl = supabase.storage.from('logos').getPublicUrl(fileName).data.publicUrl;
               setSubiendoLogo(false);
@@ -177,20 +199,21 @@ export default function CalibreApp() {
           await supabase.auth.updateUser({ 
             data: { nombre_taller: nombreLimpio, direccion_taller: inputDireccion, telefono_taller: inputTelefonoConfig, garantia_taller: inputGarantia, incluir_iva: incluirIva, logo_url: logoUrl }
           });
-
-          await supabase
-            .from('talleres')
-            .update({ nombre_taller: nombreLimpio })
-            .eq('id', session.user.id);
+  
+            await supabase
+              .from('talleres')
+              .update({ nombre_taller: nombreLimpio })
+              .eq('id', session?.user?.id);
 
           setLogoFile(null); 
           toast.success("¡Ajustes guardados!", { id: toastId }); 
           setModalConfiguracion(false);
           
           await cargarTodo(); 
-
-      } catch (err: any) { 
-        toast.error("Error: " + err.message, { id: toastId }); 
+  
+      } catch (err: unknown) { 
+        const msg = err instanceof Error ? err.message : "Error desconocido";
+        toast.error("Error: " + msg, { id: toastId }); 
         setSubiendoLogo(false); 
       } finally { 
         setGuardandoConfiguracion(false); 
@@ -202,7 +225,8 @@ export default function CalibreApp() {
   // --- PANTALLAS DE CARGA Y LOGIN ---
   if (authLoading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center"><Wrench className="animate-spin text-emerald-500" size={64} /></div>
   
-  if (!session) return <Login />
+  // Si no hay sesión normal ni sesión de mecánico, mandarlo al login
+  if (!session && !mecanicoActivo) return <Login />
 
   // 🔥 VALIDACIÓN DE SUSCRIPCIÓN (HARD LOCK DE LA FASE 4)
   const fechaVencimiento = configTaller?.fecha_vencimiento;
@@ -211,11 +235,11 @@ export default function CalibreApp() {
 
   if (estaVencido) {
       return (
-          <Paywall 
-              tallerId={session.user.id} 
-              email={session.user.email} 
-              fechaVencimiento={fechaVencimiento} 
-          />
+           <Paywall 
+               tallerId={session?.user?.id || mecanicoActivo?.taller_id || ''} 
+               email={session?.user?.email || ''} 
+               fechaVencimiento={fechaVencimiento} 
+           />
       );
   }
 
@@ -232,7 +256,7 @@ export default function CalibreApp() {
           </div>
       )}
 
-      {/* 👇 NUEVA INYECCIÓN: Le pasamos la función onOpenCRM al Header */}
+      {/* 👇 Header recibe mecanicoActivo para ocultar los módulos prohibidos */}
       <Header 
         nombreTaller={nombreTaller} 
         cajaTotal={cajaTotal} 
@@ -241,6 +265,7 @@ export default function CalibreApp() {
         onOpenScanner={() => setModalScanner(true)} 
         onOpenConfiguracion={() => setModalConfiguracion(true)} 
         onOpenMarketing={() => setModalMarketing(true)} 
+        mecanicoActivo={mecanicoActivo}
       />
 
       {soloLectura && (
@@ -258,34 +283,35 @@ export default function CalibreApp() {
         
         {/* COLUMNA IZQUIERDA (RECEPCIÓN Y BUSCADOR) */}
         <div className="lg:col-span-1">
-           <Recepcion 
-             soloLectura={soloLectura} 
-             vehiculos={vehiculos} 
-             session={session} 
-             cargarTodo={cargarTodo} 
-             abrirOrdenModal={(v: any) => setModalNuevaOrden(v)} 
-             nombreTaller={nombreTaller} 
-             abrirInfoModal={(v: any) => setVehiculoInfo(v)} 
-           />
+            <Recepcion 
+              soloLectura={soloLectura} 
+              vehiculos={vehiculos} 
+              session={session} 
+              cargarTodo={cargarTodo} 
+              abrirOrdenModal={(v: Vehiculo) => setModalNuevaOrden(v)} 
+              nombreTaller={nombreTaller} 
+              abrirInfoModal={(v: Vehiculo) => setVehiculoInfo(v)} 
+            />
         </div>
         
         {/* COLUMNA DERECHA (PIZARRA KANBAN) */}
         <div className="lg:col-span-3 flex flex-col gap-6">
-           <Pizarra 
-             ordenesAbiertas={ordenesAbiertas} 
-             soloLectura={soloLectura} 
-             nombreTaller={nombreTaller} 
-             session={session} 
-             cargarTodo={cargarTodo} 
-             setGenerandoPDF={setGenerandoPDF} 
-             abrirModalActa={setModalActa} 
-             abrirModalEvidencia={(id: any) => setFotoForm({ordenId: id, file: null, preview: '', descripcion: ''})} 
-             abrirModalEditar={(orden: any) => setModalEditarOrden(orden)} 
-             abrirModalItem={(id: any, item: any) => { 
-                setItemForm(item ? { id: item.id, orden_id: id, nombre: item.descripcion, detalle: '', precio: item.precio.toString(), tipo_item: item.tipo_item, procedencia: item.procedencia } : { id: null, orden_id: id, nombre: '', detalle: '', precio: '', tipo_item: 'servicio', procedencia: 'Taller' }); 
-                setModalItemVisible(true); 
-             }} 
-           />
+            <Pizarra 
+              ordenesAbiertas={ordenesAbiertas} 
+              soloLectura={soloLectura} 
+              nombreTaller={nombreTaller} 
+              session={session} 
+              cargarTodo={cargarTodo} 
+              setGenerandoPDF={setGenerandoPDF} 
+              abrirModalActa={setModalActa} 
+              abrirModalEvidencia={(id: string) => setFotoForm({ordenId: id, file: null, preview: '', descripcion: ''})} 
+              abrirModalEditar={(orden: OrdenTrabajo) => setModalEditarOrden(orden)} 
+               abrirModalItem={(id: string, item?: ItemOrden) => { 
+                  setItemForm(item ? { id: item.id, orden_id: id, nombre: item.descripcion, detalle: '', precio: item.precio.toString(), tipo_item: item.tipo_item, procedencia: item.procedencia || 'Taller' } : { id: null, orden_id: id, nombre: '', detalle: '', precio: '', tipo_item: 'servicio', procedencia: 'Taller' }); 
+                  setModalItemVisible(true); 
+               }} 
+               mecanicoActivo={mecanicoActivo} // Pasamos el mecánico a la Pizarra
+            />
         </div>
       </div>
 
@@ -294,42 +320,49 @@ export default function CalibreApp() {
       {modalEditarOrden && <ModalEditarOrden orden={modalEditarOrden} soloLectura={soloLectura} cargarTodo={cargarTodo} onClose={() => setModalEditarOrden(null)} />}
       {modalActa && <ModalActaRecepcion orden={modalActa} onClose={() => setModalActa(null)} />}
       {modalAlerta && <ModalAlerta alertaForm={alertaForm} setAlertaForm={setAlertaForm} guardarAlertaBD={guardarAlertaBD} guardandoAlerta={guardandoAlerta} onClose={() => setModalAlerta(null)} ordenActiva={modalAlerta} resolverAlertaBD={async (id: string) => { await supabase.from('alertas_desgaste').update({ estado: 'Resuelta' }).eq('id', id); toast.success("Alerta resuelta!"); await cargarTodo(); setModalAlerta(null); }} />}
+      
+      {/* 🔒 ESTOS MODALES SOLO DEBEN ABRIRSE SI NO ES MECÁNICO, PERO LOS CONDICIONAMOS EN EL HEADER DE TODOS MODOS */}
       {modalTelemetria && <ModalTelemetria onClose={() => setModalTelemetria(false)} gananciasEsteMes={gananciasEsteMes} autosEsteMes={autosEsteMes} ticketPromedio={ticketPromedio} pctServicio={pctServicio} pctRepuesto={pctRepuesto} ingresosServicio={ingresosServicio} ingresosRepuesto={ingresosRepuesto} topMarcas={topMarcas} topMecanicos={topMecanicos} historial={historial} oportunidades={oportunidadesVenta} nombreTaller={nombreTaller} />}      
       {modalHistorial && <ModalHistorial onClose={() => setModalHistorial(false)} busquedaHistorial={busquedaHistorial} setBusquedaHistorial={setBusquedaHistorial} historialFiltrado={historialFiltrado} configPDF={{ nombreTaller, direccion: configTaller?.direccion_taller || '', telefono: configTaller?.telefono_taller || '', garantia: configTaller?.garantia_taller || '', logoUrl: configTaller?.logo_url || null, incluirIva: configTaller?.incluir_iva || false }} />}
-      
-      {/* 👇 NUEVA INYECCIÓN: Renderizado del Modal CRM */}
       {modalCrm && <ModalCRM onClose={() => setModalCrm(false)} oportunidades={oportunidadesVenta} nombreTaller={nombreTaller} />}
       
-      {/* 🔥 MODAL CONFIGURACIÓN ACTUALIZADO CON LOS PROPS DE PAGO */}
+      {modalManual && <ModalManual onClose={() => setModalManual(false)} />}
+       
+      {/* MODAL CONFIGURACIÓN */}
       {modalConfiguracion && <ModalConfiguracion 
-        onClose={() => setModalConfiguracion(false)} 
-        inputTaller={inputTaller} 
-        setInputTaller={setInputTaller} 
-        guardarConfiguracion={guardarConfiguracion} 
-        guardandoConfiguracion={guardandoConfiguracion} 
-        handleLogout={async () => { await supabase.auth.signOut(); router.push('/'); }} 
-        inputDireccion={inputDireccion} 
-        setInputDireccion={setInputDireccion} 
-        inputTelefono={inputTelefonoConfig} 
-        setInputTelefono={setInputTelefonoConfig} 
-        logoPreview={logoPreview} 
-        handleLogoChange={(e: any) => { const f = e.target.files?.[0]; if(f) { setLogoPreview(URL.createObjectURL(f)); setLogoFile(f); } }} 
-        subiendoLogo={subiendoLogo} 
-        inputGarantia={inputGarantia} 
-        setInputGarantia={setInputGarantia} 
-        incluirIva={incluirIva} 
-        setIncluirIva={setIncluirIva} 
-        esOnboarding={esOnboarding} 
-        vehiculos={vehiculos} 
-        
-        fechaVencimiento={configTaller?.fecha_vencimiento}
-        tallerId={session.user.id}
-        email={session.user.email}
+         onClose={() => setModalConfiguracion(false)} 
+         onOpenManual={() => setModalManual(true)}
+         inputTaller={inputTaller} 
+         setInputTaller={setInputTaller} 
+         guardarConfiguracion={guardarConfiguracion} 
+         guardandoConfiguracion={guardandoConfiguracion} 
+         handleLogout={async () => { await supabase.auth.signOut(); router.push('/'); }} 
+         inputDireccion={inputDireccion} 
+         setInputDireccion={setInputDireccion} 
+         inputTelefono={inputTelefonoConfig} 
+         setInputTelefono={setInputTelefonoConfig} 
+         logoPreview={logoPreview} 
+         handleLogoChange={(e: React.ChangeEvent<HTMLInputElement>) => { const f = e.target.files?.[0]; if(f) { setLogoPreview(URL.createObjectURL(f)); setLogoFile(f); } }} 
+         subiendoLogo={subiendoLogo} 
+         inputGarantia={inputGarantia} 
+         setInputGarantia={setInputGarantia} 
+         incluirIva={incluirIva} 
+         setIncluirIva={setIncluirIva} 
+         esOnboarding={esOnboarding} 
+         vehiculos={vehiculos} 
+         fechaVencimiento={configTaller?.fecha_vencimiento ?? undefined}
+         tallerId={session?.user?.id || mecanicoActivo?.taller_id || ''}
+         email={session?.user?.email || ''}
       />}
-      
+
       {modalVehiculoInfo && <ModalVehiculoInfo vehiculoInfo={modalVehiculoInfo} onClose={() => setVehiculoInfo(null)} reCargarGlobal={cargarTodo} />}
       
-      {fotoForm && <ModalEvidencia fotoForm={fotoForm} setFotoForm={setFotoForm} handleSeleccionarFoto={(e: any) => { const f = e.target.files[0]; if(f) setFotoForm(prev => prev ? { ...prev, file: f, preview: URL.createObjectURL(f) } : null); }} subirFotoDefinitiva={subirFotoDefinitiva} subiendoFoto={subiendoFoto} />}
+      {fotoForm && <ModalEvidencia fotoForm={fotoForm} setFotoForm={setFotoForm} handleSeleccionarFoto={(e: React.ChangeEvent<HTMLInputElement>) => { 
+           if (!e.target.files) return;
+           const f = e.target.files[0]; 
+           if(f) setFotoForm(prev => prev ? { ...prev, file: f, preview: URL.createObjectURL(f) } : null); 
+       }} subirFotoDefinitiva={subirFotoDefinitiva} subiendoFoto={subiendoFoto} />}
+
       {modalItemVisible && <ModalItem itemForm={itemForm} setItemForm={setItemForm} guardarItemBD={guardarItemBD} guardandoItem={guardandoItem} onClose={() => setModalItemVisible(false)} />}
       {modalScanner && <ModalScanner onClose={() => setModalScanner(false)} codigoScanner={codigoScanner} setCodigoScanner={setCodigoScanner} vehiculoScanner={vehiculoScanner} setVehiculoScanner={setVehiculoScanner} consultarScanner={consultarScanner} cargandoScanner={cargandoScanner} resultadoScanner={resultadoScanner} setResultadoScanner={setResultadoScanner} />}
       {modalMarketing && <ModalMarketing onClose={() => setModalMarketing(false)} vehiculos={vehiculos} historial={historial} nombreTaller={nombreTaller} />}

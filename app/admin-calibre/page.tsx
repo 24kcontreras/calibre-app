@@ -4,19 +4,26 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { ShieldAlert, ShieldCheck, Lock, Unlock, Search, Wrench, CalendarDays, Car, ClipboardList, Eye } from 'lucide-react'
 import toast, { Toaster } from 'react-hot-toast'
+import { TallerConfig } from '@/hooks/types'
+
+interface TallerAdmin extends TallerConfig {
+  email?: string;
+  vehiculos?: { count: number }[];
+  ordenes_trabajo?: { count: number }[];
+}
 
 export default function AdminCalibre() {
   const router = useRouter()
   const [isAdmin, setIsAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [talleres, setTalleres] = useState<any[]>([])
+  const [talleres, setTalleres] = useState<TallerAdmin[]>([])
   const [busqueda, setBusqueda] = useState('')
 
   const ADMIN_EMAIL = 'leonardocontreras@calibreapp.com' 
 
   useEffect(() => {
     checkAdmin()
-  }, [])
+  }, [router])
 
   const checkAdmin = async () => {
     try {
@@ -60,7 +67,7 @@ export default function AdminCalibre() {
     const toastId = toast.loading(`${accion === 'ACTIVAR' ? 'Activando' : 'Bloqueando'} taller...`);
 
     try {
-      let payload: any = { pago_confirmado: nuevoEstado };
+      const payload: Partial<TallerConfig> = { pago_confirmado: nuevoEstado };
       
       if (nuevoEstado) {
           const fechaVencimiento = new Date();
@@ -73,8 +80,9 @@ export default function AdminCalibre() {
 
       toast.success(`Taller ${nuevoEstado ? 'Activado' : 'Bloqueado'} exitosamente`, { id: toastId })
       await cargarTalleres() 
-    } catch (error: any) {
-      toast.error(`Error: ${error.message}`, { id: toastId })
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : "Error desconocido";
+      toast.error(`Error: ${msg}`, { id: toastId })
     }
   }
 
@@ -90,8 +98,9 @@ export default function AdminCalibre() {
       if (error) throw error;
       toast.success('Fecha actualizada', { id: toastId });
       await cargarTalleres();
-    } catch (error: any) {
-      toast.error(`Error: ${error.message}`, { id: toastId });
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : "Error desconocido";
+      toast.error(`Error: ${msg}`, { id: toastId });
     }
   }
 
