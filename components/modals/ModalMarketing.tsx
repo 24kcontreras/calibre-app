@@ -97,21 +97,23 @@ export default function ModalMarketing({ onClose, vehiculos, historial, nombreTa
 
   return (
     <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 z-[999]">
-      <div className="bg-slate-900 border border-slate-700/50 rounded-[35px] shadow-2xl max-w-5xl w-full relative overflow-hidden flex flex-col md:flex-row h-[85vh]">
+      {/* 🔥 CORRECCIÓN AQUÍ: overflow-y-auto en móvil para que se pueda scrollear si el contenido es muy largo, overflow-hidden en desktop para mantener el diseño dividido */}
+      <div className="bg-slate-900 border border-slate-700/50 rounded-[35px] shadow-2xl max-w-5xl w-full relative overflow-y-auto md:overflow-hidden flex flex-col md:flex-row h-[85vh] md:h-[80vh] custom-scrollbar-dark">
         
         {/* Halo de luz decorativo */}
         <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-cyan-500/10 rounded-full blur-[80px] pointer-events-none z-0"></div>
 
-        <button onClick={onClose} className="absolute top-6 right-6 text-slate-500 hover:text-cyan-400 bg-slate-950/50 p-2 rounded-full border border-slate-800 transition-all hover:scale-110 z-20">
+        {/* El botón de cierre ahora es sticky en móvil para que no se pierda al scrollear */}
+        <button onClick={onClose} className="sticky md:absolute top-4 right-4 self-end md:self-auto md:top-6 md:right-6 text-slate-500 hover:text-cyan-400 bg-slate-950/50 p-2 rounded-full border border-slate-800 transition-all hover:scale-110 z-20 shrink-0">
           <X size={20} />
         </button>
 
         {/* ========================================================= */}
         {/* COLUMNA IZQUIERDA: EL LABORATORIO DE CAMPAÑAS (CREACIÓN)  */}
         {/* ========================================================= */}
-        <div className="w-full md:w-[55%] flex flex-col p-6 lg:p-8 border-b md:border-b-0 md:border-r border-slate-800/50 relative z-10 overflow-y-auto custom-scrollbar-dark shrink-0 bg-slate-900/50">
+        <div className="w-full md:w-[55%] flex flex-col p-6 lg:p-8 border-b md:border-b-0 md:border-r border-slate-800/50 relative z-10 md:overflow-y-auto custom-scrollbar-dark shrink-0 bg-slate-900/50">
           
-          <div className="mb-8">
+          <div className="mb-8 mt-2 md:mt-0">
             <h2 className="text-2xl font-black text-slate-100 uppercase tracking-tighter flex items-center gap-2">
                 <Megaphone className="text-cyan-500" /> Creador de Ofertas
             </h2>
@@ -171,10 +173,11 @@ export default function ModalMarketing({ onClose, vehiculos, historial, nombreTa
         {/* ========================================================= */}
         {/* COLUMNA DERECHA: RESULTADO Y DISTRIBUCIÓN                 */}
         {/* ========================================================= */}
-        <div className="w-full md:w-[45%] flex flex-col relative z-10 bg-slate-900">
+        {/* 🔥 CORRECCIÓN: En móvil debe ocupar el espacio natural y no esconderse */}
+        <div className="w-full md:w-[45%] flex flex-col relative z-10 bg-slate-900 shrink-0 md:h-full">
             
             {/* PANTALLA RESULTADO IA */}
-            <div className="p-6 lg:p-8 border-b border-slate-800/50 bg-slate-950/30">
+            <div className="p-6 lg:p-8 border-b border-slate-800/50 bg-slate-950/30 shrink-0">
                 <label className="text-[10px] font-black text-cyan-400 uppercase tracking-widest block mb-3 flex items-center gap-2">
                     <span className="bg-cyan-500/20 text-cyan-500 w-5 h-5 rounded-full flex items-center justify-center">3</span> 
                     Mensaje Final de la Campaña
@@ -182,7 +185,7 @@ export default function ModalMarketing({ onClose, vehiculos, historial, nombreTa
                 <textarea 
                     value={mensajeFinal} onChange={e => setMensajeFinal(e.target.value)} 
                     placeholder="Aquí aparecerá tu oferta lista y formateada por la IA..."
-                    className="w-full p-4 rounded-xl bg-slate-900 border-2 border-cyan-900/30 text-sm font-medium text-slate-200 min-h-[160px] resize-none outline-none focus:border-cyan-500 transition-all custom-scrollbar-dark shadow-inner"
+                    className="w-full p-4 rounded-xl bg-slate-900 border-2 border-cyan-900/30 text-sm font-medium text-slate-200 min-h-[160px] md:min-h-[140px] resize-none outline-none focus:border-cyan-500 transition-all custom-scrollbar-dark shadow-inner"
                 />
                 <p className="text-[9px] text-slate-500 font-bold mt-2 text-right">
                     Variables dinámicas: <span className="text-cyan-600 font-black">[NOMBRE]</span> y <span className="text-cyan-600 font-black">[VEHICULO]</span>
@@ -190,8 +193,9 @@ export default function ModalMarketing({ onClose, vehiculos, historial, nombreTa
             </div>
 
             {/* LISTA DE DISTRIBUCIÓN (LA ESCOPETA) */}
-            <div className="p-6 lg:p-8 flex-1 flex flex-col overflow-hidden">
-                <div className="flex justify-between items-end mb-4">
+            {/* 🔥 CORRECCIÓN: Min-height en móvil para asegurar que la lista se vea aunque haya pocos clientes */}
+            <div className="p-6 lg:p-8 flex-1 flex flex-col overflow-hidden min-h-[400px] md:min-h-0">
+                <div className="flex justify-between items-end mb-4 shrink-0">
                     <div>
                         <h4 className="text-sm font-black text-slate-100 uppercase tracking-widest flex items-center gap-2">
                             <Users size={16} className="text-cyan-500" /> Lista de Envío
@@ -204,7 +208,7 @@ export default function ModalMarketing({ onClose, vehiculos, historial, nombreTa
 
                 <div className="flex-1 overflow-y-auto custom-scrollbar-dark pr-2 space-y-2">
                     {audienciaPaginada.map(v => (
-                        <div key={v.id} className="bg-slate-950/50 p-3 rounded-xl flex justify-between items-center border border-slate-800 hover:border-cyan-900/50 transition-colors group">
+                        <div key={v.id} className="bg-slate-950/50 p-3 rounded-xl flex justify-between items-center border border-slate-800 hover:border-cyan-900/50 transition-colors group shrink-0">
                             <div className="overflow-hidden pr-2">
                                 <p className="font-black text-xs text-slate-200 uppercase truncate">{v.clientes.nombre}</p>
                                 <p className="text-[10px] text-slate-500 uppercase font-bold truncate">{v.marca} {v.modelo}</p>
@@ -221,7 +225,7 @@ export default function ModalMarketing({ onClose, vehiculos, historial, nombreTa
                     ))}
                     
                     {audiencia.length === 0 && (
-                        <div className="h-full flex items-center justify-center flex-col text-slate-600 border-2 border-dashed border-slate-800 rounded-2xl">
+                        <div className="h-full min-h-[200px] flex items-center justify-center flex-col text-slate-600 border-2 border-dashed border-slate-800 rounded-2xl">
                             <Users size={32} className="mb-3 opacity-20" />
                             <p className="text-xs font-bold text-center leading-tight uppercase tracking-widest">Sin audiencia<br/>para este filtro</p>
                         </div>
