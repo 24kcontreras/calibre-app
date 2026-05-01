@@ -102,6 +102,52 @@ export default function CalibreApp() {
   const [subiendoLogo, setSubiendoLogo] = useState(false)
   const [guardandoConfiguracion, setGuardandoConfiguracion] = useState(false)
 
+  // 🔥 NUEVO: SISTEMA DE ALARMA (El Reloj de Arena)
+  useEffect(() => {
+    // Si estamos en modo lectura (suscripción vencida), no molestamos
+    if (soloLectura || ordenesAbiertas.length === 0) return;
+
+    const revisarPromesasPendientes = () => {
+        const ahora = new Date();
+        
+        ordenesAbiertas.forEach((orden: OrdenTrabajo) => {
+            // Si la orden NO tiene fecha de promesa...
+            if (!orden.fecha_promesa) {
+                const creacion = new Date(orden.created_at);
+                const diferenciaHoras = (ahora.getTime() - creacion.getTime()) / (1000 * 60 * 60);
+
+                // ...Y ya pasaron más de 12 horas desde que se creó
+                if (diferenciaHoras >= 12) {
+                    toast((t) => (
+                        <span className="flex flex-col gap-2">
+                            <b className="text-xs text-orange-400">⚠️ FECHA PENDIENTE</b>
+                            <p className="text-[10px] text-slate-200">
+                                El <strong className="text-white">{orden.vehiculos?.marca} {orden.vehiculos?.modelo} ({orden.vehiculos?.patente})</strong> lleva más de 12h sin fecha de entrega.
+                            </p>
+                            <button 
+                                onClick={() => { 
+                                    toast.dismiss(t.id); 
+                                    setModalEditarOrden(orden); 
+                                }}
+                                className="bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest py-2 rounded-lg mt-1 transition-colors"
+                            >
+                                Definir Ahora
+                            </button>
+                        </span>
+                    ), { duration: 8000, icon: '⏰', id: `alarma_${orden.id}` }); // Usamos un ID para que no salgan 20 toasts iguales del mismo auto
+                }
+            }
+        });
+    };
+
+    // Revisamos al cargar y luego cada 1 hora para no saturar
+    revisarPromesasPendientes();
+    const intervalo = setInterval(revisarPromesasPendientes, 1000 * 60 * 60);
+    
+    return () => clearInterval(intervalo);
+  }, [ordenesAbiertas, soloLectura]);
+
+
   // Sincronizar datos de configuración cuando carguen
   useEffect(() => {
     if (configTaller) {

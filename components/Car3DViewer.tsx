@@ -1,8 +1,9 @@
 'use client'
-import { useState, Suspense } from 'react'
+import { useState, Suspense, useEffect } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Environment, ContactShadows, useGLTF, Html } from '@react-three/drei'
 import { Car, ChevronDown } from 'lucide-react'
+import * as THREE from 'three'
 
 const MODELOS_DISPONIBLES = [
   { id: 'sedan', label: 'Sedán', file: 'sedan', scale: 1, position: [0, 0, 0], rotation: [0, 0, 0] },
@@ -16,9 +17,57 @@ const MODELOS_DISPONIBLES = [
   { id: 'citycar', label: 'Citycar', file: 'citycar', scale: 1, position: [0, 0, 0], rotation: [0, 0, 0] }
 ]
 
-function ModeloReal({ config, onPointerDown }: { config: any, onPointerDown: (e: any) => void }) {
+function ModeloReal({ config, onPointerDown, colorAuto }: { config: any, onPointerDown: (e: any) => void, colorAuto: string }) {
   const { scene } = useGLTF(`/models/${config.file}.glb`)
   
+  // 🔥 HEURÍSTICA DE PINTURA ULTRA-ESTRICTA
+  useEffect(() => {
+    if (scene) {
+      scene.traverse((child) => {
+        if (child instanceof THREE.Mesh && child.material) {
+          // Clonamos el material para no afectar otras partes que lo compartan
+          child.material = child.material.clone();
+          
+          const matName = child.material.name ? child.material.name.toLowerCase() : '';
+          
+          // 1. Identificar piezas que NUNCA deben ser pintadas
+          const esPiezaMecanica = 
+            matName.includes('wheel') || 
+            matName.includes('tire') || 
+            matName.includes('rim') || 
+            matName.includes('rubber') || 
+            matName.includes('glass') || 
+            matName.includes('window') || 
+            matName.includes('lights') ||
+            matName.includes('plastic') ||
+            matName.includes('grille') ||
+            matName.includes('chrome') ||
+            matName.includes('alloy') ||
+            matName.includes('interior') ||
+            matName.includes('seat') ||
+            matName.includes('brake');
+
+          // 2. Identificar piezas que SÍ O SÍ son carrocería
+          const esCarroceria = 
+            matName.includes('body') || 
+            matName.includes('paint') || 
+            matName.includes('car_') || 
+            matName.includes('shell') || 
+            matName.includes('exterior') || 
+            matName.includes('skin');
+
+          // 3. Pintamos si es explícitamente carrocería, o si no sabemos qué es pero NO es pieza mecánica
+          if (esCarroceria || (!esPiezaMecanica && !matName.includes('black'))) {
+             child.material.color.set(colorAuto);
+             child.material.metalness = 0.6; // Nivel de "metalizado"
+             child.material.roughness = 0.3; // Nivel de "mate" (menor = más reflectante)
+             child.material.needsUpdate = true;
+          }
+        }
+      });
+    }
+  }, [scene, colorAuto, config.file]);
+
   return (
     <group 
       onPointerDown={onPointerDown} 
@@ -41,7 +90,11 @@ function Cargando3D() {
   )
 }
 
-export default function Car3DViewer({ marcadores, setMarcadores, soloLectura = false }: { marcadores: any[], setMarcadores?: (m: any) => void, soloLectura?: boolean }) {
+export default function Car3DViewer({ 
+    marcadores, setMarcadores, soloLectura = false, colorAuto = '#94a3b8' 
+}: { 
+    marcadores: any[], setMarcadores?: (m: any) => void, soloLectura?: boolean, colorAuto?: string 
+}) {
   
   const autoGuardado = marcadores.length > 0 ? marcadores[0].tipo : 'sedan';
   const [tipoVehiculo, setTipoVehiculo] = useState(autoGuardado)
@@ -111,7 +164,7 @@ export default function Car3DViewer({ marcadores, setMarcadores, soloLectura = f
           <Environment preset="city" />
 
           <Suspense fallback={<Cargando3D />}>
-            <ModeloReal config={configActual} onPointerDown={handlePointerDown} />
+            <ModeloReal config={configActual} onPointerDown={handlePointerDown} colorAuto={colorAuto} />
             <ContactShadows position={[0, -0.05, 0]} opacity={0.6} scale={15} blur={2.5} far={4} />
           </Suspense>
 

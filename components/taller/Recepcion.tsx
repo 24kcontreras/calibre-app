@@ -1,13 +1,16 @@
 'use client'
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Plus, Search, AlertTriangle, Info, FileText, ChevronDown } from 'lucide-react'
+import { Plus, Search, AlertTriangle, Info, FileText, ChevronDown, Palette } from 'lucide-react'
 import toast from 'react-hot-toast'
 import CAR_DATA from '@/app/taller/autos.json'
 import { Session } from '@supabase/supabase-js'
 import { Vehiculo, AlertaDesgaste } from '@/hooks/types'
 
 const MARCAS = Object.keys(CAR_DATA).sort();
+
+// 🔥 PALETA DE COLORES DE IDENTIDAD
+const COLORES_AUTO = ['#94a3b8', '#ffffff', '#000000', '#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'];
 
 const validarRutChileno = (rutCompleto: string) => {
   if (!rutCompleto) return false;
@@ -59,6 +62,8 @@ export default function Recepcion({ soloLectura, vehiculos, session, cargarTodo,
   const [patenteInput, setPatenteInput] = useState('')
   const [marcaInput, setMarcaInput] = useState('')
   const [modeloInput, setModeloInput] = useState('') 
+  // 🔥 ESTADO DEL COLOR (Gris por defecto)
+  const [nuevoColor, setNuevoColor] = useState('#94a3b8')
 
   const handleRutChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       let v = e.target.value.replace(/[^0-9kK]/g, '').toUpperCase().slice(0, 9);
@@ -93,6 +98,7 @@ export default function Recepcion({ soloLectura, vehiculos, session, cargarTodo,
                 marca: (fd.get('marca') as string).toUpperCase().trim(), 
                 modelo: (fd.get('modelo') as string).toUpperCase().trim(), 
                 anho: fd.get('anho') ? parseInt(fd.get('anho') as string) : null, 
+                color: nuevoColor, // 🔥 ENVIAMOS EL COLOR A SUPABASE
                 cliente_id: finalId, 
                 taller_id: tId 
             }]).select();
@@ -103,7 +109,7 @@ export default function Recepcion({ soloLectura, vehiculos, session, cargarTodo,
                 await cargarTodo();
                 (document.getElementById('form-recepcion') as HTMLFormElement)?.reset();
                 setMarcaInput(''); setModeloInput(''); setNombreInput(''); setRutInput('');
-                setTelefonoInput('+569'); setCorreoInput(''); setPatenteInput('');
+                setTelefonoInput('+569'); setCorreoInput(''); setPatenteInput(''); setNuevoColor('#94a3b8'); // Reiniciamos color
                 
                 abrirOrdenModal(nV[0]); 
             }
@@ -268,9 +274,32 @@ export default function Recepcion({ soloLectura, vehiculos, session, cargarTodo,
                             <input name="anho" type="number" disabled={soloLectura} placeholder="Año" className="w-full p-3 rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm text-xs text-slate-200 outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 focus:ring-1 focus:ring-emerald-500/50 transition-all" />
                         </div>
                     </div>
+
+                    {/* 🔥 SELECTOR DE COLOR DEL VEHÍCULO */}
+                    <div className="col-span-full bg-slate-950/50 p-4 rounded-2xl border border-slate-800 my-2 shadow-inner">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                            <Palette size={14} className="text-emerald-500" /> Color del Vehículo
+                        </label>
+                        <div className="flex flex-wrap gap-2.5 justify-start md:justify-center">
+                            {COLORES_AUTO.map(c => (
+                                <button
+                                    key={c}
+                                    type="button"
+                                    onClick={() => setNuevoColor(c)}
+                                    className={`w-7 h-7 md:w-8 md:h-8 rounded-full border-2 transition-all duration-300 ${
+                                        nuevoColor === c 
+                                        ? 'border-emerald-500 scale-125 shadow-[0_0_15px_rgba(16,185,129,0.4)] z-10' 
+                                        : 'border-slate-700 hover:scale-110 hover:border-slate-500'
+                                    }`}
+                                    style={{ backgroundColor: c }}
+                                    title={`Seleccionar color ${c}`}
+                                />
+                            ))}
+                        </div>
+                    </div>
                     
                     <button disabled={loading || soloLectura} className="w-full bg-emerald-600 text-slate-950 py-4 rounded-full font-black shadow-[0_0_20px_rgba(16,185,129,0.2)] hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] transition-all uppercase text-xs mt-3 disabled:opacity-50 hover:scale-[1.02] flex items-center justify-center gap-2">
-                        {loading ? 'Procesando...' : <><Plus size={16}/> Registrar Orden</>}
+                        {loading ? 'Procesando...' : <><Plus size={16}/> Registrar y Abrir Orden</>}
                     </button>
                 </form>
             </div>
@@ -311,7 +340,11 @@ export default function Recepcion({ soloLectura, vehiculos, session, cargarTodo,
                                     <button disabled={soloLectura} onClick={() => abrirOrdenModal(v)} className="bg-emerald-600 text-slate-950 px-2 py-1.5 rounded-lg text-[9px] font-black hover:bg-emerald-500 disabled:opacity-50 shadow-[0_0_10px_rgba(16,185,129,0.3)] transition-all">ORDEN</button>
                                 </div>
                             </div>
-                            <p className="text-[9px] text-slate-500 uppercase truncate mt-1">{v.clientes?.nombre}</p>
+                            <div className="flex items-center gap-1.5 mt-1">
+                                {/* 🔥 MUESTRA UN MINICÍRCULO DEL COLOR DEL AUTO EN LA LISTA */}
+                                <div className="w-2 h-2 rounded-full border border-slate-600 shrink-0" style={{ backgroundColor: v.color || '#94a3b8' }}></div>
+                                <p className="text-[9px] text-slate-500 uppercase truncate">{v.marca} {v.modelo} • {v.clientes?.nombre}</p>
+                            </div>
                         </div>
                     </div>
                 )})}
