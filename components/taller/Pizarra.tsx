@@ -8,11 +8,11 @@ import { Session } from '@supabase/supabase-js'
 import { OrdenTrabajo, ItemOrden, ComentarioOrden } from '@/hooks/types'
 
 const COLOR_ESTADO: Record<string, string> = {
-  'Diagnóstico': 'bg-blue-500/20 text-blue-400 border-blue-500/50',
-  'Pendiente Aprobación': 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50',
-  'Esperando Repuestos': 'bg-orange-500/20 text-orange-400 border-orange-500/50',
-  'En Reparación': 'bg-purple-500/20 text-purple-400 border-purple-500/50',
-  'Listo para Entrega': 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50'
+  'Diagnóstico': 'bg-blue-500/10 text-blue-400 border-blue-500/30',
+  'Pendiente Aprobación': 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30',
+  'Esperando Repuestos': 'bg-orange-500/10 text-orange-400 border-orange-500/30',
+  'En Reparación': 'bg-purple-500/10 text-purple-400 border-purple-500/30',
+  'Listo para Entrega': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
 };
 
 interface PizarraProps {
@@ -26,7 +26,7 @@ interface PizarraProps {
   abrirModalEvidencia: (ordenId: string) => void;
   abrirModalEditar: (orden: OrdenTrabajo) => void;
   abrirModalItem: (ordenId: string, item?: ItemOrden) => void;
-  mecanicoActivo?: any; // 🔥 Añadido para Censura Financiera
+  mecanicoActivo?: any; 
 }
 
 export default function Pizarra({ 
@@ -35,8 +35,6 @@ export default function Pizarra({
 }: PizarraProps) {
 
   const [comentarioInputs, setComentarioInputs] = useState<Record<string, string>>({})
-  
-  // 🔥 NUEVO ESTADO PARA EL ACORDEÓN MÓVIL
   const [tarjetaExpandida, setTarjetaExpandida] = useState<string | null>(null);
 
   const calcularTiempoEnTaller = (fechaIngreso: string) => {
@@ -234,7 +232,6 @@ export default function Pizarra({
                 <p className="text-xs text-slate-500 font-bold">Registra un vehículo a la izquierda para comenzar el trabajo.</p>
             </div>
         ) : (
-            // 🔥 CONTENEDOR PRINCIPAL: Flex vertical en móvil, flex horizontal en escritorio
             <div className="flex flex-col md:flex-row md:overflow-x-auto gap-4 md:gap-5 relative z-10 pb-4 custom-scrollbar-dark md:snap-x h-full md:min-h-[650px]">
                 {ordenesAbiertas.map(o => {
                     const subtotalItems = o.items_orden?.reduce((sum: number, item: any) => sum + item.precio, 0) || 0;
@@ -244,94 +241,92 @@ export default function Pizarra({
                     const totalNeto = subtotalBruto - desc;
                     const porcentajeDesc = subtotalBruto > 0 ? Math.round((desc / subtotalBruto) * 100) : 0;
 
-                    // Lógica del acordeón
                     const isExpanded = tarjetaExpandida === o.id;
 
                     return (
-                    <div key={o.id} className={`w-full md:min-w-[320px] md:max-w-[360px] bg-slate-900/40 backdrop-blur-md p-4 md:p-5 rounded-3xl shadow-2xl border-2 border-slate-800 hover:border-orange-500/50 transition-all relative overflow-hidden group flex flex-col md:snap-center shrink-0 ${isExpanded ? 'h-auto' : 'h-auto md:h-full'}`}>
+                    <div key={o.id} className={`w-full md:min-w-[320px] md:max-w-[360px] bg-slate-900/60 backdrop-blur-md p-4 md:p-5 rounded-3xl shadow-2xl border-2 hover:border-orange-500/50 transition-all duration-300 relative overflow-hidden group flex flex-col md:snap-center shrink-0 ${isExpanded ? 'h-auto border-orange-500/30' : 'h-auto md:h-full border-slate-800'}`}>
                         
-                        {/* 🟢 CABECERA DE LA TARJETA (Siempre visible) */}
+                        {/* 🟢 CABECERA DE LA TARJETA (Jerarquía Mejorada) */}
                         <div className="shrink-0 cursor-pointer md:cursor-default" onClick={() => { if (window.innerWidth < 768) setTarjetaExpandida(isExpanded ? null : o.id) }}>
-                            <div className="flex justify-between items-start mb-2 md:mb-3">
-                                <div className="overflow-hidden pr-2 flex-1">
-                                    <div className="flex justify-between items-center w-full mb-1">
-                                        <p className="font-black text-2xl md:text-3xl tracking-tighter text-slate-100 truncate">{o.vehiculos?.patente}</p>
-                                        
-                                        {/* Icono de Expandir (Solo en móvil) */}
-                                        <div className="md:hidden text-slate-500 bg-slate-800 p-1.5 rounded-full">
-                                            {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                                        </div>
-                                    </div>
-                                    
-                                    {/* Selector de Estado (Oculto en móvil colapsado, visible en móvil expandido o escritorio) */}
-                                    <div className={`${isExpanded ? 'block' : 'hidden md:block'} mt-2`}>
-                                        <select 
-                                            value={o.sub_estado || 'Diagnóstico'}
-                                            disabled={soloLectura}
-                                            onChange={(e) => cambiarSubEstado(o.id, e.target.value)}
-                                            onClick={(e) => e.stopPropagation()} // Evita que el select cierre el acordeón
-                                            className={`text-[8px] font-black px-1.5 py-1 rounded-md border uppercase tracking-wider outline-none cursor-pointer text-center shrink-0 w-fit ${COLOR_ESTADO[o.sub_estado || 'Diagnóstico']}`}
-                                        >
-                                            <option className="bg-slate-900 text-slate-100 font-bold" value="Diagnóstico">DIAGNÓSTICO</option>
-                                            <option className="bg-slate-900 text-slate-100 font-bold" value="Pendiente Aprobación">ESPERA APROBAR</option>
-                                            <option className="bg-slate-900 text-slate-100 font-bold" value="Esperando Repuestos">ESPERA REPUESTOS</option>
-                                            <option className="bg-slate-900 text-slate-100 font-bold" value="En Reparación">REPARANDO</option>
-                                            <option className="bg-slate-900 text-slate-100 font-bold" value="Listo para Entrega">LISTO PARA ENTREGA</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            {/* Información Básica */}
-                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest truncate">
-                                {o.vehiculos?.marca} {o.vehiculos?.modelo} 
-                                {o.kilometraje ? ` • ${o.kilometraje.toLocaleString()} KM` : ''}
-                            </p>
-                            
-                            {/* Píldoras de Tiempo y Mecánico (Ocultas en móvil colapsado) */}
-                            <div className={`${isExpanded ? 'flex flex-wrap' : 'hidden md:flex flex-wrap'} gap-2 mt-2`}>
-                                <div className="flex items-center gap-1 text-[9px] font-bold text-slate-400 bg-slate-950/50 w-fit px-2 py-1 rounded border border-slate-800">
-                                    <Clock size={10} className="text-orange-400" />
-                                    <span>{calcularTiempoEnTaller(o.created_at)} en taller</span>
+                            <div className="flex justify-between items-start w-full gap-3">
+                                
+                                {/* Izquierda: Patente y Vehículo */}
+                                <div className="flex flex-col overflow-hidden flex-1">
+                                    <p className="font-black text-3xl md:text-3xl tracking-tighter text-slate-100 truncate leading-none mb-1">{o.vehiculos?.patente}</p>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest truncate">
+                                        {o.vehiculos?.marca} {o.vehiculos?.modelo} 
+                                        {o.kilometraje ? ` • ${o.kilometraje.toLocaleString()} KM` : ''}
+                                    </p>
                                 </div>
 
-                                <div onClick={(e) => { e.stopPropagation(); handleAsignarMecanico(o.id, o.mecanico); }} className={`flex items-center gap-1 w-fit bg-slate-800/50 backdrop-blur-sm text-slate-300 font-bold text-[9px] px-2 py-1 rounded border border-slate-700/50 shadow-sm uppercase truncate max-w-full ${soloLectura ? 'opacity-50' : 'cursor-pointer hover:bg-emerald-900/50 hover:text-emerald-400 hover:border-emerald-700 transition-all'}`} title="Clic para cambiar mecánico">
-                                    <User size={10} className="shrink-0" /> <span className="truncate">{o.mecanico && o.mecanico !== 'Sin asignar' ? o.mecanico : 'Mecánico'}</span>
+                                {/* Derecha: Estado y Chevron (Solo Móvil) */}
+                                <div className="flex flex-col items-end gap-2 shrink-0">
+                                    {!isExpanded && (
+                                        <div className={`md:hidden text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded border shadow-sm ${COLOR_ESTADO[o.sub_estado || 'Diagnóstico']}`}>
+                                            {o.sub_estado || 'Diagnóstico'}
+                                        </div>
+                                    )}
+                                    <div className={`md:hidden p-1.5 rounded-full transition-colors border ${isExpanded ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>
+                                        {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                    </div>
                                 </div>
+
                             </div>
                             
-                            {/* Estado Textual en móvil colapsado (Para saber en qué está sin abrirlo) */}
-                            {!isExpanded && (
-                                <div className={`md:hidden mt-2 text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded border w-fit ${COLOR_ESTADO[o.sub_estado || 'Diagnóstico']}`}>
-                                    {o.sub_estado || 'Diagnóstico'}
+                            {/* Píldoras de Tiempo y Mecánico */}
+                            <div className={`${isExpanded ? 'flex flex-wrap' : 'hidden md:flex flex-wrap'} gap-2 mt-4`}>
+                                <div className="flex items-center gap-1.5 text-[9px] font-bold text-slate-300 bg-slate-950/50 w-fit px-2 py-1.5 rounded-lg border border-slate-700/50 shadow-inner">
+                                    <Clock size={12} className="text-orange-400" />
+                                    <span>{calcularTiempoEnTaller(o.created_at)}</span>
                                 </div>
-                            )}
+
+                                <div onClick={(e) => { e.stopPropagation(); handleAsignarMecanico(o.id, o.mecanico); }} className={`flex items-center gap-1.5 w-fit bg-slate-800/80 backdrop-blur-sm text-slate-200 font-bold text-[9px] px-2.5 py-1.5 rounded-lg border border-slate-600/50 shadow-sm uppercase truncate max-w-[140px] ${soloLectura ? 'opacity-50' : 'cursor-pointer hover:bg-emerald-900/50 hover:text-emerald-400 hover:border-emerald-700 transition-all'}`} title="Clic para cambiar mecánico">
+                                    <User size={12} className="shrink-0 text-blue-400" /> <span className="truncate">{o.mecanico && o.mecanico !== 'Sin asignar' ? o.mecanico : 'Sin Mecánico'}</span>
+                                </div>
+                            </div>
                         </div>
                         
-                        {/* 🔵 CUERPO DE LA TARJETA (Oculto en móvil colapsado, visible en escritorio) */}
-                        <div className={`${isExpanded ? 'flex flex-col mt-4' : 'hidden md:flex md:flex-col md:mt-4'} flex-1 overflow-hidden`}>
+                        {/* 🔵 CUERPO DE LA TARJETA (Oculto en móvil colapsado) */}
+                        <div className={`${isExpanded ? 'flex flex-col mt-4 animate-in fade-in slide-in-from-top-2 duration-300' : 'hidden md:flex md:flex-col md:mt-4'} flex-1 overflow-hidden`}>
                             
+                            {/* Selector de Estado Expandido */}
+                            <div className="mb-4">
+                                <label className="text-[8px] font-black uppercase tracking-widest text-slate-500 mb-1 block ml-1">Fase del Vehículo</label>
+                                <select 
+                                    value={o.sub_estado || 'Diagnóstico'}
+                                    disabled={soloLectura}
+                                    onChange={(e) => cambiarSubEstado(o.id, e.target.value)}
+                                    className={`w-full text-xs font-black px-3 py-2.5 rounded-xl border uppercase tracking-wider outline-none cursor-pointer text-center appearance-none shadow-sm ${COLOR_ESTADO[o.sub_estado || 'Diagnóstico']}`}
+                                >
+                                    <option className="bg-slate-900 text-slate-100" value="Diagnóstico">DIAGNÓSTICO</option>
+                                    <option className="bg-slate-900 text-slate-100" value="Pendiente Aprobación">ESPERA APROBACIÓN</option>
+                                    <option className="bg-slate-900 text-slate-100" value="Esperando Repuestos">ESPERA REPUESTOS</option>
+                                    <option className="bg-slate-900 text-slate-100" value="En Reparación">EN REPARACIÓN</option>
+                                    <option className="bg-slate-900 text-slate-100" value="Listo para Entrega">LISTO PARA ENTREGA</option>
+                                </select>
+                            </div>
+
                             {/* Botones de Acción Superiores */}
                             <div className="flex gap-2 shrink-0 mb-4 justify-between">
-                                <div className="bg-slate-800/30 backdrop-blur-sm p-2 rounded-xl border border-slate-700/50 flex flex-1 justify-between items-center group">
-                                    <div className="italic text-[10px] text-slate-400 line-clamp-1 w-full" title={o.descripcion}>"{o.descripcion}"</div>
+                                <div className="bg-slate-950/40 p-2 rounded-xl border border-slate-800/50 flex flex-1 justify-between items-center group shadow-inner">
+                                    <div className="italic text-[10px] text-slate-400 line-clamp-1 w-full px-1" title={o.descripcion}>"{o.descripcion}"</div>
                                     <button 
                                         onClick={() => abrirModalEditar(o)} 
                                         disabled={soloLectura}
-                                        className="ml-2 text-blue-500 hover:text-blue-400 transition-colors disabled:opacity-50" 
+                                        className="ml-2 bg-slate-800 p-1.5 rounded-lg text-blue-400 hover:text-white hover:bg-blue-600 transition-colors disabled:opacity-50" 
                                         title="Editar Orden"
                                     >
-                                        <Edit2 size={12} />
+                                        <Edit2 size={14} />
                                     </button>
                                 </div>
                                 
-                                <button onClick={() => abrirModalActa(o)} className="bg-slate-800/50 backdrop-blur-sm p-2 rounded-xl hover:bg-cyan-900/50 text-cyan-400 transition-all border border-slate-700/50" title="Ver Acta">
+                                <button onClick={() => abrirModalActa(o)} className="bg-cyan-950/30 p-2.5 rounded-xl hover:bg-cyan-900 text-cyan-400 hover:text-white transition-all border border-cyan-900/50 shadow-sm" title="Ver Acta">
                                     <ClipboardList size={16} />
                                 </button>
-                                <button onClick={() => compartirLinkCliente(o)} className="bg-slate-800/50 backdrop-blur-sm p-2 rounded-xl hover:bg-blue-900/50 text-blue-400 transition-all border border-slate-700/50" title="Compartir Link">                                        
+                                <button onClick={() => compartirLinkCliente(o)} className="bg-blue-950/30 p-2.5 rounded-xl hover:bg-blue-900 text-blue-400 hover:text-white transition-all border border-blue-900/50 shadow-sm" title="Compartir Link">                                        
                                     <Share2 size={16} />
                                 </button>
-                                <button onClick={() => abrirModalEvidencia(o.id)} disabled={soloLectura} className="bg-slate-800/50 disabled:opacity-50 backdrop-blur-sm p-2 rounded-xl hover:bg-emerald-900/50 text-emerald-400 transition-all border border-slate-700/50" title="Subir Evidencia">
+                                <button onClick={() => abrirModalEvidencia(o.id)} disabled={soloLectura} className="bg-emerald-950/30 disabled:opacity-50 p-2.5 rounded-xl hover:bg-emerald-900 text-emerald-400 hover:text-white transition-all border border-emerald-900/50 shadow-sm" title="Subir Evidencia">
                                     <Camera size={16} />
                                 </button>
                             </div>
@@ -340,69 +335,68 @@ export default function Pizarra({
                             <button 
                                 disabled={soloLectura} 
                                 onClick={() => abrirModalItem(o.id)} 
-                                className="w-full shrink-0 mb-3 py-2.5 border border-emerald-700/50 rounded-xl text-[10px] font-black text-emerald-400 hover:bg-emerald-600 hover:text-slate-950 uppercase transition-all bg-emerald-900/20 shadow-[0_4px_15px_rgba(2,6,23,0.8)] backdrop-blur-md flex items-center justify-center gap-1"
+                                className="w-full shrink-0 mb-3 py-3 border border-emerald-500/30 rounded-xl text-[10px] font-black text-emerald-400 hover:bg-emerald-500 hover:text-slate-950 uppercase tracking-widest transition-all bg-emerald-950/20 shadow-sm flex items-center justify-center gap-2"
                             >
-                                <Plus size={14} /> Añadir Servicio o Repuesto
+                                <Plus size={16} /> Añadir Tarea / Repuesto
                             </button>
 
                             {/* Lista de Ítems */}
                             <div className="flex-1 overflow-y-auto custom-scrollbar-dark pr-1 space-y-2 mb-4 max-h-[250px] md:max-h-none">
                                 {o.items_orden?.map((item: ItemOrden) => (
-                                    <div key={item.id} className={`flex justify-between items-center text-[10px] font-bold backdrop-blur-sm p-2.5 rounded-xl border group/item transition-colors ${item.realizado ? 'bg-emerald-900/10 border-emerald-900/30 opacity-70' : 'bg-slate-950/50 border-slate-800/50'}`}>
+                                    <div key={item.id} className={`flex justify-between items-center text-[10px] font-bold backdrop-blur-sm p-2.5 rounded-xl border group/item transition-colors ${item.realizado ? 'bg-emerald-900/10 border-emerald-900/30 opacity-70' : 'bg-slate-950/80 border-slate-800'}`}>
 
-                                        <div className="flex items-center gap-2 flex-1 pr-2 overflow-hidden">
+                                        <div className="flex items-center gap-2.5 flex-1 pr-2 overflow-hidden">
                                             <button disabled={soloLectura} onClick={() => toggleItemRealizado(item.id, item.realizado)} className="shrink-0 hover:scale-110 transition-transform disabled:opacity-50">
-                                                {item.realizado ? <CheckCircle2 className="text-emerald-500" size={14} /> : <Circle className="text-slate-600" size={14} />}
+                                                {item.realizado ? <CheckCircle2 className="text-emerald-500" size={16} /> : <Circle className="text-slate-600" size={16} />}
                                             </button>
                                             <div className="flex flex-col">
                                                 <span className={`uppercase truncate ${item.realizado ? 'text-slate-500 line-through' : 'text-slate-200'}`}>{item.descripcion}</span>
                                                 
                                                 {item.tipo_item === 'repuesto' && !item.realizado && (
-                                                    <span className="text-[8px] text-orange-400 uppercase tracking-widest mt-0.5 flex items-center gap-1">Bodega / Comprar</span>
+                                                    <span className="text-[8px] text-orange-400 uppercase tracking-widest mt-0.5 flex items-center gap-1">En Bodega</span>
                                                 )}
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2 shrink-0">
-                                            {/* 🔥 CENSURA DE PRECIOS PARA MECÁNICOS */}
                                             {!mecanicoActivo && (
-                                                <span className={`mr-1 ${item.realizado ? 'text-slate-500' : 'text-emerald-400'}`}>${item.precio.toLocaleString()}</span>
+                                                <span className={`mr-2 font-black ${item.realizado ? 'text-slate-500' : 'text-emerald-400'}`}>${item.precio.toLocaleString()}</span>
                                             )}
-                                            <button disabled={soloLectura} onClick={() => abrirModalItem(o.id, item)} className="text-slate-600 disabled:opacity-50 hover:text-emerald-400 transition-colors p-1" title="Editar"><Edit2 size={12} /></button>
-                                            <button disabled={soloLectura} onClick={() => eliminarItemBD(item.id)} className="text-slate-600 disabled:opacity-50 hover:text-red-400 transition-colors p-1" title="Eliminar"><Trash2 size={12} /></button>
+                                            <button disabled={soloLectura} onClick={() => abrirModalItem(o.id, item)} className="text-slate-600 disabled:opacity-50 hover:text-blue-400 transition-colors bg-slate-900 p-1.5 rounded-md border border-slate-800"><Edit2 size={12} /></button>
+                                            <button disabled={soloLectura} onClick={() => eliminarItemBD(item.id)} className="text-slate-600 disabled:opacity-50 hover:text-red-400 transition-colors bg-slate-900 p-1.5 rounded-md border border-slate-800"><Trash2 size={12} /></button>
                                         </div>
                                     </div>
                                 ))}
-                                {o.items_orden?.length === 0 && <p className="text-[10px] text-center text-slate-600 italic py-2">Sin ítems registrados.</p>}
+                                {o.items_orden?.length === 0 && <p className="text-[10px] text-center text-slate-600 italic font-bold py-4 bg-slate-950/50 rounded-xl border border-dashed border-slate-800">No hay tareas registradas.</p>}
                                 
                                 {/* Notas del Turno */}
-                                <div className="mt-4 border-t border-slate-800/50 pt-3">
-                                    <h4 className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1">
-                                        <MessageSquare size={10} /> Notas de Turno
+                                <div className="mt-4 pt-3">
+                                    <h4 className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1.5 ml-1">
+                                        <MessageSquare size={12} /> Bitácora de Turno
                                     </h4>
-                                    <div className="bg-slate-950/40 rounded-xl border border-slate-800/50 p-2 flex flex-col gap-2">
+                                    <div className="bg-slate-950/60 rounded-2xl border border-slate-800/50 p-2.5 flex flex-col gap-2 shadow-inner">
                                         
                                          {o.comentarios_orden?.map((com: ComentarioOrden) => (
-                                             <div key={com.id} className="bg-slate-900 rounded-lg p-2 text-[9px]">
-                                                <div className="flex justify-between items-center mb-1 border-b border-slate-800 pb-1">
-                                                    <span className="font-bold text-blue-400">{com.autor_nombre}</span>
-                                                    <span className="text-slate-600">{new Date(com.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}</span>
+                                             <div key={com.id} className="bg-slate-900 rounded-xl p-2.5 text-[9px] border border-slate-800">
+                                                <div className="flex justify-between items-center mb-1.5 border-b border-slate-800/50 pb-1.5">
+                                                    <span className="font-black text-blue-400 tracking-wider uppercase">{com.autor_nombre}</span>
+                                                    <span className="text-slate-500 font-bold">{new Date(com.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}</span>
                                                 </div>
-                                                <p className="text-slate-300 font-sans">{com.texto}</p>
+                                                <p className="text-slate-300 font-medium leading-relaxed">{com.texto}</p>
                                             </div>
                                         ))}
                                         
-                                        <div className="flex gap-1 mt-1">
+                                        <div className="flex gap-1.5 mt-1">
                                             <input 
                                                 type="text" 
                                                 value={comentarioInputs[o.id] || ''}
                                                 disabled={soloLectura}
                                                 onChange={e => setComentarioInputs({...comentarioInputs, [o.id]: e.target.value})}
                                                 onKeyDown={e => { if (e.key === 'Enter') enviarComentario(o.id) }}
-                                                placeholder="Añadir recado..." 
-                                                className="w-full bg-slate-800/50 rounded-lg p-2 text-[9px] text-slate-200 outline-none border border-slate-700/50 focus:border-blue-500 transition-colors"
+                                                placeholder="Añadir un recado..." 
+                                                className="w-full bg-slate-900 rounded-xl px-3 py-2 text-[10px] font-bold text-slate-200 outline-none border border-slate-700 focus:border-blue-500 transition-colors placeholder-slate-600"
                                             />
-                                            <button onClick={() => enviarComentario(o.id)} disabled={soloLectura} className="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-500 transition-colors disabled:opacity-50">
-                                                <Send size={12} />
+                                            <button onClick={() => enviarComentario(o.id)} disabled={soloLectura} className="bg-blue-600 text-white p-2.5 rounded-xl hover:bg-blue-500 transition-colors disabled:opacity-50 flex items-center justify-center">
+                                                <Send size={14} />
                                             </button>
                                         </div>
                                     </div>
@@ -411,16 +405,16 @@ export default function Pizarra({
                             
                             {/* 🔥 BLOQUE DE COBROS Y FINALIZACIÓN (Solo visible para el dueño) */}
                             {!mecanicoActivo && (
-                                <div className="shrink-0 bg-slate-950/80 p-3 rounded-2xl border border-slate-800 flex flex-col gap-2 mt-auto">
+                                <div className="shrink-0 bg-slate-950 p-4 rounded-2xl border border-slate-800 flex flex-col gap-3 mt-auto shadow-[0_-10px_20px_rgba(2,6,23,0.5)]">
                                     
-                                    <div className="flex justify-between items-center text-[10px] text-slate-400 font-bold px-1">
-                                        <span>Subtotal Tareas/Repuestos:</span>
-                                        <span>${subtotalItems.toLocaleString()}</span>
+                                    <div className="flex justify-between items-center text-[10px] text-slate-400 font-black px-1">
+                                        <span className="uppercase tracking-widest">Servicios/Repuestos:</span>
+                                        <span className="text-slate-200">${subtotalItems.toLocaleString()}</span>
                                     </div>
                                     
-                                    <div className="flex justify-between items-center text-[10px] font-bold px-1">
-                                        <span className="text-slate-300">Costo Revisión:</span>
-                                        <div className="flex items-center gap-1 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 focus-within:border-emerald-500 transition-colors">
+                                    <div className="flex justify-between items-center text-[10px] font-black px-1">
+                                        <span className="text-slate-400 uppercase tracking-widest">Diagnóstico:</span>
+                                        <div className="flex items-center gap-1 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 focus-within:border-emerald-500 transition-colors">
                                             <span className="text-slate-500">$</span>
                                             <input 
                                                 type="number" 
@@ -433,12 +427,12 @@ export default function Pizarra({
                                         </div>
                                     </div>
 
-                                    <div className="flex justify-between items-center text-[10px] font-bold px-1">
-                                        <span className="text-slate-300 flex items-center gap-1">
+                                    <div className="flex justify-between items-center text-[10px] font-black px-1">
+                                        <span className="text-slate-400 uppercase tracking-widest flex items-center gap-1">
                                             Descuento 
-                                            {porcentajeDesc > 0 && <span className="bg-orange-500/20 text-orange-400 px-1 rounded font-black">-{porcentajeDesc}%</span>}
+                                            {porcentajeDesc > 0 && <span className="bg-orange-500/20 text-orange-400 px-1.5 py-0.5 rounded-md font-black">-{porcentajeDesc}%</span>}
                                         </span>
-                                        <div className="flex items-center gap-1 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 focus-within:border-orange-500 transition-colors">
+                                        <div className="flex items-center gap-1 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 focus-within:border-orange-500 transition-colors">
                                             <span className="text-orange-500 font-bold">-$</span>
                                             <input 
                                                 type="number" 
@@ -454,21 +448,21 @@ export default function Pizarra({
                                     <div className="h-px bg-slate-800 w-full my-1"></div>
 
                                     <div className="flex justify-between items-end px-1">
-                                        <button onClick={() => anularOrden(o.id)} disabled={soloLectura} className="text-[9px] disabled:opacity-50 font-black text-red-500 uppercase tracking-widest hover:underline">
+                                        <button onClick={() => anularOrden(o.id)} disabled={soloLectura} className="text-[9px] disabled:opacity-50 font-black text-slate-600 uppercase tracking-widest hover:text-red-500 transition-colors">
                                             Anular Orden
                                         </button>
                                         <div className="text-right">
-                                            <p className="text-[9px] text-slate-500 uppercase font-black tracking-widest mb-0.5">Total a Cobrar</p>
-                                            <p className="font-black text-emerald-400 text-2xl leading-none">${totalNeto.toLocaleString()}</p>
+                                            <p className="text-[9px] text-emerald-500/70 uppercase font-black tracking-widest mb-1">Total a Cobrar</p>
+                                            <p className="font-black text-emerald-400 text-3xl leading-none">${totalNeto.toLocaleString()}</p>
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-2 mt-3">
-                                        <button disabled={soloLectura || totalNeto === 0} onClick={() => solicitarAprobacion(o)} className="bg-slate-800 disabled:opacity-50 text-slate-300 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider hover:bg-slate-700 transition-colors flex items-center justify-center gap-1">
-                                            <MessageSquare size={12}/> Aprobar Pres.
+                                    <div className="grid grid-cols-2 gap-3 mt-4">
+                                        <button disabled={soloLectura || totalNeto === 0} onClick={() => solicitarAprobacion(o)} className="bg-slate-800 border border-slate-700 disabled:opacity-50 text-slate-300 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-700 hover:text-white transition-all flex items-center justify-center gap-2 shadow-sm">
+                                            <MessageSquare size={14}/> Aprobar
                                         </button>
-                                        <button disabled={soloLectura} onClick={() => entregarOrdenYFinalizar(o)} className="bg-emerald-600 disabled:opacity-50 text-slate-950 py-2 rounded-xl text-[10px] font-black shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:bg-emerald-500 transition-all uppercase tracking-wider flex items-center justify-center gap-1">
-                                            Entregar <CheckCircle size={12} />
+                                        <button disabled={soloLectura} onClick={() => entregarOrdenYFinalizar(o)} className="bg-emerald-600 disabled:opacity-50 text-slate-950 py-3 rounded-xl text-[10px] font-black shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:bg-emerald-500 hover:scale-[1.02] transition-all uppercase tracking-widest flex items-center justify-center gap-2">
+                                            Entregar <CheckCircle size={14} />
                                         </button>
                                     </div>
                                 </div>
