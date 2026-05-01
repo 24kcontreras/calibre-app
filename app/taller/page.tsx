@@ -104,19 +104,16 @@ export default function CalibreApp() {
 
   // 🔥 NUEVO: SISTEMA DE ALARMA (El Reloj de Arena)
   useEffect(() => {
-    // Si estamos en modo lectura (suscripción vencida), no molestamos
     if (soloLectura || ordenesAbiertas.length === 0) return;
 
     const revisarPromesasPendientes = () => {
         const ahora = new Date();
         
         ordenesAbiertas.forEach((orden: OrdenTrabajo) => {
-            // Si la orden NO tiene fecha de promesa...
             if (!orden.fecha_promesa) {
                 const creacion = new Date(orden.created_at);
                 const diferenciaHoras = (ahora.getTime() - creacion.getTime()) / (1000 * 60 * 60);
 
-                // ...Y ya pasaron más de 12 horas desde que se creó
                 if (diferenciaHoras >= 12) {
                     toast((t) => (
                         <span className="flex flex-col gap-2">
@@ -134,21 +131,18 @@ export default function CalibreApp() {
                                 Definir Ahora
                             </button>
                         </span>
-                    ), { duration: 8000, icon: '⏰', id: `alarma_${orden.id}` }); // Usamos un ID para que no salgan 20 toasts iguales del mismo auto
+                    ), { duration: 8000, icon: '⏰', id: `alarma_${orden.id}` }); 
                 }
             }
         });
     };
 
-    // Revisamos al cargar y luego cada 1 hora para no saturar
     revisarPromesasPendientes();
     const intervalo = setInterval(revisarPromesasPendientes, 1000 * 60 * 60);
     
     return () => clearInterval(intervalo);
   }, [ordenesAbiertas, soloLectura]);
 
-
-  // Sincronizar datos de configuración cuando carguen
   useEffect(() => {
     if (configTaller) {
         setInputTaller(configTaller.nombre_taller || 'MI TALLER')
@@ -161,7 +155,6 @@ export default function CalibreApp() {
     }
   }, [configTaller, esOnboarding, mecanicoActivo])
 
-  // --- FUNCIONES RÁPIDAS PARA MODALES MENORES ---
   const guardarItemBD = async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
       if (!itemForm.orden_id || guardandoItem || soloLectura) return;
@@ -275,6 +268,7 @@ export default function CalibreApp() {
   // --- PANTALLAS DE CARGA Y LOGIN ---
   if (authLoading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center"><Wrench className="animate-spin text-emerald-500" size={64} /></div>
   
+  // 🔥 El Frontend maneja la seguridad perfectamente, no necesitamos middleware para esto.
   if (!session && !mecanicoActivo) return <Login />
 
   // 🔥 VALIDACIÓN DE SUSCRIPCIÓN (HARD LOCK DE LA FASE 4)
@@ -292,8 +286,6 @@ export default function CalibreApp() {
       );
   }
 
-  // --- SI LA SUSCRIPCIÓN ESTÁ AL DÍA, RENDERIZAMOS LA APP NORMAL ---
-  // 🔥 Ajustamos el padding-bottom (pb-32 en móvil) para que la barra de navegación no tape la última tarjeta
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-6 font-sans w-full mx-auto relative overflow-hidden pb-32 md:pb-6">
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-emerald-900/10 rounded-full blur-[120px] pointer-events-none z-0"></div>
@@ -306,7 +298,7 @@ export default function CalibreApp() {
           </div>
       )}
 
-      {/* HEADER ULTRACOMPACTO (Los botones en móvil se ocultarán mediante las clases de Tailwind que ajustaste) */}
+      {/* HEADER ULTRACOMPACTO */}
       <Header 
         nombreTaller={nombreTaller} 
         cajaTotal={cajaTotal} 
@@ -318,7 +310,7 @@ export default function CalibreApp() {
         mecanicoActivo={mecanicoActivo}
       />
 
-      {/* 📱 PESTAÑAS MÓVILES (Para alternar entre Recepción y Pizarra) */}
+      {/* 📱 PESTAÑAS MÓVILES */}
       <div className="flex md:hidden bg-slate-900/60 p-1.5 rounded-2xl mb-6 border border-slate-800 shadow-inner">
         <button 
           onClick={() => setVistaMecanico('pizarra')}
@@ -347,7 +339,7 @@ export default function CalibreApp() {
       {/* 🚀 ARQUITECTURA RESPONSIVA INTELIGENTE */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6 w-full relative z-10">
         
-        {/* COLUMNA IZQUIERDA (RECEPCIÓN Y BUSCADOR) */}
+        {/* COLUMNA IZQUIERDA */}
         <div className={`lg:col-span-1 ${vistaMecanico === 'recepcion' ? 'block' : 'hidden md:block'}`}>
             <Recepcion 
               soloLectura={soloLectura} 
@@ -381,7 +373,6 @@ export default function CalibreApp() {
         </div>
       </div>
 
-      {/* 🔥 BOTÓN FLOTANTE (FAB) PARA RECEPCIÓN RÁPIDA (Solo en móvil) */}
       {vistaMecanico === 'pizarra' && (
         <button 
           onClick={() => setVistaMecanico('recepcion')}
@@ -392,7 +383,7 @@ export default function CalibreApp() {
         </button>
       )}
 
-      {/* 🔥 NUEVO BOTTOM NAVIGATION BAR (Solo en móvil) */}
+      {/* 🔥 NUEVO BOTTOM NAVIGATION BAR */}
       <BottomNav 
           mecanicoActivo={mecanicoActivo}
           onOpenScanner={() => setModalScanner(true)}
@@ -402,7 +393,7 @@ export default function CalibreApp() {
           onOpenConfiguracion={() => setModalConfiguracion(true)}
       />
 
-      {/* --- RENDERIZADO DE MODALES (CAPA FLOTANTE) --- */}
+      {/* --- RENDERIZADO DE MODALES --- */}
       {modalNuevaOrden && <ModalNuevaOrden vehiculo={modalNuevaOrden} soloLectura={soloLectura} session={session} cargarTodo={cargarTodo} onClose={() => setModalNuevaOrden(null)} />}
       {modalEditarOrden && <ModalEditarOrden orden={modalEditarOrden} soloLectura={soloLectura} cargarTodo={cargarTodo} onClose={() => setModalEditarOrden(null)} />}
       {modalActa && <ModalActaRecepcion orden={modalActa} onClose={() => setModalActa(null)} />}
@@ -421,7 +412,15 @@ export default function CalibreApp() {
          setInputTaller={setInputTaller} 
          guardarConfiguracion={guardarConfiguracion} 
          guardandoConfiguracion={guardandoConfiguracion} 
-         handleLogout={async () => { await supabase.auth.signOut(); router.push('/'); }} 
+         
+         // 🔥 AQUÍ CORREGIMOS EL LOGOUT PARA ELIMINAR TODO RASTRO
+         handleLogout={async () => { 
+            localStorage.removeItem('calibre_mecanico_session');
+            document.cookie = "calibre_mecanico_auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+            await supabase.auth.signOut(); 
+            router.push('/'); 
+         }} 
+
          inputDireccion={inputDireccion} 
          setInputDireccion={setInputDireccion} 
          inputTelefono={inputTelefonoConfig} 
