@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import imageCompression from 'browser-image-compression'
 import toast, { Toaster } from 'react-hot-toast'
-import { Wrench, AlertTriangle, Bot } from 'lucide-react'
+import { Wrench, AlertTriangle, Bot, Search, ClipboardList, Plus } from 'lucide-react'
 import { useTaller } from '@/hooks/useTaller'
 import Login from '@/components/Login'
 import Header from '@/components/Header'
@@ -39,8 +39,11 @@ export default function CalibreApp() {
     nombreTaller, configTaller, esOnboarding, cajaTotal, gananciasEsteMes, 
     autosEsteMes, ticketPromedio, pctServicio, pctRepuesto, ingresosServicio, 
     ingresosRepuesto, topMarcas, topMecanicos, oportunidadesVenta, cargarTodo,
-    mecanicoActivo // 👈 AQUÍ RECIBIMOS LA CREDENCIAL DEL MECÁNICO
+    mecanicoActivo
   } = useTaller()
+
+  // 🔥 NUEVO ESTADO: Controla las pestañas en versión Móvil
+  const [vistaMecanico, setVistaMecanico] = useState<'pizarra' | 'recepcion'>('pizarra');
 
   // 🎛️ ESTADOS PARA MOSTRAR/OCULTAR MODALES
   const [modalNuevaOrden, setModalNuevaOrden] = useState<Vehiculo | null>(null)
@@ -225,7 +228,6 @@ export default function CalibreApp() {
   // --- PANTALLAS DE CARGA Y LOGIN ---
   if (authLoading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center"><Wrench className="animate-spin text-emerald-500" size={64} /></div>
   
-  // Si no hay sesión normal ni sesión de mecánico, mandarlo al login
   if (!session && !mecanicoActivo) return <Login />
 
   // 🔥 VALIDACIÓN DE SUSCRIPCIÓN (HARD LOCK DE LA FASE 4)
@@ -245,7 +247,7 @@ export default function CalibreApp() {
 
   // --- SI LA SUSCRIPCIÓN ESTÁ AL DÍA, RENDERIZAMOS LA APP NORMAL ---
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-6 font-sans w-full mx-auto relative overflow-hidden">
+    <main className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-6 font-sans w-full mx-auto relative overflow-hidden pb-24 md:pb-6">
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-emerald-900/10 rounded-full blur-[120px] pointer-events-none z-0"></div>
       <Toaster position="bottom-right" toastOptions={{ style: { background: '#1e293b', color: '#f8fafc', border: '1px solid #334155' } }} />
 
@@ -256,7 +258,7 @@ export default function CalibreApp() {
           </div>
       )}
 
-      {/* 👇 Header recibe mecanicoActivo para ocultar los módulos prohibidos */}
+      {/* HEADER ULTRACOMPACTO */}
       <Header 
         nombreTaller={nombreTaller} 
         cajaTotal={cajaTotal} 
@@ -268,6 +270,22 @@ export default function CalibreApp() {
         mecanicoActivo={mecanicoActivo}
       />
 
+      {/* 📱 PESTAÑAS MÓVILES (Ocultas en escritorio) */}
+      <div className="flex md:hidden bg-slate-900/60 p-1.5 rounded-2xl mb-6 border border-slate-800 shadow-inner">
+        <button 
+          onClick={() => setVistaMecanico('pizarra')}
+          className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 ${vistaMecanico === 'pizarra' ? 'bg-orange-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-200'}`}
+        >
+          <ClipboardList size={16} /> Taller Activo
+        </button>
+        <button 
+          onClick={() => setVistaMecanico('recepcion')}
+          className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 ${vistaMecanico === 'recepcion' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-200'}`}
+        >
+          <Search size={16} /> Base Clientes
+        </button>
+      </div>
+
       {soloLectura && (
           <div className="bg-red-500/10 border border-red-500/50 p-4 rounded-2xl mb-6 mx-auto w-full max-w-7xl flex items-center gap-3 z-20 relative">
               <AlertTriangle className="text-red-500 animate-pulse" size={24} />
@@ -278,11 +296,11 @@ export default function CalibreApp() {
           </div>
       )}
 
-      {/* 🚀 LA NUEVA ARQUITECTURA LIMPIA: RECEPCIÓN + PIZARRA */}
+      {/* 🚀 ARQUITECTURA RESPONSIVA INTELIGENTE */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6 w-full relative z-10">
         
         {/* COLUMNA IZQUIERDA (RECEPCIÓN Y BUSCADOR) */}
-        <div className="lg:col-span-1">
+        <div className={`lg:col-span-1 ${vistaMecanico === 'recepcion' ? 'block' : 'hidden md:block'}`}>
             <Recepcion 
               soloLectura={soloLectura} 
               vehiculos={vehiculos} 
@@ -295,7 +313,7 @@ export default function CalibreApp() {
         </div>
         
         {/* COLUMNA DERECHA (PIZARRA KANBAN) */}
-        <div className="lg:col-span-3 flex flex-col gap-6">
+        <div className={`lg:col-span-3 flex flex-col gap-6 ${vistaMecanico === 'pizarra' ? 'block' : 'hidden md:block'}`}>
             <Pizarra 
               ordenesAbiertas={ordenesAbiertas} 
               soloLectura={soloLectura} 
@@ -310,10 +328,21 @@ export default function CalibreApp() {
                   setItemForm(item ? { id: item.id, orden_id: id, nombre: item.descripcion, detalle: '', precio: item.precio.toString(), tipo_item: item.tipo_item, procedencia: item.procedencia || 'Taller' } : { id: null, orden_id: id, nombre: '', detalle: '', precio: '', tipo_item: 'servicio', procedencia: 'Taller' }); 
                   setModalItemVisible(true); 
                }} 
-               mecanicoActivo={mecanicoActivo} // Pasamos el mecánico a la Pizarra
+               mecanicoActivo={mecanicoActivo} 
             />
         </div>
       </div>
+
+      {/* 🔥 BOTÓN FLOTANTE (FAB) PARA RECEPCIÓN RÁPIDA (Solo en móvil) */}
+      {vistaMecanico === 'pizarra' && (
+        <button 
+          onClick={() => setVistaMecanico('recepcion')}
+          className="md:hidden fixed bottom-6 right-6 w-14 h-14 bg-blue-600 text-white rounded-full shadow-[0_0_20px_rgba(37,99,235,0.5)] flex items-center justify-center z-50 hover:bg-blue-500 transition-all active:scale-95"
+          title="Buscar o Añadir Vehículo"
+        >
+          <Plus size={28} />
+        </button>
+      )}
 
       {/* --- RENDERIZADO DE MODALES (CAPA FLOTANTE) --- */}
       {modalNuevaOrden && <ModalNuevaOrden vehiculo={modalNuevaOrden} soloLectura={soloLectura} session={session} cargarTodo={cargarTodo} onClose={() => setModalNuevaOrden(null)} />}
@@ -321,14 +350,12 @@ export default function CalibreApp() {
       {modalActa && <ModalActaRecepcion orden={modalActa} onClose={() => setModalActa(null)} />}
       {modalAlerta && <ModalAlerta alertaForm={alertaForm} setAlertaForm={setAlertaForm} guardarAlertaBD={guardarAlertaBD} guardandoAlerta={guardandoAlerta} onClose={() => setModalAlerta(null)} ordenActiva={modalAlerta} resolverAlertaBD={async (id: string) => { await supabase.from('alertas_desgaste').update({ estado: 'Resuelta' }).eq('id', id); toast.success("Alerta resuelta!"); await cargarTodo(); setModalAlerta(null); }} />}
       
-      {/* 🔒 ESTOS MODALES SOLO DEBEN ABRIRSE SI NO ES MECÁNICO, PERO LOS CONDICIONAMOS EN EL HEADER DE TODOS MODOS */}
       {modalTelemetria && <ModalTelemetria onClose={() => setModalTelemetria(false)} gananciasEsteMes={gananciasEsteMes} autosEsteMes={autosEsteMes} ticketPromedio={ticketPromedio} pctServicio={pctServicio} pctRepuesto={pctRepuesto} ingresosServicio={ingresosServicio} ingresosRepuesto={ingresosRepuesto} topMarcas={topMarcas} topMecanicos={topMecanicos} historial={historial} oportunidades={oportunidadesVenta} nombreTaller={nombreTaller} />}      
       {modalHistorial && <ModalHistorial onClose={() => setModalHistorial(false)} busquedaHistorial={busquedaHistorial} setBusquedaHistorial={setBusquedaHistorial} historialFiltrado={historialFiltrado} configPDF={{ nombreTaller, direccion: configTaller?.direccion_taller || '', telefono: configTaller?.telefono_taller || '', garantia: configTaller?.garantia_taller || '', logoUrl: configTaller?.logo_url || null, incluirIva: configTaller?.incluir_iva || false }} />}
       {modalCrm && <ModalCRM onClose={() => setModalCrm(false)} oportunidades={oportunidadesVenta} nombreTaller={nombreTaller} />}
       
       {modalManual && <ModalManual onClose={() => setModalManual(false)} />}
        
-      {/* MODAL CONFIGURACIÓN */}
       {modalConfiguracion && <ModalConfiguracion 
          onClose={() => setModalConfiguracion(false)} 
          onOpenManual={() => setModalManual(true)}
