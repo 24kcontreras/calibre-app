@@ -1,7 +1,7 @@
 'use client'
 import React, { useState, Suspense } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Wrench, Lock, Mail, ArrowRight, Loader2, UserSquare, ShieldAlert, QrCode, LogIn } from 'lucide-react'
+import { Wrench, Lock, Mail, ArrowRight, Loader2, UserSquare, ShieldAlert, QrCode } from 'lucide-react'
 import toast, { Toaster } from 'react-hot-toast'
 import Image from 'next/image'
 import { useSearchParams } from 'next/navigation'
@@ -52,7 +52,7 @@ function LoginContent() {
     }
   }
 
-  // 🔥 LÓGICA DE GOOGLE RESTAURADA (Solo para Dueños)
+  // LÓGICA DE GOOGLE (Solo para Dueños)
   const handleGoogleLogin = async () => {
     try {
         const { error } = await supabase.auth.signInWithOAuth({
@@ -83,8 +83,11 @@ function LoginContent() {
 
       if (error) throw error;
 
-      // Si todo sale bien, guardamos su pase de acceso en el celular (Local Storage)
+      // 1. Guardamos los datos para el Frontend (Celular)
       localStorage.setItem('calibre_mecanico_session', JSON.stringify(data));
+      
+      // 🔥 2. EL TRUCO: Le damos una Cookie al navegador para que el Servidor (Next.js Middleware) lo deje pasar
+      document.cookie = "calibre_mecanico_auth=true; path=/; max-age=86400"; // Dura 24 horas
       
       toast.success(`¡A la trinchera, ${data.nombre}!`, { id: toastId })
       
