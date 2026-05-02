@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import toast, { Toaster } from 'react-hot-toast'
+import { vibrar } from '@/utils/haptics'
 import { 
   Package, 
   Search, 
@@ -16,7 +17,8 @@ import {
   TrendingUp,
   Box,
   DollarSign,
-  Barcode
+  Barcode,
+  Camera // 🔥 Importamos la cámara
 } from 'lucide-react'
 import { useTaller } from '@/hooks/useTaller'
 
@@ -40,6 +42,7 @@ export default function InventarioPage() {
   const [busqueda, setBusqueda] = useState('')
   
   const [modalAbierto, setModalAbierto] = useState(false)
+  const [escanerAbierto, setEscanerAbierto] = useState(false) // 🔥 Estado del Escáner
   const [itemEditando, setItemEditando] = useState<ArticuloInventario | null>(null)
   const [guardando, setGuardando] = useState(false)
 
@@ -71,6 +74,30 @@ export default function InventarioPage() {
   useEffect(() => {
     if (session || mecanicoActivo) cargarInventario()
   }, [session, mecanicoActivo])
+
+  // 🔥 LÓGICA DEL ESCÁNER DE CÓDIGOS
+  useEffect(() => {
+    if (escanerAbierto) {
+        const { Html5QrcodeScanner } = require('html5-qrcode');
+        const scanner = new Html5QrcodeScanner("reader", { 
+            qrbox: { width: 250, height: 250 }, 
+            fps: 5 
+        }, false);
+
+        scanner.render((decodedText: string) => {
+            setBusqueda(decodedText);
+            vibrar('exito'); // Vibra al leer!
+            setEscanerAbierto(false);
+            scanner.clear();
+        }, () => {
+            // Ignorar errores de lectura constantes
+        });
+
+        return () => {
+            scanner.clear().catch(console.error);
+        };
+    }
+  }, [escanerAbierto]);
 
   const handleOpenModal = (item: ArticuloInventario | null = null) => {
     if (item) {
@@ -155,134 +182,170 @@ export default function InventarioPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 font-sans max-w-7xl mx-auto pb-24">
+    // 🔥 EL MAIN AHORA ES W-FULL PARA MATAR LOS BORDES NEGROS
+    <main className="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col w-full pb-24">
       <Toaster position="bottom-right" />
       
-      {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-        <div className="flex items-center gap-4">
+      {/* 🔥 EL WRAPPER INTERNO CONTROLA QUE NO SE ESTIRE DEMASIADO EN MONITORES GIGANTES */}
+      <div className="flex-1 w-full max-w-[1400px] mx-auto p-4 md:p-8">
+          
+          {/* HEADER */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+            <div className="flex items-center gap-4">
+                <button 
+                    onClick={() => router.push('/taller')}
+                    className="p-3 bg-slate-900 border border-slate-800 rounded-2xl text-slate-400 hover:text-white hover:border-slate-600 transition-all shadow-lg"
+                >
+                    <ArrowLeft size={20} />
+                </button>
+                <div>
+                    <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tighter text-slate-100 flex items-center gap-3">
+                        <Package className="text-emerald-500" size={28} /> Bodega e Inventario
+                    </h1>
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">{nombreTaller}</p>
+                </div>
+            </div>
+
             <button 
-                onClick={() => router.push('/taller')}
-                className="p-3 bg-slate-900 border border-slate-800 rounded-2xl text-slate-400 hover:text-white hover:border-slate-600 transition-all shadow-lg"
+                onClick={() => handleOpenModal()}
+                className="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black uppercase tracking-widest text-xs px-6 py-4 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)] hover:scale-[1.02]"
             >
-                <ArrowLeft size={20} />
+                <Plus size={18} /> Nuevo Artículo
             </button>
-            <div>
-                <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tighter text-slate-100 flex items-center gap-3">
-                    <Package className="text-emerald-500" size={28} /> Bodega e Inventario
-                </h1>
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">{nombreTaller}</p>
-            </div>
-        </div>
+          </div>
 
-        <button 
-            onClick={() => handleOpenModal()}
-            className="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black uppercase tracking-widest text-xs px-6 py-4 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)] hover:scale-[1.02]"
-        >
-            <Plus size={18} /> Nuevo Artículo
-        </button>
+          {/* MÉTRICAS RÁPIDAS */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-[32px] backdrop-blur-xl">
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-2"><Box size={14} className="text-blue-500"/> Artículos Totales</p>
+                <p className="text-3xl font-black text-slate-100">{items.length}</p>
+            </div>
+            <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-[32px] backdrop-blur-xl">
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-2"><TrendingDown size={14} className="text-orange-500"/> Inversión en Stock</p>
+                <p className="text-3xl font-black text-slate-100">${inversionTotal.toLocaleString('es-CL')}</p>
+            </div>
+            <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-[32px] backdrop-blur-xl">
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-2"><TrendingUp size={14} className="text-emerald-500"/> Valorización Venta</p>
+                <p className="text-3xl font-black text-emerald-400">${valorVentaTotal.toLocaleString('es-CL')}</p>
+            </div>
+          </div>
+
+          {/* 🔥 NUEVO BUSCADOR CON CÁMARA INYECTADA */}
+          <div className="relative w-full mb-6">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-slate-500" />
+            </div>
+            
+            <input
+                type="text"
+                placeholder="Buscar por nombre o SKU..."
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                className="w-full bg-slate-900/80 border border-slate-800 rounded-2xl py-4 pl-12 pr-16 text-sm font-bold text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 transition-colors shadow-inner"
+            />
+            
+            <div className="absolute inset-y-0 right-2 flex items-center">
+                <button 
+                    onClick={() => setEscanerAbierto(true)}
+                    className="p-2 bg-slate-800 hover:bg-emerald-500/20 text-slate-400 hover:text-emerald-400 rounded-xl transition-all border border-transparent hover:border-emerald-500/30"
+                    title="Escanear Código de Barras"
+                >
+                    <Camera size={20} />
+                </button>
+            </div>
+          </div>
+
+          {/* TABLA / LISTA */}
+          <div className="bg-slate-900/40 border border-slate-800 rounded-[35px] overflow-hidden backdrop-blur-md">
+            {cargando ? (
+                <div className="p-20 flex flex-col items-center justify-center gap-4">
+                    <Loader2 className="animate-spin text-emerald-500" size={48} />
+                    <p className="text-xs font-black text-slate-500 uppercase tracking-widest">Sincronizando Bodega...</p>
+                </div>
+            ) : itemsFiltrados.length === 0 ? (
+                <div className="p-20 flex flex-col items-center justify-center text-center">
+                    <Package size={64} className="text-slate-800 mb-4" />
+                    <h3 className="text-lg font-black text-slate-400 uppercase">Sin resultados</h3>
+                    <p className="text-xs text-slate-500 font-bold max-w-xs">No encontramos artículos que coincidan con tu búsqueda o la bodega está vacía.</p>
+                </div>
+            ) : (
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="border-b border-slate-800 bg-slate-950/50">
+                                <th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Artículo / SKU</th>
+                                <th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Stock</th>
+                                <th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Costo</th>
+                                <th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Venta</th>
+                                <th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Margen</th>
+                                <th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {itemsFiltrados.map((item) => {
+                                const margen = item.precio_venta - item.precio_costo;
+                                const pctMargen = item.precio_costo > 0 ? Math.round((margen / item.precio_costo) * 100) : 0;
+                                
+                                return (
+                                    <tr key={item.id} className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors group">
+                                        <td className="p-6">
+                                            <p className="font-black text-slate-200 uppercase tracking-tight group-hover:text-emerald-400 transition-colors">{item.nombre}</p>
+                                            <p className="text-[10px] font-mono text-slate-500 mt-1">{item.codigo_sku || 'SIN SKU'}</p>
+                                        </td>
+                                        <td className="p-6">
+                                            <span className={`px-3 py-1 rounded-full text-[10px] font-black ${item.cantidad <= 2 ? 'bg-red-500/10 text-red-400 border border-red-500/30' : 'bg-slate-800 text-slate-400'}`}>
+                                                {item.cantidad} UNID
+                                            </span>
+                                        </td>
+                                        <td className="p-6 font-bold text-slate-400 text-sm">${item.precio_costo.toLocaleString('es-CL')}</td>
+                                        <td className="p-6 font-black text-emerald-400 text-base">${item.precio_venta.toLocaleString('es-CL')}</td>
+                                        <td className="p-6">
+                                            <p className="text-[10px] font-black text-emerald-500/70">+${margen.toLocaleString('es-CL')}</p>
+                                            <p className="text-[9px] font-bold text-slate-600">{pctMargen}% Rentabilidad</p>
+                                        </td>
+                                        <td className="p-6 text-right">
+                                            <div className="flex justify-end gap-2">
+                                                <button 
+                                                    onClick={() => handleOpenModal(item)}
+                                                    className="p-2 bg-slate-800 text-blue-400 hover:bg-blue-600 hover:text-white rounded-lg transition-all border border-slate-700"
+                                                >
+                                                    <Edit2 size={14} />
+                                                </button>
+                                                <button 
+                                                    onClick={() => eliminarItem(item.id)}
+                                                    className="p-2 bg-slate-800 text-slate-500 hover:bg-red-600 hover:text-white rounded-lg transition-all border border-slate-700"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+          </div>
       </div>
 
-      {/* MÉTRICAS RÁPIDAS */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-[32px] backdrop-blur-xl">
-            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-2"><Box size={14} className="text-blue-500"/> Artículos Totales</p>
-            <p className="text-3xl font-black text-slate-100">{items.length}</p>
+      {/* 🔥 MODAL DEL ESCÁNER DE CÓDIGOS */}
+      {escanerAbierto && (
+        <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[300] flex items-center justify-center p-4">
+             <div className="bg-slate-900 border border-slate-800 rounded-[30px] p-6 max-w-sm w-full text-center shadow-2xl animate-in zoom-in-95">
+                 <h3 className="text-lg font-black uppercase tracking-tighter text-slate-100 mb-4 flex items-center justify-center gap-2">
+                    <Barcode className="text-emerald-500"/> Escanear Código
+                 </h3>
+                 <div id="reader" className="w-full overflow-hidden rounded-2xl mb-4 border-2 border-slate-800"></div>
+                 <button 
+                     onClick={() => setEscanerAbierto(false)} 
+                     className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-colors"
+                 >
+                     Cerrar Cámara
+                 </button>
+             </div>
         </div>
-        <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-[32px] backdrop-blur-xl">
-            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-2"><TrendingDown size={14} className="text-orange-500"/> Inversión en Stock</p>
-            <p className="text-3xl font-black text-slate-100">${inversionTotal.toLocaleString('es-CL')}</p>
-        </div>
-        <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-[32px] backdrop-blur-xl">
-            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-2"><TrendingUp size={14} className="text-emerald-500"/> Valorización Venta</p>
-            <p className="text-3xl font-black text-emerald-400">${valorVentaTotal.toLocaleString('es-CL')}</p>
-        </div>
-      </div>
-
-      {/* BUSCADOR */}
-      <div className="bg-slate-900/80 border border-slate-800 p-2 rounded-2xl flex items-center mb-6 shadow-inner focus-within:border-emerald-500/50 transition-all">
-        <Search size={20} className="text-slate-500 ml-4 mr-3" />
-        <input 
-            type="text" 
-            placeholder="Buscar por nombre o SKU..." 
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            className="w-full bg-transparent border-none outline-none text-slate-200 placeholder-slate-600 py-3 font-bold"
-        />
-      </div>
-
-      {/* TABLA / LISTA */}
-      <div className="bg-slate-900/40 border border-slate-800 rounded-[35px] overflow-hidden backdrop-blur-md">
-        {cargando ? (
-            <div className="p-20 flex flex-col items-center justify-center gap-4">
-                <Loader2 className="animate-spin text-emerald-500" size={48} />
-                <p className="text-xs font-black text-slate-500 uppercase tracking-widest">Sincronizando Bodega...</p>
-            </div>
-        ) : itemsFiltrados.length === 0 ? (
-            <div className="p-20 flex flex-col items-center justify-center text-center">
-                <Package size={64} className="text-slate-800 mb-4" />
-                <h3 className="text-lg font-black text-slate-400 uppercase">Sin resultados</h3>
-                <p className="text-xs text-slate-500 font-bold max-w-xs">No encontramos artículos que coincidan con tu búsqueda o la bodega está vacía.</p>
-            </div>
-        ) : (
-            <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                    <thead>
-                        <tr className="border-b border-slate-800 bg-slate-950/50">
-                            <th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Artículo / SKU</th>
-                            <th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Stock</th>
-                            <th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Costo</th>
-                            <th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Venta</th>
-                            <th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Margen</th>
-                            <th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {itemsFiltrados.map((item) => {
-                            const margen = item.precio_venta - item.precio_costo;
-                            const pctMargen = item.precio_costo > 0 ? Math.round((margen / item.precio_costo) * 100) : 0;
-                            
-                            return (
-                                <tr key={item.id} className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors group">
-                                    <td className="p-6">
-                                        <p className="font-black text-slate-200 uppercase tracking-tight group-hover:text-emerald-400 transition-colors">{item.nombre}</p>
-                                        <p className="text-[10px] font-mono text-slate-500 mt-1">{item.codigo_sku || 'SIN SKU'}</p>
-                                    </td>
-                                    <td className="p-6">
-                                        <span className={`px-3 py-1 rounded-full text-[10px] font-black ${item.cantidad <= 2 ? 'bg-red-500/10 text-red-400 border border-red-500/30' : 'bg-slate-800 text-slate-400'}`}>
-                                            {item.cantidad} UNID
-                                        </span>
-                                    </td>
-                                    <td className="p-6 font-bold text-slate-400 text-sm">${item.precio_costo.toLocaleString('es-CL')}</td>
-                                    <td className="p-6 font-black text-emerald-400 text-base">${item.precio_venta.toLocaleString('es-CL')}</td>
-                                    <td className="p-6">
-                                        <p className="text-[10px] font-black text-emerald-500/70">+${margen.toLocaleString('es-CL')}</p>
-                                        <p className="text-[9px] font-bold text-slate-600">{pctMargen}% Rentabilidad</p>
-                                    </td>
-                                    <td className="p-6 text-right">
-                                        <div className="flex justify-end gap-2">
-                                            <button 
-                                                onClick={() => handleOpenModal(item)}
-                                                className="p-2 bg-slate-800 text-blue-400 hover:bg-blue-600 hover:text-white rounded-lg transition-all border border-slate-700"
-                                            >
-                                                <Edit2 size={14} />
-                                            </button>
-                                            <button 
-                                                onClick={() => eliminarItem(item.id)}
-                                                className="p-2 bg-slate-800 text-slate-500 hover:bg-red-600 hover:text-white rounded-lg transition-all border border-slate-700"
-                                            >
-                                                <Trash2 size={14} />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            )
-                        })}
-                    </tbody>
-                </table>
-            </div>
-        )}
-      </div>
+      )}
 
       {/* MODAL AGREGAR/EDITAR */}
       {modalAbierto && (
