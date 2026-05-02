@@ -3,7 +3,9 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import toast, { Toaster } from 'react-hot-toast'
-import { ArrowLeft, Package, Search, Plus, AlertTriangle, Edit, Trash2, Box, Tag, DollarSign, Loader2, X } from 'lucide-react'
+import { ArrowLeft, Package, Search, Plus, AlertTriangle, Edit, Trash2, Box, Tag, DollarSign, Loader2, X, ScanLine } from 'lucide-react'
+import { Html5Qrcode } from 'html5-qrcode' // 🔥 EL NUEVO MOTOR DE ESCANEO
+
 // Definimos la estructura de un ítem del inventario
 interface ItemInventario {
   id: string;
@@ -34,6 +36,9 @@ export default function InventarioPage() {
     nombre: '', codigo_sku: '', categoria: 'Repuesto', cantidad: 0, stock_minimo: 2, precio_costo: 0, precio_venta: 0, ubicacion: ''
   })
 
+  // 🔥 ESTADO DEL ESCÁNER DE CÓDIGOS DE BARRAS
+  const [escanerActivo, setEscanerActivo] = useState(false)
+
   // 1. Autenticación y Carga de Datos
   useEffect(() => {
     const verificarSesion = async () => {
@@ -41,11 +46,9 @@ export default function InventarioPage() {
         let currentTallerId = null;
         const { data } = await supabase.auth.getSession();
         
-        // Verificamos si es Dueño
         if (data?.session?.user?.id) {
           currentTallerId = data.session.user.id;
         } else {
-          // Si no, verificamos si es Mecánico (Gafete)
           const credencial = localStorage.getItem('calibre_mecanico_session');
           if (credencial) {
             const mecanico = JSON.parse(credencial);
@@ -95,12 +98,10 @@ export default function InventarioPage() {
       const payload = { ...formData, taller_id: tallerId };
 
       if (formData.id) {
-        // Actualizar
         const { error } = await supabase.from('inventario').update(payload).eq('id', formData.id);
         if (error) throw error;
         toast.success("Ítem actualizado", { id: toastId });
       } else {
-        // Crear nuevo
         const { error } = await supabase.from('inventario').insert([payload]);
         if (error) throw error;
         toast.success("Ítem agregado al inventario", { id: toastId });
@@ -139,7 +140,49 @@ export default function InventarioPage() {
     setModalVisible(true);
   }
 
-  // 3. Cálculos y Filtros
+  // 🔥 3. LÓGICA DEL ESCÁNER DE CÁMARA
+  useEffect(() => {
+      let scanner: Html5Qrcode | null = null;
+      let isMounted = true;
+
+      if (escanerActivo) {
+          scanner = new Html5Qrcode("lector-codigo");
+          scanner.start(
+              { facingMode: "environment" }, // Usa la cámara trasera del celular
+              { fps: 10, qrbox: { width: 250, height: 100 } },
+              (decodedText) => {
+                  if (isMounted) {
+                      setFormData(prev => ({ ...prev, codigo_sku: decodedText.toUpperCase() }));
+                      setEscanerActivo(false);
+                      toast.success("¡SKU Capturado!", { icon: '🎯' });
+                      
+                      // Sonido clásico de escáner de supermercado
+                      try {
+                          const audio = new Audio('https://www.soundjay.com/buttons/beep-07.wav');
+                          audio.play();
+                      } catch (e) {}
+                  }
+              },
+              (errorMessage) => {
+                  // Se ignora para no inundar la consola de errores si no hay código a la vista
+              }
+          ).catch((err) => {
+              if (isMounted) {
+                  toast.error("Error: Permiso de cámara denegado");
+                  setEscanerActivo(false);
+              }
+          });
+      }
+
+      return () => {
+          isMounted = false;
+          if (scanner && scanner.isScanning) {
+              scanner.stop().then(() => scanner.clear()).catch(console.error);
+          }
+      };
+  }, [escanerActivo]);
+
+  // 4. Cálculos y Filtros
   const itemsFiltrados = items.filter(item => 
     item.nombre.toLowerCase().includes(busqueda.toLowerCase()) || 
     (item.codigo_sku && item.codigo_sku.toLowerCase().includes(busqueda.toLowerCase()))
@@ -273,8 +316,36 @@ export default function InventarioPage() {
             </table>
           </div>
         </div>
-
       </div>
+
+      {/* 💳 SUB-MODAL DEL ESCÁNER DE CÁMARA */}
+      {escanerActivo && (
+        <div className="fixed inset-0 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-center p-6 z-[300] animate-in fade-in duration-200">
+            <div className="w-full max-w-sm flex flex-col items-center">
+                <h3 className="text-xl font-black uppercase tracking-widest text-emerald-400 mb-6 flex items-center gap-2">
+                    <ScanLine size={24} /> Lector de Barras
+                </h3>
+                
+                <div className="w-full bg-slate-900 border-4 border-slate-800 rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(16,185,129,0.2)] relative min-h-[250px] flex items-center justify-center">
+                    {/* El div donde html5-qrcode inyecta el video de la cámara */}
+                    <div id="lector-codigo" className="w-full h-full object-cover"></div>
+                    
+                    {/* Diseño Laser tipo cajero */}
+                    <div className="absolute inset-0 border-[4px] border-emerald-500/30 m-8 rounded-xl pointer-events-none flex items-center">
+                        <div className="w-full h-0.5 bg-emerald-500 shadow-[0_0_15px_#10b981] animate-pulse"></div>
+                    </div>
+                </div>
+
+                <p className="text-slate-400 text-xs font-bold mt-6 text-center">
+                    Apunta la cámara al código de barras de la caja o repuesto.
+                </p>
+
+                <button onClick={() => setEscanerActivo(false)} className="mt-8 bg-slate-800 hover:bg-slate-700 text-slate-200 px-8 py-4 rounded-full font-black text-xs uppercase tracking-widest transition-colors flex items-center gap-2 border border-slate-700">
+                    <X size={18} /> Cancelar Escaneo
+                </button>
+            </div>
+        </div>
+      )}
 
       {/* MODAL AGREGAR / EDITAR ÍTEM */}
       {modalVisible && (
@@ -294,12 +365,23 @@ export default function InventarioPage() {
                   <input required value={formData.nombre || ''} onChange={e => setFormData({...formData, nombre: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold text-slate-200 focus:border-emerald-500 outline-none" placeholder="Ej: Pastillas de Freno Cerámicas" />
                 </div>
                 
-                <div>
+                {/* 🔥 CAMPO SKU CON BOTÓN DE ESCÁNER */}
+                <div className="col-span-2 md:col-span-1">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1 block">Código / SKU</label>
-                  <input value={formData.codigo_sku || ''} onChange={e => setFormData({...formData, codigo_sku: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-mono text-slate-400 focus:border-emerald-500 outline-none uppercase" placeholder="Ej: BRK-001" />
+                  <div className="relative">
+                      <input value={formData.codigo_sku || ''} onChange={e => setFormData({...formData, codigo_sku: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-4 pr-12 py-3 text-sm font-mono text-slate-300 focus:border-emerald-500 outline-none uppercase placeholder-slate-700" placeholder="BRK-001" />
+                      <button 
+                          type="button" 
+                          onClick={() => setEscanerActivo(true)} 
+                          className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-emerald-900/30 text-emerald-400 hover:bg-emerald-500 hover:text-slate-950 rounded-lg transition-colors border border-emerald-500/30"
+                          title="Escanear Código de Barras"
+                      >
+                          <ScanLine size={16} />
+                      </button>
+                  </div>
                 </div>
                 
-                <div>
+                <div className="col-span-2 md:col-span-1">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1 block">Categoría</label>
                   <select value={formData.categoria || ''} onChange={e => setFormData({...formData, categoria: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold text-slate-200 focus:border-emerald-500 outline-none appearance-none">
                     <option value="Repuesto">Repuesto</option>
@@ -315,23 +397,27 @@ export default function InventarioPage() {
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-red-500 mb-1 block">Alerta Stock Mínimo</label>
-                  <input type="number" required min="0" value={formData.stock_minimo} onChange={e => setFormData({...formData, stock_minimo: parseInt(e.target.value) || 0})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xl text-center font-black text-red-400 focus:border-emerald-500 outline-none" />
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1 block">Alerta Stock Mín.</label>
+                  <input type="number" min="0" value={formData.stock_minimo} onChange={e => setFormData({...formData, stock_minimo: parseInt(e.target.value) || 0})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xl text-center font-black text-red-400 focus:border-emerald-500 outline-none placeholder-slate-700" placeholder="0" />
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1 block">Precio de Costo ($)</label>
-                  <input type="number" min="0" value={formData.precio_costo} onChange={e => setFormData({...formData, precio_costo: parseInt(e.target.value) || 0})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold text-slate-400 focus:border-emerald-500 outline-none" />
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1 block flex items-center justify-between">
+                    Precio Costo ($) <span className="text-[8px] text-slate-600">OPCIONAL</span>
+                  </label>
+                  <input type="number" min="0" value={formData.precio_costo || ''} onChange={e => setFormData({...formData, precio_costo: parseInt(e.target.value) || 0})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold text-slate-400 focus:border-emerald-500 outline-none placeholder-slate-700" placeholder="0" />
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1 block">Precio de Venta ($)</label>
-                  <input type="number" min="0" value={formData.precio_venta} onChange={e => setFormData({...formData, precio_venta: parseInt(e.target.value) || 0})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-black text-emerald-400 focus:border-emerald-500 outline-none" />
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1 block flex items-center justify-between">
+                    Precio Venta ($) <span className="text-[8px] text-slate-600">OPCIONAL</span>
+                  </label>
+                  <input type="number" min="0" value={formData.precio_venta || ''} onChange={e => setFormData({...formData, precio_venta: parseInt(e.target.value) || 0})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-black text-emerald-400 focus:border-emerald-500 outline-none placeholder-slate-700" placeholder="0" />
                 </div>
                 
                 <div className="col-span-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1 block">Ubicación (Opcional)</label>
-                  <input value={formData.ubicacion || ''} onChange={e => setFormData({...formData, ubicacion: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs font-bold text-slate-300 focus:border-emerald-500 outline-none" placeholder="Ej: Estante A, Cajón 3" />
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1 block">Ubicación Física</label>
+                  <input value={formData.ubicacion || ''} onChange={e => setFormData({...formData, ubicacion: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs font-bold text-slate-300 focus:border-emerald-500 outline-none placeholder-slate-700" placeholder="Ej: Estante A, Cajón 3" />
                 </div>
               </div>
 
