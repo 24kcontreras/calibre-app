@@ -28,6 +28,7 @@ import ModalNuevaOrden from '@/components/modals/ModalNuevaOrden'
 import ModalEditarOrden from '@/components/modals/ModalEditarOrden'
 import ModalManual from '@/components/modals/ModalManual'
 import ModalCRM from '@/components/modals/ModalCRM' 
+import ModalCotizacion from '@/components/modals/ModalCotizacion' // 🔥 Agregamos el nuevo modal
 import Paywall from '@/components/Paywall'
 
 export default function CalibreApp() {
@@ -52,6 +53,7 @@ export default function CalibreApp() {
   const [modalVehiculoInfo, setVehiculoInfo] = useState<Vehiculo | null>(null)
   const [modalAnalisis, setModalAnalisis] = useState<OrdenTrabajo | null>(null)
   const [modalAlerta, setModalAlerta] = useState<Vehiculo | null>(null)
+  const [modalCotizacion, setModalCotizacion] = useState<Vehiculo | 'express' | null>(null) // 🔥 Estado para cotizar
   
   const [modalTelemetria, setModalTelemetria] = useState(false)
   const [modalHistorial, setModalHistorial] = useState(false)
@@ -244,7 +246,6 @@ export default function CalibreApp() {
               setSubiendoLogo(false);
           }
           
-          // 🔥 CORRECCIÓN: Eliminada la llamada duplicada y corregidos los parámetros
           await supabase.auth.updateUser({ 
             data: { 
                 nombre_taller: nombreLimpio, 
@@ -281,13 +282,12 @@ export default function CalibreApp() {
   // --- PANTALLAS DE CARGA Y LOGIN ---
   if (authLoading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center"><Wrench className="animate-spin text-emerald-500" size={64} /></div>
   
-  // 🔥 Redirigimos a la página dedicada de Login
   if (!session && !mecanicoActivo) {
       if (typeof window !== 'undefined') window.location.href = '/login';
       return null;
   }
 
-  // 🔥 VALIDACIÓN DE SUSCRIPCIÓN (HARD LOCK DE LA FASE 4)
+  // 🔥 VALIDACIÓN DE SUSCRIPCIÓN
   const fechaVencimiento = configTaller?.fecha_vencimiento;
   const hoy = new Date();
   const estaVencido = fechaVencimiento && new Date(fechaVencimiento) < hoy;
@@ -317,6 +317,7 @@ export default function CalibreApp() {
       {/* HEADER ULTRACOMPACTO */}
       <Header 
         nombreTaller={nombreTaller} 
+        logoUrl={configTaller?.logo_url}
         cajaTotal={cajaTotal} 
         onOpenTelemetria={() => setModalTelemetria(true)} 
         onOpenCRM={() => setModalCrm(true)} 
@@ -362,9 +363,10 @@ export default function CalibreApp() {
               vehiculos={vehiculos} 
               session={session} 
               cargarTodo={cargarTodo} 
-              abrirOrdenModal={(v: Vehiculo) => setModalNuevaOrden(v)} 
+              abrirOrdenModal={(v) => setModalNuevaOrden(v)} 
               nombreTaller={nombreTaller} 
-              abrirInfoModal={(v: Vehiculo) => setVehiculoInfo(v)} 
+              abrirInfoModal={(v) => setVehiculoInfo(v)} 
+              abrirModalCotizacion={(v) => setModalCotizacion(v)}
             />
         </div>
         
@@ -410,7 +412,20 @@ export default function CalibreApp() {
       />
 
       {/* --- RENDERIZADO DE MODALES --- */}
+      {modalCotizacion && (
+          <ModalCotizacion 
+              vehiculo={modalCotizacion !== 'express' ? modalCotizacion : null} 
+              esExpress={modalCotizacion === 'express'}
+              tallerId={session?.user?.id || mecanicoActivo?.taller_id || ''} 
+              nombreTaller={nombreTaller} 
+              onClose={() => setModalCotizacion(null)} 
+              cargarTodo={cargarTodo} 
+          />
+      )}
+      
+      {/* 🔥 ACÁ VUELVE A ESTAR EL MODAL DE ORDEN QUE SE HABÍA BORRADO */}
       {modalNuevaOrden && <ModalNuevaOrden vehiculo={modalNuevaOrden} soloLectura={soloLectura} session={session} cargarTodo={cargarTodo} onClose={() => setModalNuevaOrden(null)} />}
+      
       {modalEditarOrden && <ModalEditarOrden orden={modalEditarOrden} soloLectura={soloLectura} cargarTodo={cargarTodo} onClose={() => setModalEditarOrden(null)} />}
       {modalActa && <ModalActaRecepcion orden={modalActa} onClose={() => setModalActa(null)} />}
       {modalAlerta && <ModalAlerta alertaForm={alertaForm} setAlertaForm={setAlertaForm} guardarAlertaBD={guardarAlertaBD} guardandoAlerta={guardandoAlerta} onClose={() => setModalAlerta(null)} ordenActiva={modalAlerta} resolverAlertaBD={async (id: string) => { await supabase.from('alertas_desgaste').update({ estado: 'Resuelta' }).eq('id', id); toast.success("Alerta resuelta!"); await cargarTodo(); setModalAlerta(null); }} />}
@@ -418,7 +433,6 @@ export default function CalibreApp() {
       {modalTelemetria && <ModalTelemetria onClose={() => setModalTelemetria(false)} gananciasEsteMes={gananciasEsteMes} autosEsteMes={autosEsteMes} ticketPromedio={ticketPromedio} pctServicio={pctServicio} pctRepuesto={pctRepuesto} ingresosServicio={ingresosServicio} ingresosRepuesto={ingresosRepuesto} topMarcas={topMarcas} topMecanicos={topMecanicos} historial={historial} oportunidades={oportunidadesVenta} nombreTaller={nombreTaller} />}      
       {modalHistorial && <ModalHistorial onClose={() => setModalHistorial(false)} busquedaHistorial={busquedaHistorial} setBusquedaHistorial={setBusquedaHistorial} historialFiltrado={historialFiltrado} configPDF={{ nombreTaller, direccion: configTaller?.direccion_taller || '', telefono: configTaller?.telefono_taller || '', garantia: configTaller?.garantia_taller || '', logoUrl: configTaller?.logo_url || null, incluirIva: configTaller?.incluir_iva || false }} />}
       {modalCrm && <ModalCRM onClose={() => setModalCrm(false)} oportunidades={oportunidadesVenta} nombreTaller={nombreTaller} />}
-      
       {modalManual && <ModalManual onClose={() => setModalManual(false)} />}
        
       {modalConfiguracion && <ModalConfiguracion 
@@ -428,15 +442,12 @@ export default function CalibreApp() {
          setInputTaller={setInputTaller} 
          guardarConfiguracion={guardarConfiguracion} 
          guardandoConfiguracion={guardandoConfiguracion} 
-         
-         // 🔥 AQUÍ CORREGIMOS EL LOGOUT PARA ELIMINAR TODO RASTRO
          handleLogout={async () => { 
             localStorage.removeItem('calibre_mecanico_session');
             document.cookie = "calibre_mecanico_auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
             await supabase.auth.signOut(); 
             router.push('/login'); 
          }} 
-
          inputDireccion={inputDireccion} 
          setInputDireccion={setInputDireccion} 
          inputTelefono={inputTelefonoConfig} 

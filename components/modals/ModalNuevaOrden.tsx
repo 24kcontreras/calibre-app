@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react' // 🔥 Aseguramos tener useEffect
 import { supabase } from '@/lib/supabase'
 import imageCompression from 'browser-image-compression'
 import toast from 'react-hot-toast'
@@ -37,6 +37,32 @@ export default function ModalNuevaOrden({ vehiculo, onClose, soloLectura, sessio
     // 🔥 Lógica de Promesa de Entrega con Atajos
     const [fechaPromesa, setFechaPromesa] = useState<string>('')
     const [definirFechaLuego, setDefinirFechaLuego] = useState(true)
+    
+    // 🔥 ESTADO DE LA LISTA DE MECÁNICOS
+    const [listaMecanicos, setListaMecanicos] = useState<any[]>([])
+
+    // 🔥 EFECTO PARA CARGAR LOS MECÁNICOS DESDE SUPABASE
+    useEffect(() => {
+        const cargarMecanicos = async () => {
+            let tallerId = session?.user?.id;
+            if (!tallerId) {
+                const credencial = localStorage.getItem('calibre_mecanico_session');
+                if (credencial) tallerId = JSON.parse(credencial).taller_id;
+            }
+
+            if (tallerId) {
+                const { data } = await supabase
+                    .from('mecanicos')
+                    .select('id, nombre')
+                    .eq('taller_id', tallerId)
+                    .eq('activo', true)
+                    .order('nombre', { ascending: true });
+                
+                if (data) setListaMecanicos(data);
+            }
+        };
+        cargarMecanicos();
+    }, [session]);
 
     const setTiempoAtajo = (horas: number | 'tarde') => {
         const ahora = new Date();
@@ -152,8 +178,21 @@ export default function ModalNuevaOrden({ vehiculo, onClose, soloLectura, sessio
                             <input type="number" value={kilometrajeOrden} onChange={(e) => setKilometrajeOrden(e.target.value)} className="w-full p-3 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-200 outline-none focus:border-emerald-500" placeholder="000.000" />
                         </div>
                         <div className="space-y-1">
+                            {/* 🔥 NUEVO DESPLEGABLE DE MECÁNICOS */}
                             <label className="text-[10px] font-black text-slate-500 uppercase ml-1">Mecánico Asignado</label>
-                            <input value={mecanicoAsignado} onChange={(e) => setMecanicoAsignado(e.target.value)} className="w-full p-3 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-200 outline-none focus:border-emerald-500" placeholder="Nombre..." />
+                            <select 
+                                value={mecanicoAsignado} 
+                                onChange={(e) => setMecanicoAsignado(e.target.value)} 
+                                className="w-full p-3 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-200 outline-none focus:border-emerald-500 appearance-none"
+                            >
+                                <option value="" disabled>Seleccionar...</option>
+                                {listaMecanicos.map(mec => (
+                                    <option key={mec.id} value={mec.nombre}>
+                                        {mec.nombre}
+                                    </option>
+                                ))}
+                                <option value="Sin asignar">Dejar sin asignar por ahora</option>
+                            </select>
                         </div>
                     </div>
 

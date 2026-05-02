@@ -3,7 +3,8 @@ import { BarChart3, ScanLine, Users, Mail, Settings, Box } from 'lucide-react'
 import Link from 'next/link'
 
 export default function Header({ 
-  nombreTaller, 
+  nombreTaller,
+  logoUrl, // 🔥 Agregamos el prop para recibir la imagen
   cajaTotal, 
   onOpenTelemetria, 
   onOpenCRM, 
@@ -17,9 +18,20 @@ export default function Header({
       
       {/* Logo y Nombre del Taller */}
       <div className="flex items-center gap-3 md:gap-4">
-        <div className="w-10 h-10 md:w-12 md:h-12 bg-slate-950 border border-slate-800 rounded-xl md:rounded-2xl flex items-center justify-center shadow-inner group transition-transform hover:scale-105">
-          <span className="font-black text-emerald-500 text-lg md:text-xl group-hover:text-emerald-400 transition-colors">C.</span>
-        </div>
+        
+        {/* 🔥 LÓGICA DEL LOGO DINÁMICO */}
+        {logoUrl ? (
+            <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-center overflow-hidden shadow-inner group shrink-0">
+                <img src={logoUrl} alt="Logo Taller" className="w-full h-full object-contain p-1 group-hover:scale-105 transition-transform" />
+            </div>
+        ) : (
+            <div className="w-10 h-10 md:w-12 md:h-12 bg-slate-950 border border-slate-800 rounded-xl md:rounded-2xl flex items-center justify-center shadow-inner group transition-transform hover:scale-105 shrink-0">
+              <span className="font-black text-emerald-500 text-lg md:text-xl group-hover:text-emerald-400 transition-colors">
+                  {nombreTaller ? nombreTaller.substring(0, 1).toUpperCase() : 'C'}
+              </span>
+            </div>
+        )}
+
         <div className="flex flex-col">
           <h1 className="text-lg md:text-xl font-black uppercase tracking-tighter text-slate-100 leading-none">
             {nombreTaller || 'CALIBRE OS'}

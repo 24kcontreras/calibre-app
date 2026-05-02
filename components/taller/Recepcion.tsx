@@ -48,9 +48,10 @@ interface RecepcionProps {
   abrirOrdenModal: (vehiculo: Vehiculo) => void;
   nombreTaller: string;
   abrirInfoModal?: (vehiculo: Vehiculo) => void; 
+  abrirModalCotizacion: (vehiculo: Vehiculo | 'express') => void;  
 }
 
-export default function Recepcion({ soloLectura, vehiculos, session, cargarTodo, abrirOrdenModal, nombreTaller, abrirInfoModal }: RecepcionProps) {
+export default function Recepcion({ soloLectura, vehiculos, session, cargarTodo, abrirOrdenModal, nombreTaller, abrirInfoModal, abrirModalCotizacion }: RecepcionProps) {
   const [loading, setLoading] = useState(false)
   const [recepcionAbierta, setRecepcionAbierta] = useState(false)
   const [busqueda, setBusqueda] = useState('')
@@ -164,6 +165,7 @@ export default function Recepcion({ soloLectura, vehiculos, session, cargarTodo,
     <div className="space-y-4 md:space-y-6 h-full flex flex-col">
         {/* SECCIÓN 1: FORMULARIO RECEPCIÓN */}
         <section className="bg-slate-900/40 backdrop-blur-md p-5 rounded-3xl shadow-2xl border border-slate-700/50 relative overflow-hidden shrink-0">
+            {/* 🔥 HEADER DE LA SECCIÓN CON EL NUEVO BOTÓN EXPRESS */}
             <div className="flex items-center justify-between">
                 <button 
                     type="button"
@@ -172,6 +174,15 @@ export default function Recepcion({ soloLectura, vehiculos, session, cargarTodo,
                 >
                     Recepción <FileText className="text-emerald-500" size={20} />
                     <ChevronDown className={`md:hidden text-emerald-500 transition-transform duration-300 ${recepcionAbierta ? 'rotate-180' : ''}`} size={24} />
+                </button>
+                
+                {/* EL NUEVO BOTÓN DORADO GLOBAL */}
+                <button 
+                    type="button"
+                    onClick={() => abrirModalCotizacion('express')}
+                    className="bg-amber-600/20 hover:bg-amber-500 text-amber-500 hover:text-slate-950 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-amber-500/30 hover:border-amber-500 flex items-center gap-1.5 shadow-sm"
+                >
+                    Cotización Rápida
                 </button>
             </div>
             
@@ -335,6 +346,16 @@ export default function Recepcion({ soloLectura, vehiculos, session, cargarTodo,
                                         title="Información y Contacto"
                                     >
                                         <Info size={12} />
+                                    </button>
+
+                                    {/* 🔥 BOTÓN COTIZAR */}
+                                    <button 
+                                        disabled={soloLectura} 
+                                        onClick={() => abrirModalCotizacion(v)} 
+                                        className="bg-amber-600/20 text-amber-500 px-2 py-1.5 rounded-lg text-[9px] font-black hover:bg-amber-600 hover:text-slate-950 disabled:opacity-50 transition-all border border-amber-500/30 hover:border-amber-500"
+                                        title="Generar Cotización"
+                                    >
+                                        COTIZAR
                                     </button>
                                     
                                     <button disabled={soloLectura} onClick={() => abrirOrdenModal(v)} className="bg-emerald-600 text-slate-950 px-2 py-1.5 rounded-lg text-[9px] font-black hover:bg-emerald-500 disabled:opacity-50 shadow-[0_0_10px_rgba(16,185,129,0.3)] transition-all">ORDEN</button>
