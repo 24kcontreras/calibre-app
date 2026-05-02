@@ -40,6 +40,9 @@ export default function RootLayout({
         
         {/* 🔥 AQUÍ RENDERIZAMOS EL BANNER DE INSTALACIÓN */}
         <InstallPrompt />
+
+        {/* 🔥 AQUÍ INYECTAMOS LA VIBRACIÓN GLOBAL PARA TODA LA APP */}
+        <GlobalHaptics />
         
       </body>
     </html>

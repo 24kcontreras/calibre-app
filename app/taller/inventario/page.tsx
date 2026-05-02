@@ -18,7 +18,7 @@ import {
   Box,
   DollarSign,
   Barcode,
-  Camera // 🔥 Importamos la cámara
+  Camera
 } from 'lucide-react'
 import { useTaller } from '@/hooks/useTaller'
 
@@ -42,7 +42,7 @@ export default function InventarioPage() {
   const [busqueda, setBusqueda] = useState('')
   
   const [modalAbierto, setModalAbierto] = useState(false)
-  const [escanerAbierto, setEscanerAbierto] = useState(false) // 🔥 Estado del Escáner
+  const [modoEscaner, setModoEscaner] = useState<'busqueda' | 'registro' | null>(null)
   const [itemEditando, setItemEditando] = useState<ArticuloInventario | null>(null)
   const [guardando, setGuardando] = useState(false)
 
@@ -75,9 +75,9 @@ export default function InventarioPage() {
     if (session || mecanicoActivo) cargarInventario()
   }, [session, mecanicoActivo])
 
-  // 🔥 LÓGICA DEL ESCÁNER DE CÓDIGOS
+  // LÓGICA DEL ESCÁNER DE CÓDIGOS
   useEffect(() => {
-    if (escanerAbierto) {
+    if (modoEscaner) {
         const { Html5QrcodeScanner } = require('html5-qrcode');
         const scanner = new Html5QrcodeScanner("reader", { 
             qrbox: { width: 250, height: 250 }, 
@@ -85,9 +85,14 @@ export default function InventarioPage() {
         }, false);
 
         scanner.render((decodedText: string) => {
-            setBusqueda(decodedText);
-            vibrar('exito'); // Vibra al leer!
-            setEscanerAbierto(false);
+            if (modoEscaner === 'busqueda') {
+                setBusqueda(decodedText);
+            } else if (modoEscaner === 'registro') {
+                setSku(decodedText); 
+            }
+            
+            vibrar('exito'); 
+            setModoEscaner(null);
             scanner.clear();
         }, () => {
             // Ignorar errores de lectura constantes
@@ -97,7 +102,7 @@ export default function InventarioPage() {
             scanner.clear().catch(console.error);
         };
     }
-  }, [escanerAbierto]);
+  }, [modoEscaner]);
 
   const handleOpenModal = (item: ArticuloInventario | null = null) => {
     if (item) {
@@ -182,11 +187,9 @@ export default function InventarioPage() {
   }
 
   return (
-    // 🔥 EL MAIN AHORA ES W-FULL PARA MATAR LOS BORDES NEGROS
     <main className="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col w-full pb-24">
       <Toaster position="bottom-right" />
       
-      {/* 🔥 EL WRAPPER INTERNO CONTROLA QUE NO SE ESTIRE DEMASIADO EN MONITORES GIGANTES */}
       <div className="flex-1 w-full max-w-[1400px] mx-auto p-4 md:p-8">
           
           {/* HEADER */}
@@ -230,7 +233,7 @@ export default function InventarioPage() {
             </div>
           </div>
 
-          {/* 🔥 NUEVO BUSCADOR CON CÁMARA INYECTADA */}
+          {/* BUSCADOR CON CÁMARA */}
           <div className="relative w-full mb-6">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                 <Search className="h-5 w-5 text-slate-500" />
@@ -246,7 +249,7 @@ export default function InventarioPage() {
             
             <div className="absolute inset-y-0 right-2 flex items-center">
                 <button 
-                    onClick={() => setEscanerAbierto(true)}
+                    onClick={() => setModoEscaner('busqueda')}
                     className="p-2 bg-slate-800 hover:bg-emerald-500/20 text-slate-400 hover:text-emerald-400 rounded-xl transition-all border border-transparent hover:border-emerald-500/30"
                     title="Escanear Código de Barras"
                 >
@@ -329,8 +332,8 @@ export default function InventarioPage() {
           </div>
       </div>
 
-      {/* 🔥 MODAL DEL ESCÁNER DE CÓDIGOS */}
-      {escanerAbierto && (
+      {/* MODAL DEL ESCÁNER DE CÓDIGOS */}
+      {modoEscaner && (
         <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[300] flex items-center justify-center p-4">
              <div className="bg-slate-900 border border-slate-800 rounded-[30px] p-6 max-w-sm w-full text-center shadow-2xl animate-in zoom-in-95">
                  <h3 className="text-lg font-black uppercase tracking-tighter text-slate-100 mb-4 flex items-center justify-center gap-2">
@@ -338,7 +341,7 @@ export default function InventarioPage() {
                  </h3>
                  <div id="reader" className="w-full overflow-hidden rounded-2xl mb-4 border-2 border-slate-800"></div>
                  <button 
-                     onClick={() => setEscanerAbierto(false)} 
+                     onClick={() => setModoEscaner(null)} 
                      className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-colors"
                  >
                      Cerrar Cámara
@@ -375,9 +378,16 @@ export default function InventarioPage() {
                         </div>
                         <div className="space-y-1">
                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Código SKU / Parte</label>
-                            <div className="relative">
-                                <Barcode size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
-                                <input value={sku} onChange={e => setSku(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-2xl pl-12 pr-4 py-4 text-xs font-mono text-slate-400 focus:border-emerald-500 outline-none" placeholder="Opcional" />
+                            <div className="relative flex items-center">
+                                <Barcode size={16} className="absolute left-4 text-slate-500" />
+                                <input value={sku} onChange={e => setSku(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-2xl pl-12 pr-12 py-4 text-xs font-mono text-slate-400 focus:border-emerald-500 outline-none" placeholder="Opcional" />
+                                <button
+                                    type="button"
+                                    onClick={() => setModoEscaner('registro')}
+                                    className="absolute right-2 p-2 bg-slate-900 hover:bg-emerald-500/20 text-emerald-500 rounded-xl transition-all"
+                                >
+                                    <Camera size={16} />
+                                </button>
                             </div>
                         </div>
                     </div>
