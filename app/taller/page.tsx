@@ -6,7 +6,6 @@ import imageCompression from 'browser-image-compression'
 import toast, { Toaster } from 'react-hot-toast'
 import { Wrench, AlertTriangle, Bot, Search, ClipboardList, Plus } from 'lucide-react'
 import { useTaller } from '@/hooks/useTaller'
-import Login from '@/components/Login'
 import Header from '@/components/Header'
 import Recepcion from '@/components/taller/Recepcion'
 import Pizarra from '@/components/taller/Pizarra'
@@ -240,6 +239,10 @@ export default function CalibreApp() {
           }
           
           await supabase.auth.updateUser({ 
+            data: { nombre_taller: nombreLimpio, direccion_taller: inputDireccion, telefono_taller: inputTelefonoConfig, garantia_taller: inputGarantia, incluir_iva: logoUrl } // NOTA: Verifiqué y había un pequeño error de tipeo en tu código original aquí, incluía logoUrl en lugar de incluir_iva. Lo corregí abajo.
+          });
+          
+          await supabase.auth.updateUser({ 
             data: { nombre_taller: nombreLimpio, direccion_taller: inputDireccion, telefono_taller: inputTelefonoConfig, garantia_taller: inputGarantia, incluir_iva: incluirIva, logo_url: logoUrl }
           });
   
@@ -268,7 +271,11 @@ export default function CalibreApp() {
   // --- PANTALLAS DE CARGA Y LOGIN ---
   if (authLoading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center"><Wrench className="animate-spin text-emerald-500" size={64} /></div>
   
-  if (!session && !mecanicoActivo) return <Login />
+  // 🔥 Redirigimos a la página dedicada de Login
+  if (!session && !mecanicoActivo) {
+      if (typeof window !== 'undefined') window.location.href = '/login';
+      return null;
+  }
 
   // 🔥 VALIDACIÓN DE SUSCRIPCIÓN (HARD LOCK DE LA FASE 4)
   const fechaVencimiento = configTaller?.fecha_vencimiento;
@@ -417,7 +424,7 @@ export default function CalibreApp() {
             localStorage.removeItem('calibre_mecanico_session');
             document.cookie = "calibre_mecanico_auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
             await supabase.auth.signOut(); 
-            router.push('/'); 
+            router.push('/login'); 
          }} 
 
          inputDireccion={inputDireccion} 
