@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { Settings, Save, LogOut, Upload, FileText, Percent, Image as ImageIcon, MapPin, Phone, Sparkles, Download, ShieldCheck, CreditCard, BookOpen, ChevronDown, Users, Plus, QrCode, PowerOff, X, Loader2, Key, Check, Copy } from 'lucide-react'
+import { Settings, Save, LogOut, Upload, FileText, Percent, Image as ImageIcon, MapPin, Phone, Sparkles, Download, ShieldCheck, CreditCard, BookOpen, ChevronDown, Users, Plus, QrCode, PowerOff, X, Loader2, Key, Check, Copy, Trash2, AlertTriangle } from 'lucide-react'
 import toast, { Toaster } from 'react-hot-toast'
 import { supabase } from '@/lib/supabase'
 import { QRCodeSVG } from 'qrcode.react'
@@ -67,10 +67,11 @@ export default function ModalConfiguracion({
   const [guardandoMecanico, setGuardandoMecanico] = useState(false);
   const [qrVisible, setQrVisible] = useState<any | null>(null);
 
-  // 🔥 NUEVOS ESTADOS PARA EDICIÓN DE PIN
+  // ESTADOS PARA EDICIÓN DE PIN Y ELIMINACIÓN
   const [editandoPinId, setEditandoPinId] = useState<string | null>(null);
   const [nuevoPinValue, setNuevoPinValue] = useState('');
   const [guardandoPin, setGuardandoPin] = useState(false);
+  const [mecanicoAEliminar, setMecanicoAEliminar] = useState<string | null>(null); // 🔥 ESTADO DE CONFIRMACIÓN
 
   // --- LÓGICA DE PAGOS Y CSV ---
   const iniciarPago = async () => {
@@ -161,7 +162,6 @@ export default function ModalConfiguracion({
     }
   }
 
-  // 🔥 NUEVA FUNCIÓN: Actualizar PIN
   const actualizarPinMecanico = async (id: string) => {
     if (nuevoPinValue.length !== 4) return toast.error("El PIN debe tener 4 dígitos");
     setGuardandoPin(true);
@@ -178,6 +178,21 @@ export default function ModalConfiguracion({
     } finally {
         setGuardandoPin(false);
     }
+  }
+
+  // 🔥 NUEVA FUNCIÓN: Eliminar Mecánico
+  const eliminarMecanico = async (id: string) => {
+      const toastId = toast.loading("Eliminando operario...");
+      try {
+          const { error } = await supabase.from('mecanicos').delete().eq('id', id);
+          if (error) throw error;
+          
+          toast.success("Operario eliminado permanentemente", { id: toastId });
+          setMecanicoAEliminar(null);
+          cargarMecanicos(); // Recargamos la lista
+      } catch (err: any) {
+          toast.error("No se pudo eliminar al operario. Verifica tu conexión.", { id: toastId });
+      }
   }
   
   return (
@@ -311,7 +326,7 @@ export default function ModalConfiguracion({
             {pestañaActiva === 'equipo' && (
                 <div className="flex flex-col gap-6">
                     
-                    {/* 🔥 🪪 TARJETA DE IDENTIFICACIÓN DEL TALLER (NUEVA) */}
+                    {/* 🔥 🪪 TARJETA DE IDENTIFICACIÓN DEL TALLER */}
                     <div className="bg-blue-950/30 border border-blue-900/50 p-4 md:p-6 rounded-3xl flex flex-col md:flex-row items-center justify-between shadow-inner gap-4 relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
                         <div className="text-center md:text-left relative z-10">
@@ -376,7 +391,7 @@ export default function ModalConfiguracion({
                                                 </div>
                                             </div>
 
-                                            {/* 🔥 EDICIÓN DE PIN EN LÍNEA */}
+                                            {/* 🔥 INTERFAZ INLINE: EDICIÓN DE PIN O CONFIRMACIÓN DE ELIMINADO */}
                                             {editandoPinId === mec.id ? (
                                                 <div className="flex items-center gap-2 mt-auto animate-in fade-in zoom-in duration-200">
                                                     <input
@@ -394,16 +409,34 @@ export default function ModalConfiguracion({
                                                         <X size={16} />
                                                     </button>
                                                 </div>
+                                            ) : mecanicoAEliminar === mec.id ? (
+                                                <div className="flex items-center gap-2 mt-auto animate-in fade-in zoom-in duration-200 bg-red-950/40 border border-red-900/50 p-1.5 rounded-xl">
+                                                    <div className="flex-1 text-[10px] font-black text-red-400 uppercase tracking-widest flex items-center justify-center gap-1.5">
+                                                        <AlertTriangle size={14} /> ¿Eliminar?
+                                                    </div>
+                                                    <button onClick={() => eliminarMecanico(mec.id)} className="p-2 bg-red-600 hover:bg-red-500 rounded-lg text-white transition-colors shadow-sm">
+                                                        <Check size={16} />
+                                                    </button>
+                                                    <button onClick={() => setMecanicoAEliminar(null)} className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-400 transition-colors">
+                                                        <X size={16} />
+                                                    </button>
+                                                </div>
                                             ) : (
                                                 <div className="flex items-center gap-2 mt-auto">
                                                     <button onClick={() => setQrVisible(mec)} disabled={!mec.activo} className="flex-1 py-2 bg-slate-900 hover:bg-slate-800 rounded-lg text-emerald-400 transition-colors disabled:opacity-20 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest border border-slate-800">
                                                         <QrCode size={14} /> Gafete
                                                     </button>
+                                                    
                                                     <button onClick={() => { setEditandoPinId(mec.id); setNuevoPinValue(''); }} disabled={!mec.activo} className="p-2 rounded-lg bg-slate-900 border-slate-800 hover:bg-blue-900/50 hover:border-blue-500/50 hover:text-blue-400 text-slate-400 border transition-colors disabled:opacity-20" title="Modificar PIN">
                                                         <Key size={16} />
                                                     </button>
+                                                    
                                                     <button onClick={() => toggleEstadoMecanico(mec.id, mec.activo)} className={`p-2 rounded-lg transition-colors border ${mec.activo ? 'bg-slate-900 border-slate-800 hover:bg-red-900/50 text-slate-400 hover:text-red-400 hover:border-red-500/50' : 'bg-red-900/50 border-red-500/50 text-red-400 hover:bg-emerald-900/50 hover:text-emerald-400'}`} title={mec.activo ? "Desvincular (Bloquear Acceso)" : "Restaurar Acceso"}>
                                                         <PowerOff size={16} />
+                                                    </button>
+                                                    
+                                                    <button onClick={() => setMecanicoAEliminar(mec.id)} className="p-2 rounded-lg bg-slate-900 border-slate-800 hover:bg-red-900/50 hover:border-red-500/50 hover:text-red-400 text-slate-400 border transition-colors" title="Eliminar Operario Definitivamente">
+                                                        <Trash2 size={16} />
                                                     </button>
                                                 </div>
                                             )}
