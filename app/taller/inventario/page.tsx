@@ -75,31 +75,42 @@ export default function InventarioPage() {
     if (session || mecanicoActivo) cargarInventario()
   }, [session, mecanicoActivo])
 
-  // LÓGICA DEL ESCÁNER DE CÓDIGOS
+  // LÓGICA DEL ESCÁNER DE CÓDIGOS (VERSIÓN DIRECTA SIN MENÚS)
   useEffect(() => {
     if (modoEscaner) {
-        const { Html5QrcodeScanner } = require('html5-qrcode');
-        const scanner = new Html5QrcodeScanner("reader", { 
-            qrbox: { width: 250, height: 250 }, 
-            fps: 5 
-        }, false);
+        const { Html5Qrcode } = require('html5-qrcode');
+        const html5QrCode = new Html5Qrcode("reader");
 
-        scanner.render((decodedText: string) => {
-            if (modoEscaner === 'busqueda') {
-                setBusqueda(decodedText);
-            } else if (modoEscaner === 'registro') {
-                setSku(decodedText); 
+        html5QrCode.start(
+            { facingMode: "environment" }, // Fuerza la cámara trasera
+            {
+                fps: 10,
+                qrbox: { width: 250, height: 250 }
+            },
+            (decodedText: string) => {
+                if (modoEscaner === 'busqueda') {
+                    setBusqueda(decodedText);
+                } else if (modoEscaner === 'registro') {
+                    setSku(decodedText); 
+                }
+                
+                vibrar('exito'); 
+                setModoEscaner(null);
+                html5QrCode.stop().catch(console.error);
+            },
+            () => {
+                // Ignorar alertas de lectura constantes
             }
-            
-            vibrar('exito'); 
-            setModoEscaner(null);
-            scanner.clear();
-        }, () => {
-            // Ignorar errores de lectura constantes
+        ).catch((err: any) => {
+            console.error("No se pudo iniciar la cámara", err);
+            toast.error("Error al acceder a la cámara");
         });
 
+        // Limpieza si el componente se desmonta o el usuario lo cierra a la fuerza
         return () => {
-            scanner.clear().catch(console.error);
+            if (html5QrCode.isScanning) {
+                html5QrCode.stop().catch(console.error);
+            }
         };
     }
   }, [modoEscaner]);
@@ -339,7 +350,8 @@ export default function InventarioPage() {
                  <h3 className="text-lg font-black uppercase tracking-tighter text-slate-100 mb-4 flex items-center justify-center gap-2">
                     <Barcode className="text-emerald-500"/> Escanear Código
                  </h3>
-                 <div id="reader" className="w-full overflow-hidden rounded-2xl mb-4 border-2 border-slate-800"></div>
+                 {/* 🔥 EL DIV DEL VIDEO AHORA TIENE CLASES PARA ENCAJAR PERFECTO */}
+                 <div id="reader" className="w-full overflow-hidden rounded-xl mb-4 border-2 border-slate-800 bg-black [&_video]:object-cover [&_video]:w-full [&_video]:h-full [&_video]:rounded-xl min-h-[250px]"></div>
                  <button 
                      onClick={() => setModoEscaner(null)} 
                      className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-colors"
