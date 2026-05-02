@@ -73,9 +73,13 @@ export default function CalibreApp() {
     precio: string;
     tipo_item: 'servicio' | 'repuesto';
     procedencia: string;
+    inventario_id?: string | null; // 🔥 VÍNCULO CON LA BODEGA
   }
 
-  const [itemForm, setItemForm] = useState<ItemForm>({ id: null, orden_id: '', nombre: '', detalle: '', precio: '', tipo_item: 'servicio', procedencia: 'Taller' })  
+  // 🔥 CORRECCIÓN: Variables separadas correctamente
+  const [itemForm, setItemForm] = useState<ItemForm>({ 
+    id: null, orden_id: '', nombre: '', detalle: '', precio: '', tipo_item: 'servicio', procedencia: 'Taller', inventario_id: null 
+  })  
   const [guardandoItem, setGuardandoItem] = useState(false)
 
   const [fotoForm, setFotoForm] = useState<{ordenId: string, file: File | null, preview: string, descripcion: string} | null>(null)
@@ -162,7 +166,9 @@ export default function CalibreApp() {
         orden_id: itemForm.orden_id,
         descripcion: itemForm.tipo_item === 'repuesto' && itemForm.detalle.trim() !== '' ? `${itemForm.nombre.trim()} (${itemForm.detalle.trim()})` : itemForm.nombre.trim(),
         precio: parseInt(itemForm.precio) || 0,
-        tipo_item: itemForm.tipo_item, procedencia: itemForm.tipo_item === 'repuesto' ? itemForm.procedencia : 'Taller'
+        tipo_item: itemForm.tipo_item, 
+        procedencia: itemForm.tipo_item === 'repuesto' ? itemForm.procedencia : 'Taller',
+        inventario_id: itemForm.inventario_id || null // 🔥 ENVÍO AL TRIGGER DE INVENTARIO
       };
       try {
           if (itemForm.id) await supabase.from('items_orden').update(payload).eq('id', itemForm.id);
@@ -238,12 +244,16 @@ export default function CalibreApp() {
               setSubiendoLogo(false);
           }
           
+          // 🔥 CORRECCIÓN: Eliminada la llamada duplicada y corregidos los parámetros
           await supabase.auth.updateUser({ 
-            data: { nombre_taller: nombreLimpio, direccion_taller: inputDireccion, telefono_taller: inputTelefonoConfig, garantia_taller: inputGarantia, incluir_iva: logoUrl } // NOTA: Verifiqué y había un pequeño error de tipeo en tu código original aquí, incluía logoUrl en lugar de incluir_iva. Lo corregí abajo.
-          });
-          
-          await supabase.auth.updateUser({ 
-            data: { nombre_taller: nombreLimpio, direccion_taller: inputDireccion, telefono_taller: inputTelefonoConfig, garantia_taller: inputGarantia, incluir_iva: incluirIva, logo_url: logoUrl }
+            data: { 
+                nombre_taller: nombreLimpio, 
+                direccion_taller: inputDireccion, 
+                telefono_taller: inputTelefonoConfig, 
+                garantia_taller: inputGarantia, 
+                incluir_iva: incluirIva, 
+                logo_url: logoUrl 
+            }
           });
   
             await supabase
@@ -370,11 +380,11 @@ export default function CalibreApp() {
               abrirModalActa={setModalActa} 
               abrirModalEvidencia={(id: string) => setFotoForm({ordenId: id, file: null, preview: '', descripcion: ''})} 
               abrirModalEditar={(orden: OrdenTrabajo) => setModalEditarOrden(orden)} 
-               abrirModalItem={(id: string, item?: ItemOrden) => { 
-                  setItemForm(item ? { id: item.id, orden_id: id, nombre: item.descripcion, detalle: '', precio: item.precio.toString(), tipo_item: item.tipo_item, procedencia: item.procedencia || 'Taller' } : { id: null, orden_id: id, nombre: '', detalle: '', precio: '', tipo_item: 'servicio', procedencia: 'Taller' }); 
+              abrirModalItem={(id: string, item?: ItemOrden) => { 
+                  setItemForm(item ? { id: item.id, orden_id: id, nombre: item.descripcion, detalle: '', precio: item.precio.toString(), tipo_item: item.tipo_item, procedencia: item.procedencia || 'Taller', inventario_id: item.inventario_id || null } : { id: null, orden_id: id, nombre: '', detalle: '', precio: '', tipo_item: 'servicio', procedencia: 'Taller', inventario_id: null }); 
                   setModalItemVisible(true); 
-               }} 
-               mecanicoActivo={mecanicoActivo} 
+              }}
+              mecanicoActivo={mecanicoActivo} 
             />
         </div>
       </div>
