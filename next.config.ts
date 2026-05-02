@@ -5,12 +5,19 @@ const withPWA = withPWAInit({
   cacheOnFrontEndNav: true,
   aggressiveFrontEndNavCaching: true,
   reloadOnOnline: true,
-  disable: process.env.NODE_ENV === "development", // Solo activa en producción
+  disable: process.env.NODE_ENV === "development", // La PWA no se activa en local para que no moleste al programar
 });
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Tus otras configuraciones de Calibre (images, etc) aquí
+  turbopack: {}, // 🔥 ESTO SILENCIA EL ERROR DE NEXT.JS
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https' as const, 
+        hostname: '**.supabase.co' },
+    ],
+  },
 };
 
 export default withPWA(nextConfig);

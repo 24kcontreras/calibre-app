@@ -9,6 +9,7 @@ export default function ModalEditarOrden({ orden, onClose, cargarTodo, soloLectu
     const [kilometraje, setKilometraje] = useState(orden.kilometraje || '')
     const [mecanico, setMecanico] = useState(orden.mecanico || '')
     const [fechaPromesa, setFechaPromesa] = useState(orden.fecha_promesa ? orden.fecha_promesa.slice(0, 16) : '')
+    const [objetosValor, setObjetosValor] = useState(orden.objetos_valor || '')
     const [guardando, setGuardando] = useState(false)
 
     const setTiempoAtajo = (horas: number | 'tarde') => {
@@ -28,7 +29,8 @@ export default function ModalEditarOrden({ orden, onClose, cargarTodo, soloLectu
                 descripcion,
                 kilometraje: parseInt(kilometraje) || null,
                 mecanico,
-                fecha_promesa: fechaPromesa || null
+                fecha_promesa: fechaPromesa || null,
+                objetos_valor: objetosValor
             }).eq('id', orden.id);
 
             if (error) throw error;
@@ -86,6 +88,10 @@ export default function ModalEditarOrden({ orden, onClose, cargarTodo, soloLectu
                                 <label className="text-[10px] font-black text-slate-500 uppercase ml-1 flex items-center gap-1.5 mb-1.5"><User size={12}/> Mecánico</label>
                                 <input value={mecanico} onChange={(e) => setMecanico(e.target.value)} className="w-full p-3 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-200 outline-none" />
                             </div>
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-black text-slate-500 uppercase ml-1 flex items-center gap-1.5 mb-1.5">📦 Inventario de Objetos</label>
+                            <textarea value={objetosValor} onChange={(e) => setObjetosValor(e.target.value)} placeholder="Ej: Radio, Gafas, Soporte celular..." className="w-full p-3 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-200 outline-none min-h-[60px]" />
                         </div>
                     </div>
 

@@ -33,6 +33,7 @@ export default function ModalNuevaOrden({ vehiculo, onClose, soloLectura, sessio
     const [fotosRecepcion, setFotosRecepcion] = useState<File[]>([])
     const [escuchando, setEscuchando] = useState(false)
     const [danosPrevios, setDanosPrevios] = useState('')
+    const [objetosValor, setObjetosValor] = useState('')
     
     // 🔥 Lógica de Promesa de Entrega con Atajos
     const [fechaPromesa, setFechaPromesa] = useState<string>('')
@@ -120,7 +121,8 @@ export default function ModalNuevaOrden({ vehiculo, onClose, soloLectura, sessio
                 nivel_combustible: mostrarActa ? nivelCombustible : null,
                 testigos: mostrarActa ? JSON.stringify(testigosSeleccionados) : null,
                 danos_carroceria: mostrarActa ? JSON.stringify(marcadoresDanos) : null,
-                danos_previos: mostrarActa ? danosPrevios : null
+                danos_previos: mostrarActa ? danosPrevios : null,
+                objetos_valor: mostrarActa ? objetosValor : null
             };
 
             const { data: nuevaOrden, error } = await supabase.from('ordenes_trabajo').insert([payload]).select();
@@ -289,6 +291,7 @@ export default function ModalNuevaOrden({ vehiculo, onClose, soloLectura, sessio
                                     <Car3DViewer marcadores={marcadoresDanos} setMarcadores={setMarcadoresDanos} soloLectura={false} colorAuto={vehiculo.color} />
                                 </div>
                                 <input type="text" value={danosPrevios} onChange={(e) => setDanosPrevios(e.target.value)} placeholder="Notas adicionales de carrocería (Opcional)..." className="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 mt-3 text-xs text-slate-200 outline-none focus:border-emerald-500/50 transition-colors" />
+                                <textarea value={objetosValor} onChange={(e) => setObjetosValor(e.target.value)} placeholder="Inventario de Objetos de Valor (ej: Radio, Gafas, Soporte celular)..." className="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 mt-3 text-xs text-slate-200 outline-none focus:border-emerald-500/50 transition-colors min-h-[60px]" />
                             </div>
 
                             {/* BENCINA Y TESTIGOS */}
