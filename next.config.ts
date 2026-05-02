@@ -1,14 +1,16 @@
-import type { NextConfig } from "next";
-const withPWA = require('@ducanh2912/next-pwa').default({
-  dest: 'public',
-  disable: process.env.NODE_ENV === 'development',
-  register: true,
-  skipWaiting: true,
+import withPWAInit from "@ducanh2912/next-pwa";
+
+const withPWA = withPWAInit({
+  dest: "public",
+  cacheOnFrontEndNav: true,
+  aggressiveFrontEndNavCaching: true,
+  reloadOnOnline: true,
+  disable: process.env.NODE_ENV === "development", // Solo activa en producción
 });
 
-const nextConfig: NextConfig = {
-  /* config options here */
-  turbopack: {},
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  // Tus otras configuraciones de Calibre (images, etc) aquí
 };
 
 export default withPWA(nextConfig);
