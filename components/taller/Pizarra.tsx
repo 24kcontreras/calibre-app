@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Clock, User, ClipboardList, Share2, Camera, Edit2, Plus, CheckCircle2, Circle, MessageSquare, Trash2, Send, CheckCircle, Settings, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react'
+import { Clock, User, ClipboardList, Share2, Camera, Edit2, Plus, CheckCircle2, Circle, MessageSquare, Trash2, Send, CheckCircle, Settings, ChevronDown, ChevronUp, Box, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { generarDocumentoPDF } from '@/utils/pdfGenerator'
 import { Session } from '@supabase/supabase-js'
@@ -47,16 +47,16 @@ export default function Pizarra({
       return `${horas}h`;
   }
 
-  // 🔥 NUEVA FUNCIÓN: Calcular estado del reloj de arena
+  // 🔥 Calcular estado del reloj de arena
   const obtenerEstadoPromesa = (fechaPromesa: string | null) => {
-      if (!fechaPromesa) return null; // No hay promesa (Avisará el Toast de 12h)
+      if (!fechaPromesa) return null; 
       
       const promesa = new Date(fechaPromesa).getTime();
       const ahora = new Date().getTime();
       const difHoras = (promesa - ahora) / (1000 * 60 * 60);
 
       if (difHoras < 0) return 'atrasado'; // Rojo
-      if (difHoras <= 2) return 'peligro'; // Naranja/Amarillo
+      if (difHoras <= 2) return 'peligro'; // Naranja
       return 'ok'; // Verde
   }
 
@@ -122,10 +122,32 @@ export default function Pizarra({
 
   const eliminarItemBD = async (idItem: string) => {
       if (soloLectura) return;
-      if (!window.confirm("¿Estás seguro de eliminar este ítem de la orden?")) return;
+      if (!window.confirm("¿Estás seguro de eliminar este ítem? Si es un trabajo principal, también se borrarán y devolverán los repuestos asociados.")) return;
+      
       try {
+          // 1. Obtener el ítem y todos sus posibles "hijos" para saber si hay que devolver stock
+          const { data: itemsBorrados } = await supabase
+              .from('items_orden')
+              .select('*')
+              .or(`id.eq.${idItem},parent_id.eq.${idItem}`);
+
+          // 2. Devolver a la bodega lo que corresponda (Solo si es Bodega Interna)
+          if (itemsBorrados && itemsBorrados.length > 0) {
+              for (const item of itemsBorrados) {
+                  if (item.tipo_item === 'repuesto' && item.procedencia === 'Bodega Interna' && item.inventario_id) {
+                      // Rescatamos la cantidad actual de la BD directo por seguridad
+                      const { data: inv } = await supabase.from('inventario').select('cantidad').eq('id', item.inventario_id).single();
+                      if (inv) {
+                          await supabase.from('inventario').update({ cantidad: inv.cantidad + item.cantidad }).eq('id', item.inventario_id);
+                      }
+                  }
+              }
+          }
+
+          // 3. Eliminar (Si es un padre, Supabase borrará los hijos en cascada automáticamente)
           await supabase.from('items_orden').delete().eq('id', idItem);
-          toast.success("Ítem eliminado correctamente");
+          
+          toast.success("Ítem eliminado (Stock devuelto si aplica)");
           await cargarTodo();
       } catch (error: unknown) { 
           const msg = error instanceof Error ? error.message : "Error desconocido";
@@ -229,7 +251,6 @@ export default function Pizarra({
       } finally { setGenerandoPDF(false); }
   }
 
-  // 🔥 NUEVA FUNCIÓN: Alerta de Retraso Rápida (WhatsApp)
   const avisarRetrasoCliente = (o: OrdenTrabajo) => {
       const telefono = o.vehiculos?.clientes?.telefono;
       if (!telefono) return toast.error("El cliente no tiene número de teléfono registrado.");
@@ -259,7 +280,7 @@ export default function Pizarra({
             </div>
         ) : (
             <div className="flex flex-col md:flex-row md:overflow-x-auto gap-4 md:gap-5 relative z-10 pb-4 custom-scrollbar-dark md:snap-x h-full md:min-h-[650px] p-1">
-                {ordenesAbiertas.map(o => {
+                {ordenesAbiertas.map((o) => {
                     const subtotalItems = o.items_orden?.reduce((sum: number, item: any) => sum + item.precio, 0) || 0;
                     const costoRev = o.costo_revision || 0;
                     const desc = o.descuento || 0;
@@ -269,29 +290,25 @@ export default function Pizarra({
 
                     const isExpanded = tarjetaExpandida === o.id;
 
-                    // 🔥 COLOR DINÁMICO (Identidad de la Tarjeta)
-                    const colorGlow = o.vehiculos?.color || '#334155'; // Slate 700 por defecto
+                    const colorGlow = o.vehiculos?.color || '#334155';
                     const estadoPromesa = obtenerEstadoPromesa(o.fecha_promesa);
 
                     return (
                     <div 
                         key={o.id} 
-                        className={`w-full md:min-w-[320px] md:max-w-[360px] bg-slate-900/80 backdrop-blur-md p-4 md:p-5 rounded-3xl transition-all duration-300 relative overflow-hidden group flex flex-col md:snap-center shrink-0 border-2`}
+                        className="w-full md:min-w-[320px] md:max-w-[360px] bg-slate-900/80 backdrop-blur-md p-4 md:p-5 rounded-3xl transition-all duration-300 relative overflow-hidden group flex flex-col md:snap-center shrink-0 border-2"
                         style={{ 
-                            // Aplicamos el "Aura" del color del auto a la tarjeta
                             boxShadow: isExpanded ? `0 0 40px ${colorGlow}33` : `0 0 10px ${colorGlow}22`,
-                            borderColor: isExpanded ? colorGlow : '#1e293b' // Borde colorido al expandir
+                            borderColor: isExpanded ? colorGlow : '#1e293b'
                         }}
                     >
                         
                         {/* 🟢 CABECERA DE LA TARJETA */}
                         <div className="shrink-0 cursor-pointer md:cursor-default relative" onClick={() => { if (window.innerWidth < 768) setTarjetaExpandida(isExpanded ? null : o.id) }}>
                             
-                            {/* 🔥 MANCHA DE COLOR (Ayuda visual en la esquina) */}
                             <div className="absolute top-0 right-10 w-16 h-16 rounded-full blur-[30px] opacity-40 pointer-events-none" style={{ backgroundColor: colorGlow }}></div>
 
                             <div className="flex justify-between items-start w-full gap-3 relative z-10">
-                                {/* Izquierda: Patente y Vehículo */}
                                 <div className="flex flex-col overflow-hidden flex-1">
                                     <p className="font-black text-3xl md:text-3xl tracking-tighter text-slate-100 truncate leading-none mb-1">{o.vehiculos?.patente}</p>
                                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest truncate flex items-center gap-1.5">
@@ -301,7 +318,6 @@ export default function Pizarra({
                                     </p>
                                 </div>
 
-                                {/* Derecha: Estado y Chevron (Solo Móvil) */}
                                 <div className="flex flex-col items-end gap-2 shrink-0">
                                     {!isExpanded && (
                                         <div className={`md:hidden text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded border shadow-sm ${COLOR_ESTADO[o.sub_estado || 'Diagnóstico']}`}>
@@ -314,10 +330,8 @@ export default function Pizarra({
                                 </div>
                             </div>
                             
-                            {/* Píldoras de Tiempo y Mecánico */}
                             <div className={`${isExpanded ? 'flex flex-wrap' : 'hidden md:flex flex-wrap'} gap-2 mt-4 relative z-10`}>
                                 
-                                {/* 🔥 EL RELOJ DE ARENA (Promesa de Entrega) */}
                                 {o.fecha_promesa && (
                                     <div className={`flex items-center gap-1.5 text-[9px] font-bold px-2 py-1.5 rounded-lg border shadow-sm group/reloj transition-all ${
                                         estadoPromesa === 'atrasado' ? 'bg-red-500/20 text-red-400 border-red-500/50 animate-pulse cursor-pointer' :
@@ -330,7 +344,6 @@ export default function Pizarra({
                                              new Date(o.fecha_promesa).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' hrs'}
                                         </span>
                                         
-                                        {/* Botón rápido de Aviso si está atrasado */}
                                         {estadoPromesa === 'atrasado' && (
                                             <button 
                                                 onClick={(e) => { e.stopPropagation(); avisarRetrasoCliente(o); }}
@@ -353,10 +366,9 @@ export default function Pizarra({
                             </div>
                         </div>
                         
-                        {/* 🔵 CUERPO DE LA TARJETA (Oculto en móvil colapsado) */}
+                        {/* 🔵 CUERPO DE LA TARJETA */}
                         <div className={`${isExpanded ? 'flex flex-col mt-4 animate-in fade-in slide-in-from-top-2 duration-300' : 'hidden md:flex md:flex-col md:mt-4'} flex-1 overflow-hidden relative z-10`}>
                             
-                            {/* Selector de Estado Expandido */}
                             <div className="mb-4">
                                 <label className="text-[8px] font-black uppercase tracking-widest text-slate-500 mb-1 block ml-1">Fase del Vehículo</label>
                                 <select 
@@ -373,7 +385,6 @@ export default function Pizarra({
                                 </select>
                             </div>
 
-                            {/* Botones de Acción Superiores */}
                             <div className="flex gap-2 shrink-0 mb-4 justify-between">
                                 <div className="bg-slate-950/40 p-2 rounded-xl border border-slate-800/50 flex flex-1 justify-between items-center group shadow-inner">
                                     <div className="italic text-[10px] text-slate-400 line-clamp-1 w-full px-1" title={o.descripcion}>"{o.descripcion}"</div>
@@ -398,7 +409,6 @@ export default function Pizarra({
                                 </button>
                             </div>
                             
-                            {/* Botón Añadir Ítem */}
                             <button 
                                 disabled={soloLectura} 
                                 onClick={() => abrirModalItem(o.id)} 
@@ -407,72 +417,110 @@ export default function Pizarra({
                                 <Plus size={16} /> Añadir Tarea / Repuesto
                             </button>
 
-                            {/* Lista de Ítems */}
-                            <div className="flex-1 overflow-y-auto custom-scrollbar-dark pr-1 space-y-2 mb-4 max-h-[250px] md:max-h-none">
-                                {o.items_orden?.map((item: ItemOrden) => (
-                                    <div key={item.id} className={`flex justify-between items-center text-[10px] font-bold backdrop-blur-sm p-2.5 rounded-xl border group/item transition-colors ${item.realizado ? 'bg-emerald-900/10 border-emerald-900/30 opacity-70' : 'bg-slate-950/80 border-slate-800'}`}>
+                            {/* Lista de Ítems Organizada (Padres e Hijos) */}
+                            <div className="flex-1 overflow-y-auto custom-scrollbar-dark pr-1 space-y-3 mb-4 max-h-[250px] md:max-h-none">
+                                {o.items_orden?.length === 0 ? (
+                                    <p className="text-[10px] text-center text-slate-600 italic font-bold py-4 bg-slate-950/50 rounded-xl border border-dashed border-slate-800">No hay tareas registradas.</p>
+                                ) : (
+                                    o.items_orden?.filter((item: any) => !item.parent_id).map((padre: any) => {
+                                        
+                                        const hijos = o.items_orden?.filter((item: any) => item.parent_id === padre.id) || [];
 
-                                        <div className="flex items-center gap-2.5 flex-1 pr-2 overflow-hidden">
-                                            <button disabled={soloLectura} onClick={() => toggleItemRealizado(item.id, item.realizado)} className="shrink-0 hover:scale-110 transition-transform disabled:opacity-50">
-                                                {item.realizado ? <CheckCircle2 className="text-emerald-500" size={16} /> : <Circle className="text-slate-600" size={16} />}
-                                            </button>
-                                            <div className="flex flex-col">
-                                                <span className={`uppercase truncate ${item.realizado ? 'text-slate-500 line-through' : 'text-slate-200'}`}>{item.descripcion}</span>
+                                        return (
+                                            <div key={padre.id} className="flex flex-col gap-1.5">
                                                 
-                                                {item.tipo_item === 'repuesto' && !item.realizado && (
-                                                    <span className="text-[8px] text-orange-400 uppercase tracking-widest mt-0.5 flex items-center gap-1">En Bodega</span>
-                                                )}
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-2 shrink-0">
-                                            {!mecanicoActivo && (
-                                                <span className={`mr-2 font-black ${item.realizado ? 'text-slate-500' : 'text-emerald-400'}`}>${item.precio.toLocaleString()}</span>
-                                            )}
-                                            <button disabled={soloLectura} onClick={() => abrirModalItem(o.id, item)} className="text-slate-600 disabled:opacity-50 hover:text-blue-400 transition-colors bg-slate-900 p-1.5 rounded-md border border-slate-800"><Edit2 size={12} /></button>
-                                            <button disabled={soloLectura} onClick={() => eliminarItemBD(item.id)} className="text-slate-600 disabled:opacity-50 hover:text-red-400 transition-colors bg-slate-900 p-1.5 rounded-md border border-slate-800"><Trash2 size={12} /></button>
-                                        </div>
-                                    </div>
-                                ))}
-                                {o.items_orden?.length === 0 && <p className="text-[10px] text-center text-slate-600 italic font-bold py-4 bg-slate-950/50 rounded-xl border border-dashed border-slate-800">No hay tareas registradas.</p>}
-                                
-                                {/* Notas del Turno */}
-                                <div className="mt-4 pt-3">
-                                    <h4 className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1.5 ml-1">
-                                        <MessageSquare size={12} /> Bitácora de Turno
-                                    </h4>
-                                    <div className="bg-slate-950/60 rounded-2xl border border-slate-800/50 p-2.5 flex flex-col gap-2 shadow-inner">
-                                        
-                                         {o.comentarios_orden?.map((com: ComentarioOrden) => (
-                                             <div key={com.id} className="bg-slate-900 rounded-xl p-2.5 text-[9px] border border-slate-800">
-                                                <div className="flex justify-between items-center mb-1.5 border-b border-slate-800/50 pb-1.5">
-                                                    <span className="font-black text-blue-400 tracking-wider uppercase">{com.autor_nombre}</span>
-                                                    <span className="text-slate-500 font-bold">{new Date(com.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}</span>
+                                                {/* --- FILA DEL SERVICIO PADRE --- */}
+                                                <div className={`flex justify-between items-center text-[10px] font-bold backdrop-blur-sm p-2.5 rounded-xl border group/item transition-colors shadow-sm ${padre.realizado ? 'bg-emerald-900/10 border-emerald-900/30 opacity-70' : 'bg-slate-950 border-slate-800'}`}>
+                                                    <div className="flex items-center gap-2.5 flex-1 pr-2 overflow-hidden">
+                                                        <button disabled={soloLectura} onClick={() => toggleItemRealizado(padre.id, padre.realizado)} className="shrink-0 hover:scale-110 transition-transform disabled:opacity-50">
+                                                            {padre.realizado ? <CheckCircle2 className="text-emerald-500" size={16} /> : <Circle className="text-slate-600" size={16} />}
+                                                        </button>
+                                                        <div className="flex flex-col">
+                                                            <span className={`uppercase truncate font-black ${padre.realizado ? 'text-slate-500 line-through' : 'text-slate-200'}`}>{padre.descripcion}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 shrink-0">
+                                                        {!mecanicoActivo && (
+                                                            <span className={`mr-2 font-black ${padre.realizado ? 'text-slate-500' : 'text-emerald-400'}`}>${padre.precio.toLocaleString()}</span>
+                                                        )}
+                                                        <button disabled={soloLectura} onClick={() => eliminarItemBD(padre.id)} className="text-slate-600 disabled:opacity-50 hover:text-red-400 transition-colors bg-slate-900 p-1.5 rounded-md border border-slate-800"><Trash2 size={12} /></button>
+                                                    </div>
                                                 </div>
-                                                <p className="text-slate-300 font-medium leading-relaxed">{com.texto}</p>
+
+                                                {/* --- FILAS DE LOS REPUESTOS HIJOS (Anidados) --- */}
+                                                {hijos.length > 0 && (
+                                                    <div className="flex flex-col gap-1 ml-4 pl-3 border-l-2 border-slate-800/50">
+                                                        {hijos.map((hijo: any) => (
+                                                            <div key={hijo.id} className={`flex justify-between items-center text-[9px] font-bold p-2 rounded-lg border group/hijo transition-colors ${hijo.realizado ? 'bg-emerald-900/5 border-emerald-900/20 opacity-70' : 'bg-slate-900/60 border-slate-800/50'}`}>
+                                                                <div className="flex items-center gap-2 flex-1 pr-2 overflow-hidden">
+                                                                    <span className="text-slate-600 shrink-0">↳</span>
+                                                                    <div className="flex flex-wrap items-center gap-1.5">
+                                                                        <span className={`uppercase truncate ${hijo.realizado ? 'text-slate-500 line-through' : 'text-slate-300'}`}>
+                                                                            {hijo.descripcion}
+                                                                        </span>
+                                                                        <span className="text-slate-500 font-black">x{hijo.cantidad || 1}</span>
+                                                                        
+                                                                        <span className={`text-[7px] uppercase tracking-widest px-1.5 py-0.5 rounded-md flex items-center gap-0.5 ${hijo.procedencia === 'Cliente' ? 'bg-blue-900/20 text-blue-400 border border-blue-500/20' : 'bg-emerald-900/20 text-emerald-500 border border-emerald-500/20'}`}>
+                                                                            {hijo.procedencia === 'Cliente' ? <User size={8}/> : <Box size={8}/>}
+                                                                            {hijo.procedencia === 'Cliente' ? 'Cliente' : 'Bodega'}
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="flex items-center gap-2 shrink-0">
+                                                                    {!mecanicoActivo && (
+                                                                        <span className={`mr-2 font-black ${hijo.realizado ? 'text-slate-500' : (hijo.procedencia === 'Cliente' ? 'text-blue-400' : 'text-emerald-400')}`}>
+                                                                            {hijo.precio === 0 ? '$0' : `$${hijo.precio.toLocaleString()}`}
+                                                                        </span>
+                                                                    )}
+                                                                    <button disabled={soloLectura} onClick={() => eliminarItemBD(hijo.id)} className="text-slate-700 disabled:opacity-50 hover:text-red-500 transition-colors"><X size={12} /></button>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+
                                             </div>
-                                        ))}
-                                        
-                                        <div className="flex gap-1.5 mt-1">
-                                            <input 
-                                                type="text" 
-                                                value={comentarioInputs[o.id] || ''}
-                                                disabled={soloLectura}
-                                                onChange={e => setComentarioInputs({...comentarioInputs, [o.id]: e.target.value})}
-                                                onKeyDown={e => { if (e.key === 'Enter') enviarComentario(o.id) }}
-                                                placeholder="Añadir un recado..." 
-                                                className="w-full bg-slate-900 rounded-xl px-3 py-2 text-[10px] font-bold text-slate-200 outline-none border border-slate-700 focus:border-blue-500 transition-colors placeholder-slate-600"
-                                            />
-                                            <button onClick={() => enviarComentario(o.id)} disabled={soloLectura} className="bg-blue-600 text-white p-2.5 rounded-xl hover:bg-blue-500 transition-colors disabled:opacity-50 flex items-center justify-center">
-                                                <Send size={14} />
-                                            </button>
+                                        );
+                                    })
+                                )}
+                            </div>
+                            
+                            <div className="mt-4 pt-3">
+                                <h4 className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1.5 ml-1">
+                                    <MessageSquare size={12} /> Bitácora de Turno
+                                </h4>
+                                <div className="bg-slate-950/60 rounded-2xl border border-slate-800/50 p-2.5 flex flex-col gap-2 shadow-inner">
+                                    
+                                     {o.comentarios_orden?.map((com: ComentarioOrden) => (
+                                         <div key={com.id} className="bg-slate-900 rounded-xl p-2.5 text-[9px] border border-slate-800">
+                                            <div className="flex justify-between items-center mb-1.5 border-b border-slate-800/50 pb-1.5">
+                                                <span className="font-black text-blue-400 tracking-wider uppercase">{com.autor_nombre}</span>
+                                                <span className="text-slate-500 font-bold">{new Date(com.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}</span>
+                                            </div>
+                                            <p className="text-slate-300 font-medium leading-relaxed">{com.texto}</p>
                                         </div>
+                                    ))}
+                                    
+                                    <div className="flex gap-1.5 mt-1">
+                                        <input 
+                                            type="text" 
+                                            value={comentarioInputs[o.id] || ''}
+                                            disabled={soloLectura}
+                                            onChange={e => setComentarioInputs({...comentarioInputs, [o.id]: e.target.value})}
+                                            onKeyDown={e => { if (e.key === 'Enter') enviarComentario(o.id) }}
+                                            placeholder="Añadir un recado..." 
+                                            className="w-full bg-slate-900 rounded-xl px-3 py-2 text-[10px] font-bold text-slate-200 outline-none border border-slate-700 focus:border-blue-500 transition-colors placeholder-slate-600"
+                                        />
+                                        <button onClick={() => enviarComentario(o.id)} disabled={soloLectura} className="bg-blue-600 text-white p-2.5 rounded-xl hover:bg-blue-500 transition-colors disabled:opacity-50 flex items-center justify-center">
+                                            <Send size={14} />
+                                        </button>
                                     </div>
                                 </div>
                             </div>
                             
-                            {/* 🔥 BLOQUE DE COBROS Y FINALIZACIÓN (Solo visible para el dueño) */}
+                            {/* 🔥 BLOQUE DE COBROS Y FINALIZACIÓN */}
                             {!mecanicoActivo && (
-                                <div className="shrink-0 bg-slate-950 p-4 rounded-2xl border border-slate-800 flex flex-col gap-3 mt-auto shadow-[0_-10px_20px_rgba(2,6,23,0.5)] relative z-20">
+                                <div className="shrink-0 bg-slate-950 p-4 rounded-2xl border border-slate-800 flex flex-col gap-3 mt-auto mt-4 shadow-[0_-10px_20px_rgba(2,6,23,0.5)] relative z-20">
                                     
                                     <div className="flex justify-between items-center text-[10px] text-slate-400 font-black px-1">
                                         <span className="uppercase tracking-widest">Servicios/Repuestos:</span>
@@ -534,12 +582,13 @@ export default function Pizarra({
                                     </div>
                                 </div>
                             )}
-
+                            
                         </div>
                     </div>
-                )})}
+                    );
+                })}
             </div>
         )}
     </section>
-  )
+  );
 }

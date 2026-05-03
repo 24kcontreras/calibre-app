@@ -46,9 +46,10 @@ const MAPA_TESTIGOS: Record<string, string> = {
 };
 
 // =========================================================================
-// 1. FUNCIÓN ORIGINAL: INFORME TÉCNICO DE ORDEN INDIVIDUAL
+// 1. FUNCIÓN ORIGINAL: INFORME TÉCNICO Y COTIZACIÓN DE ORDEN INDIVIDUAL
 // =========================================================================
-export const generarDocumentoPDF = async (o: any, resumenIA: string = "", configPDF: ConfigPDF) => {
+// 🔥 Agregamos el parámetro "esCotizacion" (por defecto falso)
+export const generarDocumentoPDF = async (o: any, resumenIA: string = "", configPDF: ConfigPDF, esCotizacion: boolean = false) => {
     try {
         const doc = new jsPDF();
         const pageWidth = doc.internal.pageSize.getWidth();
@@ -70,7 +71,6 @@ export const generarDocumentoPDF = async (o: any, resumenIA: string = "", config
                     toast.error("Error al cargar el logo en el PDF");
                     console.error("Error logo", err);
                 }
-
         }
 
         doc.setFontSize(24);
@@ -86,7 +86,10 @@ export const generarDocumentoPDF = async (o: any, resumenIA: string = "", config
         doc.setFontSize(14);
         doc.setTextColor(100, 116, 139);
         doc.setFont("helvetica", "bold");
-        doc.text("INFORME TÉCNICO", pageWidth - 14, 18, { align: 'right' });
+        
+        // 🔥 Título Dinámico
+        const tituloPDF = esCotizacion ? "COTIZACIÓN DE SERVICIOS" : "INFORME TÉCNICO";
+        doc.text(tituloPDF, pageWidth - 14, 18, { align: 'right' });
         
         doc.setFontSize(9);
         doc.setFont("helvetica", "normal");
@@ -123,7 +126,7 @@ export const generarDocumentoPDF = async (o: any, resumenIA: string = "", config
         doc.setTextColor(71, 85, 105);
         doc.text("Kilometraje:", 110, startYCaja + 7);
         doc.text("Mecánico:", 110, startYCaja + 14);
-        doc.text("ID Orden:", 110, startYCaja + 21);
+        doc.text(esCotizacion ? "Cotización Nº:" : "ID Orden:", 110, startYCaja + 21);
 
         doc.setFont("helvetica", "normal");
         doc.setTextColor(15, 23, 42);
@@ -136,7 +139,7 @@ export const generarDocumentoPDF = async (o: any, resumenIA: string = "", config
         doc.setFontSize(10);
         doc.setTextColor(15, 23, 42);
         doc.setFont("helvetica", "bold");
-        doc.text("ACTA DE RECEPCIÓN (ESTADO INICIAL)", 14, finalY);
+        doc.text("ESTADO DE RECEPCIÓN", 14, finalY);
         finalY += 4;
 
         doc.setFillColor(241, 245, 249);
@@ -166,65 +169,80 @@ export const generarDocumentoPDF = async (o: any, resumenIA: string = "", config
         finalY += 24;
 
         const items = o.items_orden || [];
-        const servicios = items.filter((i: any) => i.tipo_item === 'servicio');
-        const repuestos = items.filter((i: any) => i.tipo_item === 'repuesto');
-        
-        const subtotalServicios = servicios.reduce((sum: number, item: any) => sum + item.precio, 0);
-        const subtotalRepuestos = repuestos.reduce((sum: number, item: any) => sum + item.precio, 0);
         const costoRevision = o.costo_revision || 0;
         const descuento = o.descuento || 0;
-
-        const subtotalBruto = subtotalServicios + subtotalRepuestos + costoRevision;
+        
+        let subtotalItems = 0;
+        items.forEach((i: any) => subtotalItems += i.precio);
+        const subtotalBruto = subtotalItems + costoRevision;
         const totalNeto = subtotalBruto - descuento;
 
-        if (servicios.length > 0 || costoRevision > 0) {
+        // 🔥 NUEVA TABLA UNIFICADA Y JERÁRQUICA
+        if (items.length > 0 || costoRevision > 0) {
             doc.setFontSize(10);
             doc.setTextColor(15, 23, 42);
             doc.setFont("helvetica", "bold");
-            doc.text("MANO DE OBRA Y SERVICIOS", 14, finalY);
+            doc.text("DETALLE DE SERVICIOS Y REPUESTOS", 14, finalY);
             finalY += 2;
 
-            let bodyServicios = servicios.map((i: any) => [
-                i.descripcion.toUpperCase(),
-                `$${i.precio.toLocaleString('es-CL')}`
-            ]);
+            const bodyTabla: any[] = [];
 
+            // 1. Añadimos el diagnóstico inicial (si existe)
             if (costoRevision > 0) {
-                bodyServicios.unshift([
+                bodyTabla.push([
                     "DIAGNÓSTICO Y REVISIÓN TÉCNICA INICIAL",
                     `$${costoRevision.toLocaleString('es-CL')}`
                 ]);
             }
 
-            // 🔥 VOLVEMOS A AUTOTABLE ORIGINAL
+            // 2. Filtramos a los Padres (Servicios)
+            const padres = items.filter((i: any) => !i.parent_id);
+
+            padres.forEach((padre: any) => {
+                // Fila del Padre
+                bodyTabla.push([
+                    padre.descripcion.toUpperCase(),
+                    `$${padre.precio.toLocaleString('es-CL')}`
+                ]);
+
+                // Filas de los Hijos (Anidados)
+                const hijos = items.filter((i: any) => i.parent_id === padre.id);
+                hijos.forEach((hijo: any) => {
+                    const procedencia = hijo.procedencia === 'Cliente' ? 'Traído por Cliente' : 'Bodega';
+                    const cant = hijo.cantidad || 1;
+                    const precioTxt = hijo.precio === 0 ? '$0' : `$${hijo.precio.toLocaleString('es-CL')}`;
+                    
+                    bodyTabla.push([
+                        `   ↳ ${hijo.descripcion} (Cant: ${cant} | ${procedencia})`,
+                        precioTxt
+                    ]);
+                });
+            });
+
             autoTable(doc, {
                 startY: finalY,
-                head: [['Descripción del Servicio', 'Valor']],
-                body: bodyServicios,
+                head: [['Descripción', 'Valor']],
+                body: bodyTabla,
                 theme: 'grid',
                 styles: { fontSize: 8, cellPadding: 2 },
                 headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255], fontStyle: 'bold' },
                 alternateRowStyles: { fillColor: [248, 250, 252] },
-                columnStyles: { 1: { halign: 'right', cellWidth: 40 } }
-            });
-            finalY = (doc as any).lastAutoTable.finalY + 10;
-        }
-
-        if (repuestos.length > 0) {
-            doc.setFontSize(10);
-            doc.setTextColor(15, 23, 42);
-            doc.setFont("helvetica", "bold");
-            doc.text("REPUESTOS E INSUMOS UTILIZADOS", 14, finalY);
-            finalY += 2;
-
-            autoTable(doc, {
-                startY: finalY,
-                head: [['Descripción del Repuesto', 'Procedencia']],
-                body: repuestos.map((i: any) => [i.descripcion.toUpperCase(), i.procedencia.toUpperCase()]),
-                theme: 'grid',
-                styles: { fontSize: 8, cellPadding: 2 },
-                headStyles: { fillColor: [71, 85, 105], textColor: [255, 255, 255], fontStyle: 'bold' },
-                alternateRowStyles: { fillColor: [248, 250, 252] }
+                columnStyles: { 1: { halign: 'right', cellWidth: 40 } },
+                didParseCell: function (data: any) {
+                    // 🔥 Lógica visual: Si la fila empieza con "↳", aplicamos estilo sutil (Hijo)
+                    if (data.section === 'body') {
+                        const esHijo = data.row.raw[0].toString().startsWith('   ↳');
+                        
+                        if (esHijo) {
+                            data.cell.styles.fontStyle = 'italic';
+                            data.cell.styles.textColor = [100, 116, 139]; // Gris (Slate 500)
+                        } else {
+                            data.cell.styles.fontStyle = 'bold';
+                            if (data.column.index === 0) data.cell.styles.textColor = [15, 23, 42]; // Negro
+                            if (data.column.index === 1) data.cell.styles.textColor = [16, 185, 129]; // Verde
+                        }
+                    }
+                }
             });
             finalY = (doc as any).lastAutoTable.finalY + 10;
         }
@@ -265,91 +283,93 @@ export const generarDocumentoPDF = async (o: any, resumenIA: string = "", config
 
         finalY = (doc as any).lastAutoTable.finalY || finalY + 20;
 
-        const textoFinalIA = resumenIA && resumenIA.length > 10 ? resumenIA : `Servicios completados para el vehículo patente ${o.vehiculos?.patente}.`;
+        // 🔥 Ocultamos IA y Evidencias si es solo una Cotización
+        if (!esCotizacion) {
+            const textoFinalIA = resumenIA && resumenIA.length > 10 ? resumenIA : `Servicios completados para el vehículo patente ${o.vehiculos?.patente}.`;
 
-        if (finalY + 15 > 265) { doc.addPage(); finalY = 20; }
+            if (finalY + 15 > 265) { doc.addPage(); finalY = 20; }
 
-        finalY += 15;
-        doc.setFontSize(12);
-        doc.setTextColor(16, 185, 129);
-        doc.setFont("helvetica", "bold");
-        doc.text("DIAGNÓSTICO Y RECOMENDACIONES", 14, finalY);
-
-        doc.setFontSize(9);
-        doc.setTextColor(51, 65, 85);
-        doc.setFont("helvetica", "normal");
-
-        const lineasIA = doc.splitTextToSize(textoFinalIA, pageWidth - 28);
-        finalY += 7; 
-        for (let i = 0; i < lineasIA.length; i++) {
-            if (finalY > 275) { doc.addPage(); finalY = 20; }
-            doc.text(lineasIA[i], 14, finalY);
-            finalY += 5; 
-        }
-
-        const alertas = o.vehiculos?.alertas_desgaste || [];
-        const alertasPendientes = alertas.filter((a: any) => a.estado === 'Pendiente');
-
-        if (alertasPendientes.length > 0) {
             finalY += 15;
-            if (finalY > 250) { doc.addPage(); finalY = 20; }
-            doc.setFontSize(12);
-            doc.setTextColor(249, 115, 22); 
-            doc.setFont("helvetica", "bold");
-            doc.text("INSPECCIÓN TÉCNICA - SUGERENCIAS DE SEGURIDAD", 14, finalY);
-            finalY += 8;
-
-            alertasPendientes.forEach((alerta: any) => {
-                if (finalY > 260) { doc.addPage(); finalY = 20; }
-                const isRojo = alerta.nivel_riesgo === 'Rojo';
-                if (isRojo) { doc.setFillColor(254, 242, 242); doc.setDrawColor(252, 165, 165); } 
-                else { doc.setFillColor(254, 252, 232); doc.setDrawColor(253, 224, 71); }
-                
-                doc.roundedRect(14, finalY, pageWidth - 28, 18, 2, 2, 'FD');
-                doc.setFontSize(10);
-                doc.setFont("helvetica", "bold");
-                doc.setTextColor(isRojo ? 220 : 202, isRojo ? 38 : 138, isRojo ? 38 : 4); 
-                const icono = isRojo ? "URGENTE:" : "PREVENTIVO:";
-                doc.text(`${icono} ${alerta.pieza.toUpperCase()}`, 18, finalY + 6);
-
-                doc.setFontSize(8);
-                doc.setFont("helvetica", "normal");
-                doc.setTextColor(71, 85, 105); 
-                const obsText = alerta.observacion ? alerta.observacion : (isRojo ? "Riesgo inminente de falla. Recomendamos reemplazo." : "Desgaste moderado. Vigilar en la próxima mantención.");
-                const lineasObs = doc.splitTextToSize(obsText, pageWidth - 36);
-                doc.text(lineasObs.slice(0, 2), 18, finalY + 13); 
-                finalY += 22; 
-            });
-        }
-
-        if (o.fotos_orden?.length > 0) {
-            if (finalY > 230) { doc.addPage(); finalY = 20; } else { finalY += 15; }
             doc.setFontSize(12);
             doc.setTextColor(16, 185, 129);
             doc.setFont("helvetica", "bold");
-            doc.text("EVIDENCIA FOTOGRÁFICA", 14, finalY);
-            let y = finalY + 10;
+            doc.text("DIAGNÓSTICO Y RECOMENDACIONES", 14, finalY);
 
-            for (const f of o.fotos_orden.slice(0, 4)) {
-                try {
-                    const b64 = await urlABase64JPEG(f.url);
-                    const imgProps = doc.getImageProperties(b64);
-                    const pdfAncho = 80;
-                    const pdfAlto = (imgProps.height * pdfAncho) / imgProps.width;
+            doc.setFontSize(9);
+            doc.setTextColor(51, 65, 85);
+            doc.setFont("helvetica", "normal");
 
-                    if (y + pdfAlto > 270) { doc.addPage(); y = 20; }
-                    doc.addImage(b64, 'JPEG', 14, y, pdfAncho, pdfAlto);
-                    doc.setFontSize(9);
-                    doc.setFont("helvetica", "italic");
-                    doc.setTextColor(100, 116, 139);
-                    doc.text(`Nota técnica: ${f.descripcion}`, 14, y + pdfAlto + 5);
-                    y += pdfAlto + 15;
-                } catch (e) { 
-                    toast.error("Error cargando imagen de evidencia");
-                    console.error("Error cargando imagen en PDF"); 
-                }
+            const lineasIA = doc.splitTextToSize(textoFinalIA, pageWidth - 28);
+            finalY += 7; 
+            for (let i = 0; i < lineasIA.length; i++) {
+                if (finalY > 275) { doc.addPage(); finalY = 20; }
+                doc.text(lineasIA[i], 14, finalY);
+                finalY += 5; 
             }
-            finalY = y; 
+
+            const alertas = o.vehiculos?.alertas_desgaste || [];
+            const alertasPendientes = alertas.filter((a: any) => a.estado === 'Pendiente');
+
+            if (alertasPendientes.length > 0) {
+                finalY += 15;
+                if (finalY > 250) { doc.addPage(); finalY = 20; }
+                doc.setFontSize(12);
+                doc.setTextColor(249, 115, 22); 
+                doc.setFont("helvetica", "bold");
+                doc.text("INSPECCIÓN TÉCNICA - SUGERENCIAS DE SEGURIDAD", 14, finalY);
+                finalY += 8;
+
+                alertasPendientes.forEach((alerta: any) => {
+                    if (finalY > 260) { doc.addPage(); finalY = 20; }
+                    const isRojo = alerta.nivel_riesgo === 'Rojo';
+                    if (isRojo) { doc.setFillColor(254, 242, 242); doc.setDrawColor(252, 165, 165); } 
+                    else { doc.setFillColor(254, 252, 232); doc.setDrawColor(253, 224, 71); }
+                    
+                    doc.roundedRect(14, finalY, pageWidth - 28, 18, 2, 2, 'FD');
+                    doc.setFontSize(10);
+                    doc.setFont("helvetica", "bold");
+                    doc.setTextColor(isRojo ? 220 : 202, isRojo ? 38 : 138, isRojo ? 38 : 4); 
+                    const icono = isRojo ? "URGENTE:" : "PREVENTIVO:";
+                    doc.text(`${icono} ${alerta.pieza.toUpperCase()}`, 18, finalY + 6);
+
+                    doc.setFontSize(8);
+                    doc.setFont("helvetica", "normal");
+                    doc.setTextColor(71, 85, 105); 
+                    const obsText = alerta.observacion ? alerta.observacion : (isRojo ? "Riesgo inminente de falla. Recomendamos reemplazo." : "Desgaste moderado. Vigilar en la próxima mantención.");
+                    const lineasObs = doc.splitTextToSize(obsText, pageWidth - 36);
+                    doc.text(lineasObs.slice(0, 2), 18, finalY + 13); 
+                    finalY += 22; 
+                });
+            }
+
+            if (o.fotos_orden?.length > 0) {
+                if (finalY > 230) { doc.addPage(); finalY = 20; } else { finalY += 15; }
+                doc.setFontSize(12);
+                doc.setTextColor(16, 185, 129);
+                doc.setFont("helvetica", "bold");
+                doc.text("EVIDENCIA FOTOGRÁFICA", 14, finalY);
+                let y = finalY + 10;
+
+                for (const f of o.fotos_orden.slice(0, 4)) {
+                    try {
+                        const b64 = await urlABase64JPEG(f.url);
+                        const imgProps = doc.getImageProperties(b64);
+                        const pdfAncho = 80;
+                        const pdfAlto = (imgProps.height * pdfAncho) / imgProps.width;
+
+                        if (y + pdfAlto > 270) { doc.addPage(); y = 20; }
+                        doc.addImage(b64, 'JPEG', 14, y, pdfAncho, pdfAlto);
+                        doc.setFontSize(9);
+                        doc.setFont("helvetica", "italic");
+                        doc.setTextColor(100, 116, 139);
+                        doc.text(`Nota técnica: ${f.descripcion}`, 14, y + pdfAlto + 5);
+                        y += pdfAlto + 15;
+                    } catch (e) { 
+                        console.error("Error cargando imagen en PDF"); 
+                    }
+                }
+                finalY = y; 
+            }
         }
 
         if (configPDF.garantia && configPDF.garantia.trim() !== "") {
@@ -357,7 +377,8 @@ export const generarDocumentoPDF = async (o: any, resumenIA: string = "", config
             doc.setFontSize(7);
             doc.setTextColor(148, 163, 184); 
             doc.setFont("helvetica", "italic");
-            const lineasGarantia = doc.splitTextToSize(`Condiciones y Garantía: ${configPDF.garantia}`, pageWidth - 28);
+            const tituloSeccion = esCotizacion ? "Notas del Taller:" : "Condiciones y Garantía:";
+            const lineasGarantia = doc.splitTextToSize(`${tituloSeccion} ${configPDF.garantia}`, pageWidth - 28);
             for (let i = 0; i < lineasGarantia.length; i++) {
                 if (finalY > 275) { doc.addPage(); finalY = 20; }
                 doc.text(lineasGarantia[i], 14, finalY);
@@ -377,18 +398,22 @@ export const generarDocumentoPDF = async (o: any, resumenIA: string = "", config
             doc.text(`PÁGINA ${i} DE ${pageCount}`, pageWidth - 14, 292, { align: 'right' });
         }
 
-        doc.save(`Reporte_${configPDF.nombreTaller.replace(/\s+/g, '_')}_${o.vehiculos?.patente}.pdf`);
+        const nombreArchivo = esCotizacion 
+            ? `Cotizacion_${configPDF.nombreTaller.replace(/\s+/g, '_')}_${o.vehiculos?.patente}.pdf`
+            : `Reporte_${configPDF.nombreTaller.replace(/\s+/g, '_')}_${o.vehiculos?.patente}.pdf`;
+            
+        doc.save(nombreArchivo);
         return doc.output('datauristring');
 
     } catch (e) {
-        toast.error("Error al generar la Radiografía Mensual");
+        toast.error(`Error al generar ${esCotizacion ? 'la Cotización' : 'el Informe'}`);
         console.error("Error al generar PDF:", e);
         throw e;
     }
 };
 
 // =========================================================================
-// 2. FUNCIÓN NUEVA: RADIOGRAFÍA GERENCIAL MENSUAL
+// 2. FUNCIÓN NUEVA: RADIOGRAFÍA GERENCIAL MENSUAL (Sin Cambios)
 // =========================================================================
 export const generarRadiografiaMensualPDF = async (historial: any[] = [], oportunidades: any[] = [], configPDF: ConfigPDF) => {
     try {
@@ -478,7 +503,6 @@ export const generarRadiografiaMensualPDF = async (historial: any[] = [], oportu
         doc.text("1. RESUMEN EJECUTIVO", 14, posicionY);
         posicionY += 4;
 
-        // 🔥 BLINDADO PARA EVITAR QUE EXPLOTE SI NO HAY DATOS
         autoTable(doc, {
             startY: posicionY,
             head: [['Métrica', 'Valor']],
@@ -522,7 +546,6 @@ export const generarRadiografiaMensualPDF = async (historial: any[] = [], oportu
         doc.text("3. RANKING DE PRODUCTIVIDAD (MECÁNICOS)", 14, posicionY);
         posicionY += 4;
 
-        // 🔥 EL BLINDAJE CONTRA EL ERROR SILENCIOSO (SI NO HAY MECÁNICOS ESTE MES)
         const bodyMecanicos = rendimientoMecanicos.length > 0 
             ? rendimientoMecanicos.map(([nombre, total]: any, i: number) => [`#${i + 1}`, nombre, `$${total.toLocaleString('es-CL')}`])
             : [['-', 'Sin registros de mecánicos este mes', '-']];
