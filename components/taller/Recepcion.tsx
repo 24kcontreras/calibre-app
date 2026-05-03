@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Plus, Search, AlertTriangle, Info, FileText, ChevronDown, Palette } from 'lucide-react'
+import { Plus, Search, AlertTriangle, Info, FileText, ChevronDown, Palette, Car } from 'lucide-react'
 import toast from 'react-hot-toast'
 import CAR_DATA from '@/app/taller/autos.json'
 import { Session } from '@supabase/supabase-js'
@@ -50,7 +50,11 @@ interface RecepcionProps {
 
 export default function Recepcion({ soloLectura, vehiculos, session, cargarTodo, abrirOrdenModal, nombreTaller, abrirInfoModal, abrirModalCotizacion }: RecepcionProps) {
   const [loading, setLoading] = useState(false)
-  const [recepcionAbierta, setRecepcionAbierta] = useState(false)
+  
+  // 🔥 Por defecto cerrado para priorizar el buscador
+  const [recepcionAbierta, setRecepcionAbierta] = useState(false) 
+  const [mostrarColores, setMostrarColores] = useState(false) // 🔥 Nuevo estado para ocultar/mostrar colores
+
   const [busqueda, setBusqueda] = useState('')
 
   const [nombreInput, setNombreInput] = useState('')
@@ -105,7 +109,8 @@ export default function Recepcion({ soloLectura, vehiculos, session, cargarTodo,
                 toast.success("Vehículo registrado correctamente.");
                 await cargarTodo();
                 setMarcaInput(''); setModeloInput(''); setNombreInput(''); setRutInput('');
-                setTelefonoInput('+569'); setCorreoInput(''); setPatenteInput(''); setNuevoColor('#94a3b8');
+                setTelefonoInput('+569'); setCorreoInput(''); setPatenteInput(''); 
+                setNuevoColor('#94a3b8'); setMostrarColores(false); // Reseteamos color y ocultamos
                 abrirOrdenModal(nV[0]); 
             }
         }
@@ -159,16 +164,19 @@ export default function Recepcion({ soloLectura, vehiculos, session, cargarTodo,
 
   return (
     <div className="space-y-4 md:space-y-6 h-full flex flex-col overflow-hidden">
-        {/* SECCIÓN 1: FORMULARIO RECEPCIÓN */}
-        <section className="bg-slate-900/40 backdrop-blur-md p-5 rounded-3xl shadow-2xl border border-slate-700/50 relative overflow-hidden shrink-0">
+        
+        {/* SECCIÓN 1: FORMULARIO RECEPCIÓN (Ahora es un acordeón real en PC y Móvil) */}
+        <section className="bg-slate-900/40 backdrop-blur-md p-5 rounded-3xl shadow-2xl border border-slate-700/50 relative overflow-hidden shrink-0 transition-all duration-300">
             <div className="flex items-center justify-between">
+                
+                {/* 🔥 El botón de Recepción ahora abre/cierra en todas las pantallas */}
                 <button 
                     type="button"
                     onClick={() => setRecepcionAbierta(!recepcionAbierta)}
-                    className="flex items-center gap-2 text-xl font-black text-slate-100 uppercase tracking-tighter focus:outline-none md:cursor-default"
+                    className="flex items-center gap-2 text-xl font-black text-slate-100 uppercase tracking-tighter focus:outline-none hover:text-emerald-400 transition-colors group"
                 >
-                    Recepción <FileText className="text-emerald-500" size={20} />
-                    <ChevronDown className={`md:hidden text-emerald-500 transition-transform duration-300 ${recepcionAbierta ? 'rotate-180' : ''}`} size={24} />
+                    Recepción <Car className="text-emerald-500 group-hover:scale-110 transition-transform" size={20} />
+                    <ChevronDown className={`text-emerald-500 transition-transform duration-300 ${recepcionAbierta ? 'rotate-180' : ''}`} size={20} />
                 </button>
                 
                 <button 
@@ -180,8 +188,9 @@ export default function Recepcion({ soloLectura, vehiculos, session, cargarTodo,
                 </button>
             </div>
             
-            <div className={`transition-all duration-300 ${recepcionAbierta ? 'block mt-5' : 'hidden'} md:block md:mt-5 ${soloLectura ? 'opacity-50 pointer-events-none' : ''}`}>
-                <form id="form-recepcion" onSubmit={registrarTodo} className="space-y-3 relative z-10">
+            {/* 🔥 Contenedor colapsable unificado */}
+            <div className={`transition-all duration-300 overflow-hidden ${recepcionAbierta ? 'max-h-[1000px] opacity-100 mt-5' : 'max-h-0 opacity-0 mt-0 pointer-events-none'}`}>
+                <form id="form-recepcion" onSubmit={registrarTodo} className={`space-y-3 relative z-10 ${soloLectura ? 'opacity-50 pointer-events-none' : ''}`}>
                     <input 
                         name="rut_cliente" 
                         value={rutInput}
@@ -252,31 +261,45 @@ export default function Recepcion({ soloLectura, vehiculos, session, cargarTodo,
                         <input name="anho" type="number" placeholder="Año" className="w-full p-3 rounded-2xl border border-slate-700/50 bg-slate-900/50 text-xs text-slate-200 outline-none transition-all" />
                     </div>
 
-                    <div className="col-span-full bg-slate-950/50 p-4 rounded-2xl border border-slate-800 my-2 shadow-inner">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                            <Palette size={14} className="text-emerald-500" /> Color del Vehículo
-                        </label>
-                        <div className="flex flex-wrap gap-2.5 justify-start md:justify-center">
-                            {COLORES_AUTO.map(c => (
-                                <button
-                                    key={c}
-                                    type="button"
-                                    onClick={() => setNuevoColor(c)}
-                                    className={`w-7 h-7 rounded-full border-2 transition-all duration-300 ${nuevoColor === c ? 'border-emerald-500 scale-125 shadow-[0_0_15px_rgba(16,185,129,0.4)] z-10' : 'border-slate-700 hover:scale-110'}`}
-                                    style={{ backgroundColor: c }}
-                                />
-                            ))}
+                    {/* 🔥 SELECTOR DE COLOR OPTIMIZADO */}
+                    <div className="col-span-full mt-2">
+                        <button 
+                            type="button" 
+                            onClick={() => setMostrarColores(!mostrarColores)}
+                            className="w-full flex items-center justify-between p-3 rounded-xl border border-slate-700/50 bg-slate-900/30 hover:bg-slate-800/50 transition-colors"
+                        >
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                <Palette size={14} className="text-emerald-500" /> Color del Vehículo
+                            </span>
+                            <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 rounded-full border border-slate-500 shadow-sm" style={{ backgroundColor: nuevoColor }}></div>
+                                <ChevronDown size={14} className={`text-slate-500 transition-transform ${mostrarColores ? 'rotate-180' : ''}`} />
+                            </div>
+                        </button>
+
+                        <div className={`transition-all duration-300 overflow-hidden ${mostrarColores ? 'max-h-[100px] mt-2 opacity-100' : 'max-h-0 opacity-0'}`}>
+                            <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800 shadow-inner flex flex-wrap gap-2.5 justify-center">
+                                {COLORES_AUTO.map(c => (
+                                    <button
+                                        key={c}
+                                        type="button"
+                                        onClick={() => { setNuevoColor(c); setMostrarColores(false); }}
+                                        className={`w-6 h-6 rounded-full border-2 transition-all duration-300 ${nuevoColor === c ? 'border-emerald-500 scale-125 shadow-[0_0_10px_rgba(16,185,129,0.4)] z-10' : 'border-slate-700 hover:scale-110 hover:border-slate-400'}`}
+                                        style={{ backgroundColor: c }}
+                                    />
+                                ))}
+                            </div>
                         </div>
                     </div>
                     
-                    <button disabled={loading || soloLectura} className="w-full bg-emerald-600 text-slate-950 py-4 rounded-full font-black shadow-[0_0_20px_rgba(16,185,129,0.2)] uppercase text-xs mt-3 flex items-center justify-center gap-2">
+                    <button disabled={loading || soloLectura} className="w-full bg-emerald-600 text-slate-950 py-4 rounded-full font-black shadow-[0_0_20px_rgba(16,185,129,0.2)] hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] uppercase text-xs mt-3 flex items-center justify-center gap-2 transition-all hover:scale-[1.02]">
                         {loading ? 'Procesando...' : <><Plus size={16}/> Registrar y Abrir Orden</>}
                     </button>
                 </form>
             </div>
         </section>
 
-        {/* SECCIÓN 2: BUSCADOR DE VEHÍCULOS (Corregida para Scroll) */}
+        {/* SECCIÓN 2: BUSCADOR DE VEHÍCULOS */}
         <section className="bg-slate-900/40 backdrop-blur-md p-5 rounded-3xl shadow-2xl border border-slate-700/50 flex flex-col flex-1 min-h-0 overflow-hidden">
             <div className="relative shrink-0">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
@@ -284,40 +307,39 @@ export default function Recepcion({ soloLectura, vehiculos, session, cargarTodo,
                     value={busqueda} 
                     onChange={(e) => setBusqueda(e.target.value)} 
                     placeholder="Buscar Patente, Nombre o RUT..." 
-                    className="w-full p-3 pl-9 rounded-xl border border-slate-700/50 bg-slate-900/50 text-xs font-bold text-slate-200 outline-none focus:border-emerald-500/50 transition-all" 
+                    className="w-full p-3 pl-9 rounded-xl border border-slate-700/50 bg-slate-900/50 text-xs font-bold text-slate-200 outline-none focus:border-emerald-500/50 transition-all focus:bg-slate-800/80" 
                 />
             </div>
             
-            {/* Contenedor scrolleable con altura flexible */}
             <div className="mt-4 overflow-y-auto custom-scrollbar-dark pr-2 flex-1 space-y-2">
                  {vehiculosFiltrados.map(v => {
                      const alertaPendiente = v.alertas_desgaste?.find((a: AlertaDesgaste) => a.estado === 'Pendiente');
                      return (
-                     <div key={v.id} className="p-3 bg-slate-800/50 rounded-xl flex justify-between items-center border border-slate-700/50 hover:border-emerald-500/50 transition-all">
+                     <div key={v.id} className="p-3 bg-slate-800/40 rounded-xl flex justify-between items-center border border-slate-700/30 hover:border-emerald-500/50 transition-all group hover:bg-slate-800/80">
                         <div className="overflow-hidden pr-2 w-full">
                             <div className="flex items-center justify-between w-full">
                                 <div className="flex items-center gap-2">
-                                    <p className="font-black text-xs text-slate-100 tracking-wider">{v.patente}</p>
+                                    <p className="font-black text-xs text-slate-100 tracking-wider group-hover:text-emerald-50 transition-colors">{v.patente}</p>
                                     {alertaPendiente && <AlertTriangle size={12} className="text-orange-500 animate-pulse" />}
                                 </div>
                                 <div className="flex items-center gap-1 shrink-0">
-                                    <button onClick={() => abrirInfoModal && abrirInfoModal(v)} className="bg-blue-600/20 text-blue-400 p-1.5 rounded-lg hover:bg-blue-600 hover:text-white transition-colors"><Info size={12} /></button>
-                                    <button onClick={() => abrirModalCotizacion(v)} className="bg-amber-600/20 text-amber-500 px-2 py-1.5 rounded-lg text-[9px] font-black border border-amber-500/30">COTIZAR</button>
-                                    <button onClick={() => abrirOrdenModal(v)} className="bg-emerald-600 text-slate-950 px-2 py-1.5 rounded-lg text-[9px] font-black">ORDEN</button>
+                                    <button onClick={() => abrirInfoModal && abrirInfoModal(v)} className="bg-blue-600/10 text-blue-400 p-1.5 rounded-lg hover:bg-blue-600 hover:text-white transition-colors" title="Información"><Info size={12} /></button>
+                                    <button onClick={() => abrirModalCotizacion(v)} className="bg-amber-600/10 text-amber-500 px-2 py-1.5 rounded-lg text-[9px] font-black border border-amber-500/20 hover:bg-amber-600 hover:text-white hover:border-amber-600 transition-all" title="Cotizar">COTIZAR</button>
+                                    <button onClick={() => abrirOrdenModal(v)} className="bg-emerald-600/20 text-emerald-400 border border-emerald-500/20 px-2 py-1.5 rounded-lg text-[9px] font-black hover:bg-emerald-600 hover:text-slate-950 hover:border-emerald-600 transition-all">ORDEN</button>
                                 </div>
                             </div>
                             <div className="flex items-center gap-1.5 mt-1">
                                 <div className="w-2 h-2 rounded-full border border-slate-600 shrink-0" style={{ backgroundColor: v.color || '#94a3b8' }}></div>
-                                <p className="text-[9px] text-slate-500 uppercase truncate">{v.marca} {v.modelo} • {v.clientes?.nombre}</p>
+                                <p className="text-[9px] text-slate-400 uppercase truncate group-hover:text-slate-300 transition-colors">{v.marca} {v.modelo} • {v.clientes?.nombre}</p>
                             </div>
                         </div>
                     </div>
                  )})}
                 
                 {vehiculosFiltrados.length === 0 && (
-                    <div className="text-center p-4 border border-dashed border-slate-800 rounded-xl flex flex-col items-center justify-center h-full">
-                        <Search size={24} className="text-slate-700 mb-2"/>
-                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">No se encontraron vehículos.</p>
+                    <div className="text-center p-4 border border-dashed border-slate-800 rounded-xl flex flex-col items-center justify-center h-full opacity-50">
+                        <Car size={32} className="text-slate-600 mb-2"/>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">No se encontraron vehículos.</p>
                     </div>
                 )}
             </div>

@@ -77,7 +77,7 @@ body::-webkit-scrollbar {
   }
 }
 
-/* PERSONALIZACIÓN DE SCROLLBAR (ESTILO CALIBRE) - (La mantenemos por si la usas dentro de algún modal) */
+/* PERSONALIZACIÓN DE SCROLLBAR (ESTILO CALIBRE) */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
 }
@@ -91,6 +91,22 @@ body::-webkit-scrollbar {
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(16, 185, 129, 0.8); /* Brilla al pasar el mouse */
+}
+
+/* 🔥 NUEVO: SCROLLBAR OSCURA (Usada en la Pizarra y modales de texto) */
+.custom-scrollbar-dark::-webkit-scrollbar {
+  width: 6px;
+  height: 6px; /* Por si en algún momento hay scroll horizontal interno */
+}
+.custom-scrollbar-dark::-webkit-scrollbar-track {
+  background: transparent; 
+}
+.custom-scrollbar-dark::-webkit-scrollbar-thumb {
+  background: #334155; /* slate-700 (Gris oscuro elegante) */
+  border-radius: 10px;
+}
+.custom-scrollbar-dark::-webkit-scrollbar-thumb:hover {
+  background: #475569; /* slate-600 (Brilla sutilmente) */
 }
 
 /* Ocultar barra de scroll para el carrusel móvil */

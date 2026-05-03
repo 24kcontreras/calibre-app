@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import imageCompression from 'browser-image-compression'
 import toast, { Toaster } from 'react-hot-toast'
-import { Wrench, AlertTriangle, Bot, Search, ClipboardList, Plus } from 'lucide-react'
+import { Wrench, AlertTriangle, Bot, Search, ClipboardList, Plus, FolderOpen } from 'lucide-react'
 import { useTaller } from '@/hooks/useTaller'
 import Header from '@/components/Header'
 import Recepcion from '@/components/taller/Recepcion'
@@ -14,7 +14,6 @@ import { Vehiculo, OrdenTrabajo, ItemOrden } from '@/hooks/types'
 // 🔥 IMPORTAMOS EL NUEVO BOTTOM NAV Y TODOS TUS MODALES
 import BottomNav from '@/components/taller/BottomNav'
 import ModalTelemetria from '@/components/modals/ModalTelemetria'
-import ModalHistorial from '@/components/modals/ModalHistorial'
 import ModalConfiguracion from '@/components/modals/ModalConfiguracion'
 import ModalVehiculoInfo from '@/components/modals/ModalVehiculoInfo'
 import ModalEvidencia from '@/components/modals/ModalEvidencia'
@@ -28,8 +27,11 @@ import ModalNuevaOrden from '@/components/modals/ModalNuevaOrden'
 import ModalEditarOrden from '@/components/modals/ModalEditarOrden'
 import ModalManual from '@/components/modals/ModalManual'
 import ModalCRM from '@/components/modals/ModalCRM' 
-import ModalCotizacion from '@/components/modals/ModalCotizacion' // 🔥 Agregamos el nuevo modal
+import ModalCotizacion from '@/components/modals/ModalCotizacion'
 import Paywall from '@/components/Paywall'
+// 🔥 Importamos los nuevos modales de historial con las RUTAS CORRECTAS
+import ModalHistorialVehiculo from '@/components/modals/ModalHistorialVehiculo'
+import ModalHistorial from '@/components/modals/ModalHistorial'
 
 export default function CalibreApp() {
   const router = useRouter()
@@ -53,10 +55,17 @@ export default function CalibreApp() {
   const [modalVehiculoInfo, setVehiculoInfo] = useState<Vehiculo | null>(null)
   const [modalAnalisis, setModalAnalisis] = useState<OrdenTrabajo | null>(null)
   const [modalAlerta, setModalAlerta] = useState<Vehiculo | null>(null)
-  const [modalCotizacion, setModalCotizacion] = useState<Vehiculo | 'express' | null>(null) // 🔥 Estado para cotizar
+  const [modalCotizacion, setModalCotizacion] = useState<Vehiculo | 'express' | null>(null) 
   
   const [modalTelemetria, setModalTelemetria] = useState(false)
-  const [modalHistorial, setModalHistorial] = useState(false)
+  
+  // 🔥 Estados para el Modal de Historial Global
+  const [modalHistorialGlobalAbierto, setModalHistorialGlobalAbierto] = useState(false);
+  const [busquedaHistorialGlobal, setBusquedaHistorialGlobal] = useState("");
+  
+  // 🔥 Estado para el Historial Específico de un Vehículo
+  const [vehiculoParaHistorial, setVehiculoParaHistorial] = useState<Vehiculo | null>(null);
+
   const [modalMarketing, setModalMarketing] = useState(false)
   const [modalScanner, setModalScanner] = useState(false)
   const [modalConfiguracion, setModalConfiguracion] = useState(false)
@@ -94,8 +103,7 @@ export default function CalibreApp() {
   const [vehiculoScanner, setVehiculoScanner] = useState('')
   const [resultadoScanner, setResultadoScanner] = useState<Record<string, unknown> | null>(null)
   const [cargandoScanner, setCargandoScanner] = useState(false)
-  const [busquedaHistorial, setBusquedaHistorial] = useState('')
-
+  
   // ⚙️ ESTADOS DE CONFIGURACIÓN
   const [inputTaller, setInputTaller] = useState('')
   const [inputDireccion, setInputDireccion] = useState('')
@@ -277,7 +285,12 @@ export default function CalibreApp() {
       }
   }
 
-  const historialFiltrado = historial.filter(o => o.vehiculos?.patente.toLowerCase().includes(busquedaHistorial.toLowerCase()) || (o.vehiculos?.clientes?.nombre || '').toLowerCase().includes(busquedaHistorial.toLowerCase()))
+  // 🔥 Filtrado para el Historial Global
+  const historialGlobalFiltrado = historial.filter(o => 
+    o.vehiculos?.patente.toLowerCase().includes(busquedaHistorialGlobal.toLowerCase()) || 
+    (o.vehiculos?.clientes?.nombre || '').toLowerCase().includes(busquedaHistorialGlobal.toLowerCase()) ||
+    (o.vehiculos?.clientes?.rut || '').toLowerCase().includes(busquedaHistorialGlobal.toLowerCase())
+  );
 
   // --- PANTALLAS DE CARGA Y LOGIN ---
   if (authLoading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center"><Wrench className="animate-spin text-emerald-500" size={64} /></div>
@@ -357,7 +370,24 @@ export default function CalibreApp() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6 w-full relative z-10">
         
         {/* COLUMNA IZQUIERDA */}
-        <div className={`lg:col-span-1 ${vistaMecanico === 'recepcion' ? 'block' : 'hidden md:block'}`}>
+        <div className={`lg:col-span-1 flex flex-col gap-6 ${vistaMecanico === 'recepcion' ? 'block' : 'hidden md:block'}`}>
+            
+            {/* 🔥 Botón de Archivo Global en la Columna de Recepción */}
+            <button 
+                onClick={() => setModalHistorialGlobalAbierto(true)}
+                className="w-full mb-2 bg-slate-900/40 hover:bg-slate-800/80 border border-slate-700/50 text-slate-300 p-4 rounded-3xl transition-colors flex items-center justify-between shadow-sm group"
+            >
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 group-hover:bg-emerald-500/20 transition-colors">
+                        <FolderOpen size={20} className="text-emerald-500" />
+                    </div>
+                    <div className="text-left">
+                        <p className="text-sm font-black uppercase tracking-widest text-slate-200">Archivo General</p>
+                        <p className="text-[10px] text-slate-500 font-bold">Historial de vehículos entregados</p>
+                    </div>
+                </div>
+            </button>
+
             <Recepcion 
               soloLectura={soloLectura} 
               vehiculos={vehiculos} 
@@ -365,7 +395,10 @@ export default function CalibreApp() {
               cargarTodo={cargarTodo} 
               abrirOrdenModal={(v) => setModalNuevaOrden(v)} 
               nombreTaller={nombreTaller} 
-              abrirInfoModal={(v) => setVehiculoInfo(v)} 
+              abrirInfoModal={(v) => {
+                  setVehiculoInfo(null);
+                  setVehiculoParaHistorial(v);
+              }} 
               abrirModalCotizacion={(v) => setModalCotizacion(v)}
             />
         </div>
@@ -412,6 +445,25 @@ export default function CalibreApp() {
       />
 
       {/* --- RENDERIZADO DE MODALES --- */}
+      
+      {/* 🔥 NUEVOS MODALES DE HISTORIAL */}
+      {modalHistorialGlobalAbierto && (
+        <ModalHistorial 
+            onClose={() => setModalHistorialGlobalAbierto(false)}
+            busquedaHistorial={busquedaHistorialGlobal}
+            setBusquedaHistorial={setBusquedaHistorialGlobal}
+            historialFiltrado={historialGlobalFiltrado}
+            configPDF={{ nombreTaller, direccion: configTaller?.direccion_taller || '', telefono: configTaller?.telefono_taller || '', garantia: configTaller?.garantia_taller || '', logoUrl: configTaller?.logo_url || null, incluirIva: configTaller?.incluir_iva || false }} 
+        />
+      )}
+
+      {vehiculoParaHistorial && (
+        <ModalHistorialVehiculo 
+            vehiculo={vehiculoParaHistorial} 
+            onClose={() => setVehiculoParaHistorial(null)} 
+        />
+      )}
+
       {modalCotizacion && (
           <ModalCotizacion 
               vehiculo={modalCotizacion !== 'express' ? modalCotizacion : null} 
@@ -431,7 +483,6 @@ export default function CalibreApp() {
       {modalAlerta && <ModalAlerta alertaForm={alertaForm} setAlertaForm={setAlertaForm} guardarAlertaBD={guardarAlertaBD} guardandoAlerta={guardandoAlerta} onClose={() => setModalAlerta(null)} ordenActiva={modalAlerta} resolverAlertaBD={async (id: string) => { await supabase.from('alertas_desgaste').update({ estado: 'Resuelta' }).eq('id', id); toast.success("Alerta resuelta!"); await cargarTodo(); setModalAlerta(null); }} />}
       
       {modalTelemetria && <ModalTelemetria onClose={() => setModalTelemetria(false)} gananciasEsteMes={gananciasEsteMes} autosEsteMes={autosEsteMes} ticketPromedio={ticketPromedio} pctServicio={pctServicio} pctRepuesto={pctRepuesto} ingresosServicio={ingresosServicio} ingresosRepuesto={ingresosRepuesto} topMarcas={topMarcas} topMecanicos={topMecanicos} historial={historial} oportunidades={oportunidadesVenta} nombreTaller={nombreTaller} />}      
-      {modalHistorial && <ModalHistorial onClose={() => setModalHistorial(false)} busquedaHistorial={busquedaHistorial} setBusquedaHistorial={setBusquedaHistorial} historialFiltrado={historialFiltrado} configPDF={{ nombreTaller, direccion: configTaller?.direccion_taller || '', telefono: configTaller?.telefono_taller || '', garantia: configTaller?.garantia_taller || '', logoUrl: configTaller?.logo_url || null, incluirIva: configTaller?.incluir_iva || false }} />}
       {modalCrm && <ModalCRM onClose={() => setModalCrm(false)} oportunidades={oportunidadesVenta} nombreTaller={nombreTaller} />}
       {modalManual && <ModalManual onClose={() => setModalManual(false)} />}
        
@@ -466,7 +517,8 @@ export default function CalibreApp() {
          email={session?.user?.email || ''}
       />}
 
-      {modalVehiculoInfo && <ModalVehiculoInfo vehiculoInfo={modalVehiculoInfo} onClose={() => setVehiculoInfo(null)} reCargarGlobal={cargarTodo} />}
+      {/* 🔥 Este ModalVehiculoInfo original lo mantengo comentado por si lo necesitas, pero ahora usamos ModalHistorialVehiculo
+      {modalVehiculoInfo && <ModalVehiculoInfo vehiculoInfo={modalVehiculoInfo} onClose={() => setVehiculoInfo(null)} reCargarGlobal={cargarTodo} />} */}
       
       {fotoForm && <ModalEvidencia fotoForm={fotoForm} setFotoForm={setFotoForm} handleSeleccionarFoto={(e: React.ChangeEvent<HTMLInputElement>) => { 
            if (!e.target.files) return;

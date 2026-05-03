@@ -75,44 +75,57 @@ export default function InventarioPage() {
     if (session || mecanicoActivo) cargarInventario()
   }, [session, mecanicoActivo])
 
-  // LÓGICA DEL ESCÁNER DE CÓDIGOS (VERSIÓN DIRECTA SIN MENÚS)
+  // 🔥 LÓGICA DEL ESCÁNER OPTIMIZADA PARA CÓDIGOS DE BARRAS Y REACT 18
   useEffect(() => {
-    if (modoEscaner) {
-        const { Html5Qrcode } = require('html5-qrcode');
-        const html5QrCode = new Html5Qrcode("reader");
+    if (!modoEscaner) return;
+    
+    let isStarting = true;
+    const { Html5Qrcode } = require('html5-qrcode');
+    const html5QrCode = new Html5Qrcode("reader");
 
-        html5QrCode.start(
-            { facingMode: "environment" }, // Fuerza la cámara trasera
-            {
-                fps: 10,
-                qrbox: { width: 250, height: 250 }
-            },
-            (decodedText: string) => {
-                if (modoEscaner === 'busqueda') {
-                    setBusqueda(decodedText);
-                } else if (modoEscaner === 'registro') {
-                    setSku(decodedText); 
+    html5QrCode.start(
+        { facingMode: "environment" }, // Cámara trasera
+        {
+            fps: 15, // Más cuadros por segundo para mayor velocidad de lectura
+            // 🔥 El secreto para Códigos de Barras: Caja ancha y corta (Rectángulo)
+            qrbox: { width: 280, height: 120 }, 
+            aspectRatio: 1.0
+        },
+        (decodedText: string) => {
+            // Lectura Exitosa
+            if (modoEscaner === 'busqueda') {
+                setBusqueda(decodedText);
+            } else if (modoEscaner === 'registro') {
+                setSku(decodedText); 
+            }
+            
+            vibrar('exito'); 
+            setModoEscaner(null);
+        },
+        () => {
+            // Ignorar errores de lectura que ocurren en cada frame vacío
+        }
+    ).then(() => {
+        isStarting = false;
+    }).catch((err: any) => {
+        isStarting = false;
+        console.error("No se pudo iniciar la cámara", err);
+        toast.error("Error al acceder a la cámara. Verifica los permisos.");
+        setModoEscaner(null);
+    });
+
+    // Limpieza robusta para evitar que la cámara quede "colgada"
+    return () => {
+        if (!isStarting && html5QrCode.isScanning) {
+            html5QrCode.stop().then(() => html5QrCode.clear()).catch(console.error);
+        } else if (isStarting) {
+            setTimeout(() => {
+                if (html5QrCode.isScanning) {
+                    html5QrCode.stop().then(() => html5QrCode.clear()).catch(console.error);
                 }
-                
-                vibrar('exito'); 
-                setModoEscaner(null);
-                html5QrCode.stop().catch(console.error);
-            },
-            () => {
-                // Ignorar alertas de lectura constantes
-            }
-        ).catch((err: any) => {
-            console.error("No se pudo iniciar la cámara", err);
-            toast.error("Error al acceder a la cámara");
-        });
-
-        // Limpieza si el componente se desmonta o el usuario lo cierra a la fuerza
-        return () => {
-            if (html5QrCode.isScanning) {
-                html5QrCode.stop().catch(console.error);
-            }
-        };
-    }
+            }, 2000);
+        }
+    };
   }, [modoEscaner]);
 
   const handleOpenModal = (item: ArticuloInventario | null = null) => {
@@ -343,20 +356,61 @@ export default function InventarioPage() {
           </div>
       </div>
 
-      {/* MODAL DEL ESCÁNER DE CÓDIGOS */}
+      {/* 🔥 NUEVO MODAL DEL ESCÁNER DE CÓDIGOS (NIVEL PRO) */}
       {modoEscaner && (
-        <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[300] flex items-center justify-center p-4">
-             <div className="bg-slate-900 border border-slate-800 rounded-[30px] p-6 max-w-sm w-full text-center shadow-2xl animate-in zoom-in-95">
-                 <h3 className="text-lg font-black uppercase tracking-tighter text-slate-100 mb-4 flex items-center justify-center gap-2">
-                    <Barcode className="text-emerald-500"/> Escanear Código
+        <div className="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-[300] flex flex-col items-center justify-center p-4 animate-in fade-in duration-200">
+             
+             {/* Keyframes locales para el rayo láser */}
+             <style>{`
+               @keyframes laserScan {
+                 0% { transform: translateY(0px); }
+                 50% { transform: translateY(116px); } 
+                 100% { transform: translateY(0px); }
+               }
+             `}</style>
+
+             <div className="w-full max-w-md relative flex flex-col items-center animate-in zoom-in-95 duration-300">
+                 <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-100 mb-6 flex items-center justify-center gap-3">
+                    <Barcode className="text-emerald-500" size={28}/> Escanear SKU
                  </h3>
-                 {/* 🔥 EL DIV DEL VIDEO AHORA TIENE CLASES PARA ENCAJAR PERFECTO */}
-                 <div id="reader" className="w-full overflow-hidden rounded-xl mb-4 border-2 border-slate-800 bg-black [&_video]:object-cover [&_video]:w-full [&_video]:h-full [&_video]:rounded-xl min-h-[250px]"></div>
+                 
+                 {/* CONTENEDOR DEL ESCÁNER */}
+                 <div className="relative w-full aspect-square md:aspect-video rounded-[32px] overflow-hidden border border-slate-700 bg-black shadow-2xl">
+                     
+                     {/* El Video de la Cámara */}
+                     <div id="reader" className="w-full h-full [&_video]:object-cover [&_video]:w-full [&_video]:h-full border-none"></div>
+                     
+                     {/* OVERLAY DEL FILTRO (Capa oscura con un hueco en el centro) */}
+                     <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
+                         {/* El marco de escaneo (280x120px) */}
+                         <div className="w-[280px] h-[120px] relative">
+                             {/* Máscara oscura para todo lo que está fuera de la caja */}
+                             <div className="absolute inset-0 shadow-[0_0_0_9999px_rgba(15,23,42,0.85)] rounded-2xl"></div>
+                             
+                             {/* Esquinas Esmeralda (Estilo Sci-Fi) */}
+                             <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-emerald-500 rounded-tl-2xl z-20"></div>
+                             <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-emerald-500 rounded-tr-2xl z-20"></div>
+                             <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-emerald-500 rounded-bl-2xl z-20"></div>
+                             <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-emerald-500 rounded-br-2xl z-20"></div>
+                             
+                             {/* Línea Láser Animada */}
+                             <div 
+                                className="absolute top-0 left-2 right-2 h-[2px] bg-emerald-500 shadow-[0_0_15px_3px_rgba(16,185,129,0.9)] z-20"
+                                style={{ animation: 'laserScan 2.5s ease-in-out infinite' }}
+                             ></div>
+                         </div>
+                     </div>
+                 </div>
+                 
+                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-6 mb-8 text-center bg-slate-900/50 px-4 py-2 rounded-xl border border-slate-800">
+                     Apunta la cámara hacia el código de barras
+                 </p>
+
                  <button 
                      onClick={() => setModoEscaner(null)} 
-                     className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-colors"
+                     className="w-full max-w-[280px] bg-slate-800 hover:bg-slate-700 text-slate-200 py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-colors shadow-lg border border-slate-700"
                  >
-                     Cerrar Cámara
+                     Cancelar Escaneo
                  </button>
              </div>
         </div>
