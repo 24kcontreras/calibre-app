@@ -1,6 +1,7 @@
 'use server'
 
-import { createClient } from '@/utils/supabase/server'
+// Usamos ruta relativa por seguridad para evitar el error de Vercel
+import { createClient } from '../../utils/supabase/server'
 import { cookies } from 'next/headers'
 
 export async function loginAdminAction(email: string, password: string) {
@@ -10,7 +11,6 @@ export async function loginAdminAction(email: string, password: string) {
   return { success: true }
 }
 
-// 🔥 RESTAURADO: Registro con Metadata del Taller
 export async function registerAdminAction(
   email: string, 
   password: string, 
@@ -31,17 +31,19 @@ export async function registerAdminAction(
   return { success: true }
 }
 
-// 🔥 NUEVO: Acción para recuperar contraseña
 export async function resetPasswordAction(email: string) {
   const supabase = await createClient()
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    // Redirige al usuario a una página donde pueda poner su nueva clave
-    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/actualizar-password`,
+    // 🔥 AQUÍ ESTÁ EL TRUCO: Lo enviamos al callback con el destino fijo
+    redirectTo: `${siteUrl}/api/auth/callback?next=/actualizar-password`,
   })
   if (error) throw new Error(error.message)
   return { success: true }
 }
 
+// 🔥 RESTAURADO: Esta es la parte que se te había borrado en el archivo mezclado
 export async function loginOperarioAction(tallerId: string, usuario: string, pin: string) {
   const supabase = await createClient()
   const { data, error } = await supabase.rpc('iniciar_sesion_mecanico', {
@@ -61,4 +63,12 @@ export async function loginOperarioAction(tallerId: string, usuario: string, pin
   })
 
   return { success: true, data }
+}
+
+// 🔥 NO OLVIDAR: La acción para cambiar la contraseña que hicimos hace un rato
+export async function updatePasswordAction(newPassword: string) {
+  const supabase = await createClient()
+  const { error } = await supabase.auth.updateUser({ password: newPassword })
+  if (error) throw new Error(error.message)
+  return { success: true }
 }

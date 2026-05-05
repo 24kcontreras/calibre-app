@@ -1,9 +1,11 @@
 'use client'
-import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import { useState } from 'react'
 import { ArrowRight, Lock, AlertCircle, CheckCircle } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
+
+// 🔥 IMPORTAMOS LA ACCIÓN DEL SERVIDOR
+import { updatePasswordAction } from '@/app/login/actions'
 
 export default function ActualizarPassword() {
   const [password, setPassword] = useState('')
@@ -36,19 +38,15 @@ export default function ActualizarPassword() {
         return
     }
 
-    // 🔥 SUPABASE: Como el usuario entró por el enlace mágico, ya hay sesión. 
-    // Ahora simplemente actualizamos la clave de esa sesión.
-    const { error } = await supabase.auth.updateUser({
-      password: password
-    })
-    
-    if (error) {
-        setErrorMsg('Error al actualizar. Es posible que el enlace haya expirado.')
-    } else {
-        setSuccessMsg(true)
+    try {
+      // 🔥 AHORA LLAMAMOS AL SERVIDOR SEGURO
+      await updatePasswordAction(password)
+      setSuccessMsg(true)
+    } catch (error: any) {
+      setErrorMsg('Error al actualizar: ' + (error.message || 'Es posible que el enlace haya expirado.'))
+    } finally {
+      setLoading(false)
     }
-    
-    setLoading(false)
   }
 
   return (
