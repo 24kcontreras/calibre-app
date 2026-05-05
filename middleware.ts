@@ -44,8 +44,9 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Exceptuamos rutas estáticas y la página de recuperación
+     * Excluimos explícitamente la página de actualizar password y el callback
+     * para que el middleware no haga redirecciones automáticas ahí.
      */
-    '/((?!_next/static|actualizar-password|api/auth|api/flow|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico)$).*)',
+    '/((?!_next/static|actualizar-password|auth/callback|api/auth|api/flow|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico)$).*)',
   ],
 }
