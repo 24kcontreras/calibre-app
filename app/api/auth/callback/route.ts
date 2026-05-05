@@ -1,21 +1,22 @@
-import { NextResponse } from 'next/server'
-import { createClient } from '@/utils/supabase/server'
+import { createClient } from '../../../../utils/supabase/server'
+import { NextResponse, type NextRequest } from 'next/server'
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
+  
+  // 🛡️ El sistema leerá el parámetro "next" que inyectamos.
   const next = searchParams.get('next') ?? '/taller'
 
   if (code) {
     const supabase = await createClient()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     
-    // Si Google nos da el OK, mandamos al usuario a la pizarra
     if (!error) {
+      // Redirige a donde debe (ej: /actualizar-password)
       return NextResponse.redirect(`${origin}${next}`)
     }
   }
 
-  // Si algo falla, lo regresamos al login
-  return NextResponse.redirect(`${origin}/login?error=oauth`)
+  return NextResponse.redirect(`${origin}/login?error=enlace_expirado`)
 }
