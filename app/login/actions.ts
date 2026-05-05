@@ -1,6 +1,7 @@
 'use server'
 
-import { createClient } from '../../utils/supabase/server'
+// 🔥 Usamos el ALIAS ABSOLUTO (@/) para que Vercel no se pierda buscando la ruta
+import { createClient } from '@/utils/supabase/server'
 import { cookies } from 'next/headers'
 
 export async function loginAdminAction(email: string, password: string) {
@@ -30,18 +31,13 @@ export async function registerAdminAction(
   return { success: true }
 }
 
-// 🔥 CONFIGURACIÓN DE RECUPERACIÓN BLINDADA
 export async function resetPasswordAction(email: string) {
   const supabase = await createClient()
-  
-  // En Vercel usa tu URL real, en local usa localhost
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
   
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    // 🛡️ FORZAMOS que el link del correo pase por el callback y LUEGO a actualizar clave
-    redirectTo: `${siteUrl}/auth/callback?next=/actualizar-password`,
+    redirectTo: `${siteUrl}/api/auth/callback?next=/actualizar-password`,
   })
-  
   if (error) throw new Error(error.message)
   return { success: true }
 }
