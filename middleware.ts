@@ -42,5 +42,6 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|._png|._jpg|._jpeg|._gif|._webp|._svg|._ico|api/auth|api/flow).*)'],
+  // Añadimos /actualizar-password a la lista de ignorados del middleware para que no te redirija
+  matcher: ['/((?!_next/static|actualizar-password|api/auth|api/flow|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico)$).*)'],
 }
