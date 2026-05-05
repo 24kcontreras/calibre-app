@@ -1,4 +1,5 @@
 'use client'
+import { guardarItemAction, guardarAlertaAction, resolverAlertaAction } from './actions'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
@@ -172,19 +173,27 @@ export default function CalibreApp() {
       e.preventDefault();
       if (!itemForm.orden_id || guardandoItem || soloLectura) return;
       setGuardandoItem(true);
+      
       const payload = {
         orden_id: itemForm.orden_id,
         descripcion: itemForm.tipo_item === 'repuesto' && itemForm.detalle.trim() !== '' ? `${itemForm.nombre.trim()} (${itemForm.detalle.trim()})` : itemForm.nombre.trim(),
         precio: parseInt(itemForm.precio) || 0,
         tipo_item: itemForm.tipo_item, 
         procedencia: itemForm.tipo_item === 'repuesto' ? itemForm.procedencia : 'Taller',
-        inventario_id: itemForm.inventario_id || null // 🔥 ENVÍO AL TRIGGER DE INVENTARIO
+        inventario_id: itemForm.inventario_id || null
       };
-      try {
-          if (itemForm.id) await supabase.from('items_orden').update(payload).eq('id', itemForm.id);
-          else await supabase.from('items_orden').insert([payload]);
-          setModalItemVisible(false); toast.success("Ítem guardado"); await cargarTodo();
-      } catch (err) { toast.error("Error guardando el ítem"); } finally { setGuardandoItem(false); }
+
+      // Llamamos al backend de forma segura
+      const res = await guardarItemAction(payload, itemForm.id);
+
+      if (res.success) {
+          setModalItemVisible(false); 
+          toast.success("Ítem guardado"); 
+          await cargarTodo();
+      } else {
+          toast.error("Error guardando el ítem: " + res.error);
+      }
+      setGuardandoItem(false);
   }
 
   const subirFotoDefinitiva = async () => {
@@ -210,17 +219,27 @@ export default function CalibreApp() {
       e.preventDefault();
       if (!modalAlerta || guardandoAlerta || soloLectura) return;
       setGuardandoAlerta(true);
-      try {
-            const tallerIdBD = mecanicoActivo ? mecanicoActivo.taller_id : session?.user?.id;
-            const payload = { vehiculo_id: modalAlerta?.vehiculo_id || modalAlerta?.id, pieza: alertaForm.pieza, nivel_riesgo: alertaForm.nivel_riesgo, observacion: alertaForm.observacion, taller_id: tallerIdBD };
 
-          const { error } = await supabase.from('alertas_desgaste').insert([payload]);
-          if (error) throw error;
-          toast.success("¡Alerta registrada!"); setModalAlerta(null); await cargarTodo(); 
-      } catch (err: unknown) { 
-          const msg = err instanceof Error ? err.message : "Error desconocido";
-          toast.error("Error guardando alerta: " + msg); 
-      } finally { setGuardandoAlerta(false); }
+      const tallerIdBD = mecanicoActivo ? mecanicoActivo.taller_id : session?.user?.id;
+      const payload = { 
+        vehiculo_id: modalAlerta?.vehiculo_id || modalAlerta?.id, 
+        pieza: alertaForm.pieza, 
+        nivel_riesgo: alertaForm.nivel_riesgo, 
+        observacion: alertaForm.observacion, 
+        taller_id: tallerIdBD 
+      };
+
+      // Llamamos al backend de forma segura
+      const res = await guardarAlertaAction(payload);
+
+      if (res.success) {
+          toast.success("¡Alerta registrada!"); 
+          setModalAlerta(null); 
+          await cargarTodo(); 
+      } else {
+          toast.error("Error guardando alerta: " + res.error); 
+      }
+      setGuardandoAlerta(false);
   }
 
   const consultarScanner = async (e: React.FormEvent, tipo: 'scanner' | 'manual') => {
@@ -480,7 +499,16 @@ export default function CalibreApp() {
       
       {modalEditarOrden && <ModalEditarOrden orden={modalEditarOrden} soloLectura={soloLectura} cargarTodo={cargarTodo} onClose={() => setModalEditarOrden(null)} />}
       {modalActa && <ModalActaRecepcion orden={modalActa} onClose={() => setModalActa(null)} />}
-      {modalAlerta && <ModalAlerta alertaForm={alertaForm} setAlertaForm={setAlertaForm} guardarAlertaBD={guardarAlertaBD} guardandoAlerta={guardandoAlerta} onClose={() => setModalAlerta(null)} ordenActiva={modalAlerta} resolverAlertaBD={async (id: string) => { await supabase.from('alertas_desgaste').update({ estado: 'Resuelta' }).eq('id', id); toast.success("Alerta resuelta!"); await cargarTodo(); setModalAlerta(null); }} />}
+      {modalAlerta && <ModalAlerta alertaForm={alertaForm} setAlertaForm={setAlertaForm} guardarAlertaBD={guardarAlertaBD} guardandoAlerta={guardandoAlerta} onClose={() => setModalAlerta(null)} ordenActiva={modalAlerta} resolverAlertaBD={async (id: string) => { 
+        const res = await resolverAlertaAction(id);
+        if (res.success) {
+          toast.success("Alerta resuelta!"); 
+          await cargarTodo(); 
+          setModalAlerta(null); 
+        } else {
+          toast.error("Error resolviendo alerta");
+        }
+      }} />}
       
       {modalTelemetria && <ModalTelemetria onClose={() => setModalTelemetria(false)} gananciasEsteMes={gananciasEsteMes} autosEsteMes={autosEsteMes} ticketPromedio={ticketPromedio} pctServicio={pctServicio} pctRepuesto={pctRepuesto} ingresosServicio={ingresosServicio} ingresosRepuesto={ingresosRepuesto} topMarcas={topMarcas} topMecanicos={topMecanicos} historial={historial} oportunidades={oportunidadesVenta} nombreTaller={nombreTaller} />}      
       {modalCrm && <ModalCRM onClose={() => setModalCrm(false)} oportunidades={oportunidadesVenta} nombreTaller={nombreTaller} />}

@@ -59,3 +59,43 @@ export async function fetchInitialTallerData(tallerId: string) {
     return { success: false, error: error.message }
   }
 }
+
+// --- AÑADIR AL FINAL DE app/taller/actions.ts ---
+
+export async function guardarItemAction(payload: any, itemId: string | null) {
+  try {
+    const supabase = await createClient()
+    if (itemId) {
+      const { error } = await supabase.from('items_orden').update(payload).eq('id', itemId)
+      if (error) throw new Error(error.message)
+    } else {
+      const { error } = await supabase.from('items_orden').insert([payload])
+      if (error) throw new Error(error.message)
+    }
+    return { success: true }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}
+
+export async function guardarAlertaAction(payload: any) {
+  try {
+    const supabase = await createClient()
+    const { error } = await supabase.from('alertas_desgaste').insert([payload])
+    if (error) throw new Error(error.message)
+    return { success: true }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}
+
+export async function resolverAlertaAction(id: string) {
+  try {
+    const supabase = await createClient()
+    const { error } = await supabase.from('alertas_desgaste').update({ estado: 'Resuelta' }).eq('id', id)
+    if (error) throw new Error(error.message)
+    return { success: true }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}
