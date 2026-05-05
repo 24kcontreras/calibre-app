@@ -11,6 +11,9 @@ import {
   AlertaDesgaste 
 } from './types'
 
+// 🔥 Importamos la acción del servidor
+import { fetchInitialTallerData } from '@/app/taller/actions'
+
 export const useTaller = () => {
   const [session, setSession] = useState<Session | null>(null)
   const [mecanicoActivo, setMecanicoActivo] = useState<any | null>(null)
@@ -25,54 +28,41 @@ export const useTaller = () => {
   const [esOnboarding, setEsOnboarding] = useState(false)
 
   const extraerDatosConfiguracionAuth = (metadata: Record<string, any>) => {
-       if (!metadata || !metadata.nombre_taller) {
-           setNombreTaller('MI TALLER');
-           setEsOnboarding(true);
-           return;
-       }
-       setEsOnboarding(false); 
-   };
-
-   const cargarTodo = async (tId?: string) => {
-     const currentTallerId = tId || session?.user?.id || mecanicoActivo?.taller_id;
-     if (!currentTallerId) return;
-
-     // 1. Datos del Taller
-     const { data: tData } = await supabase.from('talleres').select('*').eq('id', currentTallerId).single();
-     if (tData) {
-         setConfigTaller((prev: TallerConfig | null) => ({ ...prev, ...tData }));
-         if (tData.nombre_taller) setNombreTaller(tData.nombre_taller);
-
-        const vencido = tData.fecha_vencimiento ? new Date(tData.fecha_vencimiento) < new Date() : false;
-        setSoloLectura(!tData.pago_confirmado || vencido);
+    if (!metadata || !metadata.nombre_taller) {
+        setNombreTaller('MI TALLER');
+        setEsOnboarding(true);
+        return;
     }
+    setEsOnboarding(false); 
+  };
 
-    // 2. Vehículos
-    const { data: vData } = await supabase.from('vehiculos')
-      .select('*, clientes(*), alertas_desgaste(*)') 
-      .eq('taller_id', currentTallerId)
-      .order('created_at', { ascending: false })
-    setVehiculos(vData || [])
+  // 🔥 AQUÍ ESTÁ LA MAGIA DEL SERVER ACTION
+  const cargarTodo = async (tId?: string) => {
+    const currentTallerId = tId || session?.user?.id || mecanicoActivo?.taller_id;
+    if (!currentTallerId) return;
 
-    // 3. Órdenes Activas
-    const { data: oAbiertas, error: errAbiertas } = await supabase.from('ordenes_trabajo')
-      .select('*, vehiculos!inner(*, clientes(*), alertas_desgaste(*)), items_orden(*), fotos_orden(*), comentarios_orden(*)') 
-      .eq('vehiculos.taller_id', currentTallerId)
-      .neq('estado', 'Finalizada')
-      .order('created_at', { ascending: false })
-    
-    if (errAbiertas) toast.error(`Error al cargar pizarra: ${errAbiertas.message}`);
-    setOrdenesAbiertas(oAbiertas || [])
+    try {
+      const response = await fetchInitialTallerData(currentTallerId);
 
-    // 4. Historial
-    const { data: oFinalizadas, error: errFinalizadas } = await supabase.from('ordenes_trabajo')
-      .select('*, vehiculos!inner(*, clientes(*), alertas_desgaste(*)), items_orden(*), fotos_orden(*), comentarios_orden(*)') 
-      .eq('vehiculos.taller_id', currentTallerId)
-      .eq('estado', 'Finalizada')
-      .order('updated_at', { ascending: false })
-      
-    if (errFinalizadas) toast.error(`Error al cargar historial: ${errFinalizadas.message}`);
-    setHistorial(oFinalizadas || [])
+      if (response.success && response.data) {
+        const { configTaller: tData, vehiculos: vData, ordenesAbiertas: oAbiertas, historial: oFinalizadas, soloLectura: sLectura } = response.data;
+        
+        if (tData) {
+          setConfigTaller(prev => ({ ...prev, ...tData }));
+          if (tData.nombre_taller) setNombreTaller(tData.nombre_taller);
+        }
+        
+        setSoloLectura(sLectura);
+        setVehiculos(vData);
+        setOrdenesAbiertas(oAbiertas);
+        setHistorial(oFinalizadas);
+      } else {
+         toast.error(`Error al sincronizar datos: ${response.error}`);
+      }
+    } catch (err) {
+      console.error("Error al cargar datos del servidor:", err);
+      toast.error("Hubo un problema de conexión al cargar tu taller.");
+    }
   }
 
   useEffect(() => {
@@ -98,12 +88,8 @@ export const useTaller = () => {
                 if (credencial) {
                     const mecanico = JSON.parse(credencial);
                     
-                    // 🔥 LA CORRECCIÓN MAESTRA ESTÁ AQUÍ 🔥
-                    // Usamos maybeSingle() para que no explote si el RLS lo bloquea.
                     const { data: mecDB } = await supabase.from('mecanicos').select('activo').eq('id', mecanico.id).maybeSingle();
                     
-                    // Si el RLS bloquea (mecDB es null), asumimos que está activo porque pasó la barrera del PIN.
-                    // Solo lo echamos si explícitamente la BD dice "activo: false"
                     if (!mecDB || mecDB.activo !== false) {
                         setMecanicoActivo(mecanico);
                         setSession({ user: { id: 'mecanico' } } as any); 
@@ -186,7 +172,7 @@ export const useTaller = () => {
     };
   }, [session?.user?.id, mecanicoActivo]);
 
-  // 🔥 CÁLCULOS DERIVADOS
+  // 🔥 CÁLCULOS DERIVADOS (Permanecen en el cliente porque son transformaciones ligeras en tiempo real)
   const cajaTotal = historial.reduce((acc, o) => acc + (o.items_orden?.reduce((s: number, i: ItemOrden) => s + i.precio, 0) || 0) + (o.costo_revision || 0) - (o.descuento || 0), 0)
 
   let ingresosServicio = 0;
