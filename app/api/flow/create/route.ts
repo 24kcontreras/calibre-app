@@ -4,7 +4,9 @@ import crypto from 'crypto';
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { taller_id, email, monto = 24990 } = body;
+        const { taller_id, email, monto = 24990
+
+         } = body;
 
         const apiKey = process.env.FLOW_API_KEY;
         const secretKey = process.env.FLOW_SECRET_KEY;

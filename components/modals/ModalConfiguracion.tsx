@@ -81,7 +81,8 @@ export default function ModalConfiguracion({
           const res = await fetch('/api/flow/create', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ taller_id: tallerId, email: email, monto: 24990 })
+              body: JSON.stringify({ taller_id: tallerId, email: email, monto: 24990
+               })
           });
           const data = await res.json();
           if (data.url) window.location.href = data.url;

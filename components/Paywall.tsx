@@ -22,7 +22,7 @@ export default function Paywall({ tallerId, email, fechaVencimiento }: PaywallPr
                 body: JSON.stringify({ 
                     taller_id: tallerId, 
                     email: email,
-                    monto: 100 // Puedes cambiar el precio aquí si quieres
+                    monto: 24990 // Puedes cambiar el precio aquí si quieres
                 })
             });
             
