@@ -1,34 +1,33 @@
 'use client'
 import React, { useState, Suspense } from 'react'
-import { supabase } from '@/lib/supabase'
 import { Wrench, Lock, Mail, ArrowRight, Loader2, UserSquare, ShieldAlert, QrCode } from 'lucide-react'
 import toast, { Toaster } from 'react-hot-toast'
 import Image from 'next/image'
 import { useSearchParams } from 'next/navigation'
+import { supabase } from '@/lib/supabase' // El cliente del navegador
+
+// 🔥 IMPORTAMOS TUS NUEVOS SERVER ACTIONS
+import { loginAdminAction, registerAdminAction, loginOperarioAction } from '@/app/login/actions'
 
 function LoginContent() {
   const searchParams = useSearchParams();
   
-  // Detectar si viene de un Código QR (?t=ID_TALLER&u=USUARIO)
   const qrTaller = searchParams.get('t');
   const qrUser = searchParams.get('u');
 
-  // Si viene del QR, abrimos la pestaña de operario por defecto
   const [modo, setModo] = useState<'admin' | 'operario'>(qrTaller ? 'operario' : 'admin');
   
-  // Estados para Administrador (Dueño)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isRegister, setIsRegister] = useState(false)
   
-  // Estados para Operario (Mecánico)
   const [tallerId, setTallerId] = useState(qrTaller || '')
   const [usuarioMecanico, setUsuarioMecanico] = useState(qrUser || '')
   const [pin, setPin] = useState('')
 
   const [loading, setLoading] = useState(false)
 
-  // 1. INICIO DE SESIÓN PARA EL DUEÑO (ADMIN)
+  // 1. INICIO DE SESIÓN DUEÑO (AHORA SEGURO CON SSR)
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -36,14 +35,12 @@ function LoginContent() {
 
     try {
       if (isRegister) {
-        const { error } = await supabase.auth.signUp({ email, password })
-        if (error) throw error
+        await registerAdminAction(email, password)
         toast.success("Registro exitoso. Revisa tu correo.", { id: toastId })
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password })
-        if (error) throw error
+        await loginAdminAction(email, password)
         toast.success('¡Bienvenido a Calibre OS!', { id: toastId })
-        window.location.href = '/taller' // Recargamos para que los hooks detecten la sesión
+        window.location.href = '/taller' 
       }
     } catch (error: any) {
       toast.error(error.message || 'Credenciales incorrectas.', { id: toastId })
@@ -52,13 +49,14 @@ function LoginContent() {
     }
   }
 
-  // LÓGICA DE GOOGLE (Solo para Dueños)
+  // LÓGICA DE GOOGLE (Apuntando a la ruta de validación del servidor)
   const handleGoogleLogin = async () => {
     try {
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: `${window.location.origin}/taller`
+                // Ahora apuntamos a un callback del backend para crear la cookie
+                redirectTo: `${window.location.origin}/api/auth/callback`
             }
         })
         if (error) throw error;
@@ -67,36 +65,25 @@ function LoginContent() {
     }
   }
 
-  // 2. INICIO DE SESIÓN PARA MECÁNICOS (OPERARIOS)
+  // 2. INICIO DE SESIÓN OPERARIOS (AHORA SEGURO CON SSR)
   const handleOperarioLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     const toastId = toast.loading('Verificando Gafete Inteligente...')
 
     try {
-      // Llamamos a nuestro Guardia Virtual en Supabase (RPC)
-      const { data, error } = await supabase.rpc('iniciar_sesion_mecanico', {
-        p_taller_id: tallerId,
-        p_usuario: usuarioMecanico.toLowerCase().trim(),
-        p_pin: pin
-      });
+      // Llamamos al Backend en Node.js, ya no lo hacemos en el navegador
+      const response = await loginOperarioAction(tallerId, usuarioMecanico, pin)
 
-      if (error) throw error;
-
-      // 1. Guardamos los datos para el Frontend (Celular)
-      localStorage.setItem('calibre_mecanico_session', JSON.stringify(data));
+      // Guardamos la info del mecánico para el frontend
+      localStorage.setItem('calibre_mecanico_session', JSON.stringify(response.data));
       
-      // 🔥 2. EL TRUCO: Le damos una Cookie al navegador para que el Servidor (Next.js Middleware) lo deje pasar
-      document.cookie = "calibre_mecanico_auth=true; path=/; max-age=86400"; // Dura 24 horas
-      
-      toast.success(`¡A la trinchera, ${data.nombre}!`, { id: toastId })
-      
-      // Lo enviamos a la pizarra operativa
+      toast.success(`¡A la trinchera, ${response.data.nombre}!`, { id: toastId })
       window.location.href = '/taller' 
       
     } catch (error: any) {
-      toast.error('PIN incorrecto o acceso revocado.', { id: toastId })
-      setPin('') // Le borramos el PIN para que intente de nuevo
+      toast.error(error.message, { id: toastId })
+      setPin('') 
     } finally {
       setLoading(false)
     }
@@ -106,13 +93,11 @@ function LoginContent() {
     <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4 relative overflow-hidden">
       <Toaster position="top-center" toastOptions={{ style: { background: '#1e293b', color: '#f8fafc' } }} />
 
-      {/* Fondos abstractos Cyberpunk */}
       <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-emerald-900/20 rounded-full blur-[120px] pointer-events-none z-0"></div>
       <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-blue-900/10 rounded-full blur-[120px] pointer-events-none z-0"></div>
 
       <div className="w-full max-w-md bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-[40px] shadow-2xl p-8 relative z-10">
         
-        {/* LOGO */}
         <div className="flex flex-col items-center mb-8">
             <div className="w-16 h-16 bg-slate-950 border border-slate-800 rounded-2xl flex items-center justify-center mb-4 shadow-inner">
                 <Image src="/logo-calibre.png" alt="Logo" width={32} height={32} className="drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
@@ -121,7 +106,6 @@ function LoginContent() {
             <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mt-1">Sistema Operativo Automotriz</p>
         </div>
 
-        {/* SWITCH DE MODO (ADMIN / OPERARIO) */}
         <div className="flex bg-slate-950 p-1 rounded-2xl mb-8 border border-slate-800 relative">
             <button 
                 type="button"
@@ -137,12 +121,9 @@ function LoginContent() {
             >
                 <Wrench size={14} /> Operario
             </button>
-            
-            {/* Animación del fondo del switch */}
             <div className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-slate-800 rounded-xl transition-transform duration-300 shadow-md ${modo === 'admin' ? 'translate-x-0' : 'translate-x-[calc(100%+4px)]'}`}></div>
         </div>
 
-        {/* FORMULARIO DUEÑO */}
         {modo === 'admin' && (
             <div className="animate-in fade-in slide-in-from-left-4 duration-300">
               <form onSubmit={handleAdminLogin} className="space-y-5">
@@ -165,7 +146,6 @@ function LoginContent() {
                   </button>
               </form>
 
-              {/* OPCIONES DE GOOGLE Y REGISTRO SOLO PARA DUEÑOS */}
               <div className="my-8 flex items-center gap-4">
                 <div className="flex-1 h-px bg-slate-800"></div>
                 <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest">O continuar con</span>
@@ -194,10 +174,8 @@ function LoginContent() {
             </div>
         )}
 
-        {/* FORMULARIO OPERARIO (MECÁNICO) */}
         {modo === 'operario' && (
             <form onSubmit={handleOperarioLogin} className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
-                
                 {qrUser && qrTaller ? (
                     <div className="bg-emerald-950/30 border border-emerald-900/50 p-4 rounded-2xl flex items-center gap-4 mb-2">
                         <div className="bg-emerald-500/20 p-3 rounded-full text-emerald-500">
