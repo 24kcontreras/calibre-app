@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { resetPasswordAction } from '@/app/login/actions'
 import { ArrowLeft, Mail, AlertCircle, CheckCircle } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -16,15 +16,11 @@ export default function RecuperarPassword() {
     setLoading(true)
     setErrorMsg('')
     
-    // 🔥 Llama a Supabase para enviar el link de reseteo, dirigido a la nueva pantalla
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/actualizar-password`, 
-    })
-    
-    if (error) {
-        setErrorMsg('Error al enviar el correo. Verifica que esté bien escrito.')
-    } else {
-        setSuccessMsg(true)
+    try {
+      await resetPasswordAction(email)
+      setSuccessMsg(true)
+    } catch (error: any) {
+        setErrorMsg(error.message || 'Error al enviar el correo. Verifica que esté bien escrito.')
     }
     
     setLoading(false)
