@@ -25,7 +25,12 @@ export default function LandingPage() {
     const revisarSiYaTieneLlave = async () => {
       const { data } = await supabase.auth.getSession();
       
-      if (data.session) {
+      // 🛡️ BLOQUEO DE REDIRECCIÓN: Si el usuario tiene sesión pero viene de un flujo de reseteo,
+      // NO lo mandamos a /taller para evitar que entre sin cambiar la clave.
+      const isResetFlow = window.location.search.includes('next=/actualizar-password') || 
+                          window.location.pathname.includes('actualizar-password');
+
+      if (data.session && !isResetFlow) {
         router.push('/taller'); 
       } else {
         setComprobandoSesion(false);

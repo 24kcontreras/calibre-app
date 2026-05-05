@@ -5,15 +5,17 @@ export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
   
-  // 🛡️ El sistema leerá el parámetro "next" que inyectamos.
-  const next = searchParams.get('next') ?? '/taller'
-
+  const next = searchParams.get('next') || '/taller'
+  
   if (code) {
     const supabase = await createClient()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     
     if (!error) {
-      // Redirige a donde debe (ej: /actualizar-password)
+      // If the user is coming from a password reset, we MUST force them to the update page
+      if (next === '/actualizar-password') {
+        return NextResponse.redirect(`${origin}/actualizar-password`)
+      }
       return NextResponse.redirect(`${origin}${next}`)
     }
   }
